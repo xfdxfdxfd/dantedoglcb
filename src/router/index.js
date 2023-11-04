@@ -3,12 +3,12 @@ import Home from '/src/views/Home.vue'
 import About from '/src/views/About.vue'
 const routes = [
     {
-        path:'/',
+        path:'/LCB/Home',
         name:'Home',
         component:Home
     },
     {
-        path:'/',
+        path:'/LCB/About',
         name:'About',
         component:About
     }

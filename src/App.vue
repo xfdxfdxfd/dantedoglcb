@@ -2,23 +2,32 @@
   <div class="topline">
       <img class="pipe" alt="LC Dog Dante" src="./assets/logo.png">
       &nbsp;
-      <h1 class="pipe2" style=display:inline>LIMBUS COMPANY SITE FOR DOG DANTE</h1>
+      <h1 class="pipe2" style="display:inline;color: rgb(236, 236, 236)">Limbus Company Tools For</h1>
+      <h1 class="pipe2" style="display:inline;color: rgb(249, 87, 47)">DANTE THE DOG</h1>
   </div>
 
   <div class="topnav">
-    <router-link class="active" :to="{name:'Home'}">Home</router-link>
-    <router-link :to="{name:'About'}">About</router-link>
+    <template v-if="this.$route.path == '/LCB/Home'"><router-link class="active" :to="{name:'Home'}">Home</router-link></template>
+    <template v-else><router-link :to="{name:'Home'}">Home</router-link></template>
+    <template v-if="this.$route.path == '/LCB/About'"><router-link class="active" :to="{name:'About'}">About</router-link></template>
+    <template v-else><router-link :to="{name:'About'}">About</router-link></template>
   </div>
   <router-view/>
 </template>
 
 <script>
+
 // import LimbusCompany from './components/LimbusCompany.vue'
 
 export default {
   name: 'App',
+  computed: {
+  },
+  methods: {
+  },
   components: {
-    // LimbusCompany
+  },
+  watch:{
   }
 }
 </script>
@@ -87,5 +96,7 @@ body
 .topline{
   border-top: 3px solid rgb(211, 55, 16);
   overflow: hidden;
+  background-image: url("./assets/K_Corp._Class_3_Excision_Staff_Hong_Lu_Full_Uptied.png");
+  background-size: cover;
 }
 </style>
