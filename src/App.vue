@@ -1,16 +1,19 @@
 <template>
-  <div class="topline">
-      <img class="pipe" alt="LC Dog Dante" src="./assets/logo.png">
+  <div class="topline" style="position: relative;">
+      <img class="pagetitle" alt="LC Dog Dante" src="./assets/logo.png">
       &nbsp;
-      <h1 class="pipe2" style="display:inline;color: rgb(236, 236, 236)">Limbus Company Tools For</h1>
-      <h1 class="pipe2" style="display:inline;color: rgb(249, 87, 47)">DANTE THE DOG</h1>
+      <h2 class="pagetitle" :style="$i18n.locale == 'zh'? 'font-size:29px;position: absolute;left: 70px;top: 1px;':'font-size:28px;position: absolute;left: 70px;top: 5px;'" style="display:inline;color: rgb(211, 55, 16);">{{$t(`DANTE THE DOG'S`)}}</h2>
+      <h2 class="pagetitle" :style="$i18n.locale == 'zh'? 'font-size:29px;position: absolute;left: 100px;top: 37px;':'font-size:28px;position: absolute;left: 100px;top: 40px;'" style="display:inline;color: rgb(243, 218, 148);">{{$t(`Limbus Company Tools`)}}</h2>
+      &nbsp;
+      <b-button size="sm" class="locale-changer" type="submit" style="display:inline;color: #f2f2f2;cursor: pointer;position: absolute;right: 50px;top: 17px;" @click="$i18n.locale = 'en'">English</b-button>
+      &nbsp;
+      <b-button size="sm" class="locale-changer" type="submit" style="display:inline;color: #f2f2f2;cursor: pointer;position: absolute;right: 10px;top: 15px;" @click="$i18n.locale = 'zh'">中文</b-button>
   </div>
 
   <div class="topnav">
-    <template v-if="this.$route.path == '/LCB/Home'"><router-link class="active" :to="{name:'Home'}">Home</router-link></template>
-    <template v-else><router-link :to="{name:'Home'}">Home</router-link></template>
-    <template v-if="this.$route.path == '/LCB/About'"><router-link class="active" :to="{name:'About'}">About</router-link></template>
-    <template v-else><router-link :to="{name:'About'}">About</router-link></template>
+    <router-link :class="this.$route.path == '/'? 'active':''" :to="{name:'Home'}">{{$t(`Home`)}}</router-link>
+    <router-link :class="this.$route.path == '/LCB/Thread'? 'active':''" :to="{name:'Thread'}">{{$t(`Thread`)}}</router-link>
+    <router-link :class="this.$route.path == '/LCB/About'? 'active':''" :to="{name:'About'}">{{$t(`About`)}}</router-link>
   </div>
   <router-view/>
 </template>
@@ -42,9 +45,9 @@ export default {
 img {
   margin: 0px;
   padding: 0px;
-  width: 50px;
+  width: 60px;
 }
-h1{
+h2{
   margin: 0px;
   padding: 0px;
   border-top-width: 0px;
@@ -52,11 +55,8 @@ h1{
   border-bottom-width: 0px;
   border-left-width: 0px;
 }
-.pipe {
-  padding: 5px;
-}
-.pipe2 {
-  padding: 5px;
+.pagetitle {
+  padding: 7px;
 }
 body
 {
