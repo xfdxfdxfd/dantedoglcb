@@ -1,6 +1,6 @@
 <template>
   <div class="topline" style="position: relative;">
-      <img class="pagetitle" alt="LC Dog Dante" src="./assets/logo.png">
+      <img class="pagetitle" alt="LC Dog Dante" src="./assets/DanteLogo.png">
       &nbsp;
       <h2 class="pagetitle" :style="$i18n.locale == 'zh'? 'font-size:29px;position: absolute;left: 70px;top: 1px;':'font-size:28px;position: absolute;left: 70px;top: 5px;'" style="display:inline;color: rgb(211, 55, 16);">{{$t(`DANTE THE DOG'S`)}}</h2>
       <h2 class="pagetitle" :style="$i18n.locale == 'zh'? 'font-size:29px;position: absolute;left: 100px;top: 37px;':'font-size:28px;position: absolute;left: 100px;top: 40px;'" style="display:inline;color: rgb(243, 218, 148);">{{$t(`Limbus Company Tools`)}}</h2>
@@ -45,7 +45,7 @@ export default {
 img {
   margin: 0px;
   padding: 0px;
-  width: 60px;
+  width: 65px;
 }
 h2{
   margin: 0px;
