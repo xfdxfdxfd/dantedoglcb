@@ -1,3 +1,3 @@
 <template>
-    <div> This is About</div>
+    <div style="height: 100vh;"> This is About</div>
 </template>

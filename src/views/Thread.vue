@@ -1,3 +1,3 @@
 <template>
-    <div> This is Thread counter</div>
+    <div style="height: 100vh;"> This is Uptie cal</div>
 </template>
