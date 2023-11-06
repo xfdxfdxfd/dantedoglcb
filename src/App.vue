@@ -3,8 +3,8 @@
     <div class="toplineapp" style="position: relative;">
         <router-link :class="this.$route.path == '/'? 'active':''" :to="{name:'Home'}"><img class="pagetitle" alt="LC Dog Dante" src="./assets/DanteLogo.png"></router-link>
         &nbsp;
-        <h2 class="pagetitle" :style="$i18n.locale == 'zh'? 'font-size:29px;position: absolute;left: 70px;top: 1px;':'font-size:28px;position: absolute;left: 70px;top: 5px;'" style="display:inline;color: rgb(211, 55, 16);">{{$t(`DANTE THE DOG'S`)}}</h2>
-        <h2 class="pagetitle" :style="$i18n.locale == 'zh'? 'font-size:29px;position: absolute;left: 100px;top: 37px;':'font-size:28px;position: absolute;left: 100px;top: 40px;'" style="display:inline;color: rgb(243, 218, 148);">{{$t(`Limbus Company Tools`)}}</h2>
+        <!-- <h2 class="pagetitle" :style="$i18n.locale == 'zh'? 'font-size:29px;position: absolute;left: 70px;top: 1px;':'font-size:28px;position: absolute;left: 70px;top: 5px;'" style="display:inline;color: rgb(211, 55, 16);">{{$t(`DANTE THE DOG'S`)}}</h2>
+        <h2 class="pagetitle" :style="$i18n.locale == 'zh'? 'font-size:29px;position: absolute;left: 100px;top: 37px;':'font-size:28px;position: absolute;left: 100px;top: 40px;'" style="display:inline;color: rgb(243, 218, 148);">{{$t(`Limbus Company Tools`)}}</h2> -->
         &nbsp;
         <b-button size="sm" class="locale-changer" type="submit" style="display:inline;color: #f2f2f2;cursor: pointer;position: absolute;right: 50px;top: 17px;" @click="$i18n.locale = 'en'">English</b-button>
         &nbsp;
@@ -12,6 +12,7 @@
     </div>
 
     <div class="topnav">
+      <router-link :class="this.$route.path == '/'? 'active':''" :to="{name:'Home'}">{{$t(`Home`)}}</router-link>
       <router-link :class="this.$route.path == '/LCB/About'? 'active':''" :to="{name:'About'}">{{$t(`About`)}}</router-link>
       <router-link :class="this.$route.path == '/LCB/Thread'? 'active':''" :to="{name:'Thread'}">{{$t(`Thread`)}}</router-link>
     </div>
