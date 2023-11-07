@@ -1,9 +1,13 @@
 {
     "Home" :"首頁",
-    "About":"關於",
-    "Thread":"升階計算器",
+    "Changelog":"日誌",
+    "UptieCalculator":"升階計算器",
     "Welcome": "直面爆肝，拯救錢包",
     "WelcomeTitle": "你好，主管",
     "WelcomeText": "一個多合一輔助資源管理工具網站",
-    "WelcomeParagraph":"本網站並非完成品\n 它的主要目的是為玩家提供簡單能用的工具\n 準確性是設計和製作工具時的首要考量"
+    "WelcomeParagraph":"本網站仍在建設中\n 網站的主要目的是為玩家提供簡單能用的工具\n 設計和製作工具時，準確性是首要考量",
+    "Welcomesection1":"選擇你想換或者缺的人格/EGO\n然後按底下的 \"提交\" 去開始算你需要的碎片和燈泡數量",
+    "ContactTitle":"聯繫我",
+    "ContactParagraph":"如果你發現有bug或者你想幫忙\n歡迎進我的伺服器來聊\n你的小小幫助是網頁能運行下去的巨大動力",
+    "You need":"你需要"
 }

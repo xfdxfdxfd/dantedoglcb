@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Home from '/src/views/Home.vue'
-import About from '/src/views/About.vue'
-import Thread from '/src/views/Thread.vue'
+import Changelog from '/src/views/Changelog.vue'
+import UptieCalculator from '/src/views/UptieCalculator.vue'
 const routes = [
     {
         path:'/',
@@ -9,14 +9,14 @@ const routes = [
         component:Home
     },
     {
-        path:'/LCB/About',
-        name:'About',
-        component:About
+        path:'/LCB/Changelog',
+        name:'Changelog',
+        component:Changelog
     },
     {
-        path:'/LCB/Thread',
-        name:'Thread',
-        component:Thread
+        path:'/LCB/UptieCalculator',
+        name:'UptieCalculator',
+        component:UptieCalculator
     }
 ]   
 const router = createRouter({

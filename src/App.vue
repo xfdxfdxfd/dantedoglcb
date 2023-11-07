@@ -10,8 +10,8 @@
 
     <div class="topnav">
       <router-link :class="this.$route.path == '/'? 'active':''" :to="{name:'Home'}">{{$t(`Home`)}}</router-link>
-      <router-link :class="this.$route.path == '/LCB/About'? 'active':''" :to="{name:'About'}">{{$t(`About`)}}</router-link>
-      <router-link :class="this.$route.path == '/LCB/Thread'? 'active':''" :to="{name:'Thread'}">{{$t(`Thread`)}}</router-link>
+      <router-link :class="this.$route.path == '/LCB/Changelog'? 'active':''" :to="{name:'Changelog'}">{{$t(`Changelog`)}}</router-link>
+      <router-link :class="this.$route.path == '/LCB/UptieCalculator'? 'active':''" :to="{name:'UptieCalculator'}">{{$t(`UptieCalculator`)}}</router-link>
     </div>
   </div>
   <div class="content" style="z-index: 3;">
@@ -67,7 +67,7 @@ body
 
 /* from https://www.w3schools.com/howto/howto_js_topnav.asp */
 .topnav {
-  background-color: #333;
+  background-color: #232222;
   overflow: hidden;
 }
 /* Style the links inside the navigation bar */
@@ -104,6 +104,11 @@ body
   background-repeat: no-repeat;
   background-size: cover;
   background-size: 1700px 100px;
+  overflow: hidden;
+}
+.bottombar {
+  width: 100%; /* Full width */
+  height: 100%;
   overflow: hidden;
 }
 .content {
