@@ -1,11 +1,10 @@
 {
     "Home" :"Home",
     "About":"About",
-    "Limbus Company Tools":"Limbus Company Tools",
-    "DANTE THE DOG'S":"DANTE THE DOG'S",
     "Thread":"Uptie Calculator",
     "Welcome": "FACE THE GRINDING, SAVE YOUR MONEY",
-    "WelcomeTitle": "Welcome, Dante",
-    "WelcomeText": "The all-in-one platform for planning your future grinding.",
-    "WelcomeParagraph":"Please be aware that this website is just a prototype.\n Its main purpose is to provide simple and reliable tools to faciliate your gameplay.\n Correctness of the tools will be ensured first."
+    "WelcomeTitle": "Welcome, Manager",
+    "WelcomeText": "The all-in-one site for planning your future grinding.",
+    "WelcomeParagraph":"Please be aware that this website is just a prototype.\n Its main purpose is to provide simple and reliable tools to faciliate your gameplay.\n Correctness of the tools will be ensured first.",
+    "WelcomeParagraph2":""
 }
