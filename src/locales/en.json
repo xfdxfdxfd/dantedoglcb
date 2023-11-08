@@ -6,8 +6,10 @@
     "WelcomeTitle": "Welcome, Manager",
     "WelcomeText": "The all-in-one site for planning your future grinding.",
     "WelcomeParagraph":"Please be aware that this website is still under active developing.\n Its main purpose is to provide simple and reliable tools to faciliate your gameplay.\n Correctness of the tools will be ensured first.",
-    "Welcomesection1":"Select the IDs/EGOs that you want to spark or you do not have.\nThen click \"Submit\" at the bottom to start calculating the shards and threads you need.",
+    "UptieCalculatorSection":"Set the status of your IDs and EGOs in \"Update Settings\".\nThen select the IDs/EGOs that you want to uptie.\nClick \"Submit\" at the bottom to start calculating the shards and threads you need.",
     "ContactTitle":"Contact Me",
     "ContactParagraph":"If you have found any bugs or you wish to help with the website,\nfeel free to contact me by joining my server.\nAny help is greatly appreciated.",
-    "You need":"You need"
+    "You need":"You need",
+    "StatusSetting":"Update Settings",
+    "StatusSettingSection":"Set the status of your IDs and EGOs to update the information in all tools."
 }

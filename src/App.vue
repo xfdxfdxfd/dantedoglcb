@@ -11,10 +11,11 @@
     <div class="topnav">
       <router-link :class="this.$route.path == '/'? 'active':''" :to="{name:'Home'}">{{$t(`Home`)}}</router-link>
       <router-link :class="this.$route.path == '/LCB/Changelog'? 'active':''" :to="{name:'Changelog'}">{{$t(`Changelog`)}}</router-link>
+      <router-link :class="this.$route.path == '/LCB/StatusSetting'? 'active':''" :to="{name:'StatusSetting'}">{{$t(`StatusSetting`)}}</router-link>
       <router-link :class="this.$route.path == '/LCB/UptieCalculator'? 'active':''" :to="{name:'UptieCalculator'}">{{$t(`UptieCalculator`)}}</router-link>
     </div>
   </div>
-  <div class="content" style="z-index: 3;">
+  <div style="z-index: 5;padding-top:100px">
     <router-view/>
   </div>
 </template>
@@ -99,8 +100,8 @@ body
   background-image: url("./assets/E041X_2.png");
   position: fixed; /* Set the navbar to fixed position */
   top: 0; /* Position the navbar at the top of the page */
-  width: 100%; /* Full width */
-  height: 100%;
+  width: 1700px; /* Full width */
+  height: 130px;
   background-repeat: no-repeat;
   background-size: cover;
   background-size: 1700px 100px;
