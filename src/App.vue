@@ -3,9 +3,9 @@
     <div class="toplineapp" style="position: relative;">
         <router-link :class="this.$route.path == '/'? 'active':''" :to="{name:'Home'}"><img style="margin: 0px;padding-left: 20px;width: 150px;" class="pagetitle" alt="LC Dog Dante" src="./assets/DanteLogoBanner.png"></router-link>
         &nbsp;
-        <b-button size="sm" class="locale-changer" type="submit" style="display:inline;color: #f2f2f2;cursor: pointer;position: absolute;right: 50px;top: 17px;" @click="$i18n.locale = 'en'">English</b-button>
+        <b-button size="sm" class="locale-changer" type="submit" style="display:inline;color: #f2f2f2;cursor: pointer;padding-left:70vw;" @click="$i18n.locale = 'en'">English</b-button>
         &nbsp;
-        <b-button size="sm" class="locale-changer" type="submit" style="display:inline;color: #f2f2f2;cursor: pointer;position: absolute;right: 10px;top: 15px;" @click="$i18n.locale = 'zh'">中文</b-button>
+        <b-button size="sm" class="locale-changer" type="submit" style="display:inline;color: #f2f2f2;cursor: pointer;" @click="$i18n.locale = 'zh'">中文</b-button>
     </div>
 
     <div class="topnav">
