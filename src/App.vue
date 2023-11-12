@@ -100,10 +100,11 @@ body
   background-image: url("./assets/E041X_2.png");
   position: fixed; /* Set the navbar to fixed position */
   top: 0; /* Position the navbar at the top of the page */
-  width: 1700px; /* Full width */
+  width: 100vw; /* Full width */
   height: 130px;
   background-repeat: no-repeat;
   background-size: cover;
+  background-attachment: fixed;
   background-size: 1700px 100px;
   overflow: hidden;
 }
@@ -115,6 +116,7 @@ body
 .content {
   background-image: url("./assets/maxresdefault.jpg");
   background-size: cover;
+  background-attachment: fixed;
   background-repeat: no-repeat;
   overflow: hidden;
 }
