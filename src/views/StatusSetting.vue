@@ -29,7 +29,7 @@
                         {{$t(index)}}
                         &nbsp;
                         <div >
-                            <select :id='currentID+index' @change="id.uptied=getitemselected(currentID+index)">
+                            <select :id='currentID+index' @change="id.uptied=getitemselected(currentID+index),updateIDdata()">
                                 <option value="0">{{$t(`Don't have`)}}</option>
                                 <option value="1">{{$t(`Uptie`)}}1</option>
                                 <option value="2">{{$t(`Uptie`)}}2</option>
@@ -44,7 +44,7 @@
                         {{$t(index)}}
                         &nbsp;
                         <div >
-                            <select :id='currentID+index' @change="id.uptied=getitemselected(currentID+index)">
+                            <select :id='currentID+index' @change="id.uptied=getitemselected(currentID+index),updateIDdata()">
                                 <option value="0">{{$t(`Don't have`)}}</option>
                                 <option value="1">{{$t(`Uptie`)}}1</option>
                                 <option value="2">{{$t(`Uptie`)}}2</option>
@@ -123,6 +123,7 @@ export default {
                 "R.B. Chef de Cuisine Ryoshu": {rarity:"000",owned:false, uptied:'0'},
                 "Kurokumo Clan Wakashu Ryoshu": {rarity:"000",owned:false, uptied:'0'},
                 "Seven Assoc. South Section 6 Ryoshu": {rarity:"00",owned:false, uptied:'0'},
+                "LCCB Assistant Manager Ryoshu": {rarity:"00",owned:false, uptied:'0'},
                 "LCB Sinner Ryoshu":{rarity:"0",owned:false, uptied:'0'},
             },
             EGOs:{
@@ -251,6 +252,7 @@ export default {
         GregorIDs: {
             IDs: {
                 "G Corp. Manager Corporal Gregor":{rarity:"000",owned:false, uptied:'0'},
+                "Twinhook Pirates First Mate Gregor":{rarity:"000",owned:false, uptied:'0'},
                 "Zwei Assoc. South Section 4 Gregor":{rarity:"000",owned:false, uptied:'0'},
                 "Rosespanner Workshop Fixer Gregor":{rarity:"00",owned:false, uptied:'0'},
                 "Liu Assoc. South Section 6 Gregor":{rarity:"00",owned:false, uptied:'0'},
@@ -321,7 +323,10 @@ export default {
     testing(){
         console.log(this.$data);
     },
-    
+    //update the data to local storage
+    updateIDdata(){
+        localStorage.setItem('IDdata',JSON.stringify(this.$data));
+    },
     //update the current id
     getIDselected(){
         var e = document.getElementById("IDs-select");
