@@ -2,10 +2,11 @@
   <div class="navbar" style="z-index: 6;">
     <div class="toplineapp" style="position: relative;">
         <router-link :class="this.$route.path == '/'? 'active':''" :to="{name:'Home'}"><img style="margin: 0px;padding-left: 20px;width: 150px;" class="pagetitle" alt="LC Dog Dante" src="./assets/DanteLogoBanner.png"></router-link>
-        &nbsp;
-        <b-button size="sm" class="locale-changer" type="submit" style="display:inline;color: #f2f2f2;cursor: pointer;padding-left:70vw;" @click="$i18n.locale = 'en'">English</b-button>
-        &nbsp;
-        <b-button size="sm" class="locale-changer" type="submit" style="display:inline;color: #f2f2f2;cursor: pointer;" @click="$i18n.locale = 'zh'">中文</b-button>
+        <div style="text-align: right">
+          <b-button size="sm" class="locale-changer" type="submit" style="display:inline;color: #f2f2f2;cursor: pointer;" @click="$i18n.locale = 'en'">English</b-button>
+          &nbsp;
+          <b-button size="sm" class="locale-changer" type="submit" style="display:inline;color: #f2f2f2;cursor: pointer;padding-right:10%" @click="$i18n.locale = 'zh'">中文</b-button>
+        </div>
     </div>
 
     <div class="topnav">
@@ -54,7 +55,7 @@ h1,h2{
   border-left-width: 0px;
 }
 .pagetitle {
-  padding: 7px;
+  padding-top: 5px;
 }
 body
 {
@@ -101,7 +102,7 @@ body
   position: fixed; /* Set the navbar to fixed position */
   top: 0; /* Position the navbar at the top of the page */
   width: 100vw; /* Full width */
-  height: 130px;
+  height: 150px;
   background-repeat: no-repeat;
   background-size: cover;
   background-attachment: fixed;
