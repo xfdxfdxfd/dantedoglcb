@@ -9,24 +9,27 @@
                 <h3 class="box1h3text" style="color:#c2bfbf;margin:10px">{{ $t(`UptieCalculatorSection2`) }}</h3>
                 <div style="text-align: right;padding-right:10px">
                     <button class="button-6" role="button" style="background-color:rgb(255, 220, 161)"
-                        @click="updateuptiemode('uptie3')">{{ $t(`All Uptie 3`)
+                        @click="updateuptiemode('uptie3'), calculate('uptie3')">{{ $t(`All Uptie 3`)
                         }}</button>
                     <button class="button-6" role="button" style="background-color:rgb(255, 220, 161)"
-                        @click="updateuptiemode('uptie4')">{{ $t(`All Uptie 4`)
+                        @click="updateuptiemode('uptie4'), calculate('uptie4')">{{ $t(`All Uptie 4`)
                         }}</button>
                     <!-- <button class="button-6" role="button" @click="updateuptiemode('uptie5')">{{ $t(`All Uptie 5`)
                     }}</button> -->
-                    <button class="button-6" role="button" @click="updateuptiemode('uptie3only')">{{ $t(`All Uptie 3-2`)
-                    }}</button>
-                    <button class="button-6" role="button" @click="updateuptiemode('uptie4only')">{{ $t(`All Uptie 4-2`)
-                    }}</button>
+                    <button class="button-6" role="button"
+                        @click="updateuptiemode('uptie3only'), calculate('uptie3only')">{{
+                            $t(`All Uptie 3-2`)
+                        }}</button>
+                    <button class="button-6" role="button"
+                        @click="updateuptiemode('uptie4only'), calculate('uptie4only')">{{ $t(`All Uptie 4-2`)
+                        }}</button>
                     <!-- <button class="button-6" role="button" @click="updateuptiemode('uptie5only')">{{ $t(`All Uptie 5-2`)}}</button> -->
                 </div>
-                <div style="text-align: right;padding-right:10px">
+                <!-- <div style="text-align: right;padding-right:10px">
                     <button class="button-6" role="button" style="background-color:rgb(211, 55, 16);color:#fff">{{
                         $t(`Reset`)
                     }}</button>
-                </div>
+                </div> -->
                 <h2 style="border-bottom: 3px solid rgb(172, 172, 172);"></h2>
                 &nbsp;
                 <h3 class="box1h3text" style="text-align:left;">{{ $t(`You need`) }}:</h3>
@@ -110,103 +113,710 @@ export default {
             uptiethreadamount: {
                 sparkingshardamount: {
                     "EGO": 400,
-                    "000": 400,
-                    "00": 150,
+                    "Rarity000": 400,
+                    "Rarity00": 150,
                 },
                 IDamount: {
-                    "000": {
-                        "1to2": { thread: 20, shard: 0 },
-                        "2to3": { thread: 80, shard: 0 },
-                        "3to4": { thread: 150, shard: 50 },
+                    "Rarity000": {
+                        "from1to2": { thread: 20, shard: 0 },
+                        "from2to3": { thread: 80, shard: 0 },
+                        "from3to4": { thread: 150, shard: 50 },
                     },
-                    "00": {
-                        "1to2": { thread: 10, shard: 0 },
-                        "2to3": { thread: 40, shard: 0 },
-                        "3to4": { thread: 100, shard: 30 },
+                    "Rarity00": {
+                        "from1to2": { thread: 10, shard: 0 },
+                        "from2to3": { thread: 40, shard: 0 },
+                        "from3to4": { thread: 100, shard: 30 },
                     },
-                    "0": {
-                        "1to2": { thread: 0, shard: 0 },
-                        "2to3": { thread: 0, shard: 0 },
-                        "3to4": { thread: 50, shard: 20 },
+                    "Rarity0": {
+                        "from1to2": { thread: 0, shard: 0 },
+                        "from2to3": { thread: 0, shard: 0 },
+                        "from3to4": { thread: 50, shard: 20 },
                     },
                 },
                 EGOamount: {
                     "Z": {
-                        "1to2": { thread: 0, shard: 0 },
-                        "2to3": { thread: 0, shard: 0 },
-                        "3to4": { thread: 110, shard: 80 },
+                        "from1to2": { thread: 0, shard: 0 },
+                        "from2to3": { thread: 0, shard: 0 },
+                        "from3to4": { thread: 110, shard: 80 },
                     },
                     "ZnotOriginal": {
-                        "1to2": { thread: 20, shard: 0 },
-                        "2to3": { thread: 60, shard: 0 },
-                        "3to4": { thread: 110, shard: 80 },
+                        "from1to2": { thread: 20, shard: 0 },
+                        "from2to3": { thread: 60, shard: 0 },
+                        "from3to4": { thread: 110, shard: 80 },
                     },
                     "T": {
-                        "1to2": { thread: 25, shard: 0 },
-                        "2to3": { thread: 70, shard: 0 },
-                        "3to4": { thread: 130, shard: 90 },
+                        "from1to2": { thread: 25, shard: 0 },
+                        "from2to3": { thread: 70, shard: 0 },
+                        "from3to4": { thread: 130, shard: 90 },
                     },
                     "H": {
-                        "1to2": { thread: 30, shard: 0 },
-                        "2to3": { thread: 80, shard: 0 },
-                        "3to4": { thread: 150, shard: 100 },
+                        "from1to2": { thread: 30, shard: 0 },
+                        "from2to3": { thread: 80, shard: 0 },
+                        "from3to4": { thread: 150, shard: 100 },
                     },
                 }
+            },
+
+            ZEGOnotOriginal: {
+                Soda: "Soda",
+                Legerdemain: "Legerdemain",
             }
         }
     },
     computed: {
     },
     methods: {
-        changewhichvalue(IDkey) {
-            switch (IDkey) {
-                case "YiSangIDs":
-                    return this.CalResult.YiSang;
-                case "FaustIDs":
-                    return this.CalResult.Faust;
-                case "DonIDs":
-                    return this.CalResult.Don;
-                case "RyoshuIDs":
-                    return this.CalResult.Ryoshu;
-                case "MeurIDs":
-                    return this.CalResult.Meur;
-                case "HongLuIDs":
-                    return this.CalResult.HongLu;
-                case "HeathIDs":
-                    return this.CalResult.Heath;
-                case "IshIDs":
-                    return this.CalResult.Ish;
-                case "RodionIDs":
-                    return this.CalResult.Rodion;
-                case "SinclairIDs":
-                    return this.CalResult.Sinclair;
-                case "OutisIDs":
-                    return this.CalResult.Outis;
-                case "GregorIDs":
-                    return this.CalResult.Gregor;
-                case "Threadamount":
-                    return this.CalResult.ThreadAmount;
-            }
-        },
 
         calculate_case_ut3(restore_data) {
+            this.CalResult.ThreadAmount = 0
             for (const [key1, value1] of Object.entries(restore_data)) {
-                var shardinput = this.changewhichvalue(key1);      //this.CalResult.YiSang,this.CalResult.Faust....
-                var identityIDList = value1;                   //this.All_IDs.YiSangIDs,this.All_IDs.FaustIDs....
+                // console.log(key1);      //this.CalResult.YiSang,this.CalResult.Faust....
+                var identityIDList = value1;//this.All_IDs.YiSangIDs,this.All_IDs.FaustIDs....
+                var shardvalue = 0;
+                var threadvalue = 0;
                 for (const [key2, value2] of Object.entries(identityIDList.IDs)) {
                     //key2 = Molar Office Fixer Outis,LCB Sinner Meursault...
                     //value2 = { rarity: "000", uptied: 0 },...
+                    switch (value2.rarity) {
+                        case "000":
+                            if (value2.uptied == "2") { //ut2 or below
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from2to3.thread;
+                            }
+                            if (value2.uptied == "1") { //ut1 or don't hv
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from1to2.thread;
+                            }
+                            if (value2.uptied == "0") { //don't hv
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from1to2.thread;
+                                shardvalue += this.uptiethreadamount.sparkingshardamount.Rarity000;
+                            }
+                            break;
+                        case "00":
+                            if (value2.uptied == "2") { //ut2 or below
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from2to3.thread;
+                            }
+                            if (value2.uptied == "1") { //ut1 or don't hv
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from1to2.thread;
+                            }
+                            if (value2.uptied == "0") { //don't hv
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from1to2.thread;
+                                shardvalue += this.uptiethreadamount.sparkingshardamount.Rarity00;
+                            }
+                            break;
+                        case "0": //do nothing as lcb sinner only do ut4
+                            break;
+                    }
                 }
                 for (const [key3, value3] of Object.entries(identityIDList.EGOs)) {
                     //key3 = Chains of Others,Regret...
                     //value3 = { rarity: "Z", uptied: 0 },...
                     //need to filter out the original EGOs for each Sinner
+                    switch (value3.rarity) {
+                        case "T":
+                            if (value3.uptied == "2") { //ut2 or below
+                                //console.log("value3.uptied = 2")
+                                threadvalue += this.uptiethreadamount.EGOamount.T.from2to3.thread;
+                            }
+                            if (value3.uptied == "1") { //ut1 or don't hv
+                                //console.log("value3.uptied = 1")
+                                threadvalue += this.uptiethreadamount.EGOamount.T.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.EGOamount.T.from1to2.thread;
+                            }
+                            if (value3.uptied == "0") { //don't hv
+                                //console.log("value3.uptied = 0")
+                                threadvalue += this.uptiethreadamount.EGOamount.T.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.EGOamount.T.from1to2.thread;
+                                shardvalue += this.uptiethreadamount.sparkingshardamount.EGO;
+                            }
+                            break;
+                        case "H":
+                            if (value3.uptied == "2") { //ut2 or below
+                                //console.log("value3.uptied = 2")
+                                threadvalue += this.uptiethreadamount.EGOamount.H.from2to3.thread;
+                            }
+                            if (value3.uptied == "1") { //ut1 or don't hv
+                                //console.log("value3.uptied = 1")
+                                threadvalue += this.uptiethreadamount.EGOamount.H.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.EGOamount.H.from1to2.thread;
+                            }
+                            if (value3.uptied == "0") { //don't hv
+                                //console.log("value3.uptied = 0")
+                                threadvalue += this.uptiethreadamount.EGOamount.H.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.EGOamount.H.from1to2.thread;
+                                shardvalue += this.uptiethreadamount.sparkingshardamount.EGO;
+                            }
+                            break;
+                        case "Z":
+                            if (key3 in this.ZEGOnotOriginal) { //not original
+                                //console.log(key3);
+                                if (value3.uptied == "2") { //ut2 or below
+                                    //console.log("value3.uptied = 2")
+                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from2to3.thread;
+                                }
+                                if (value3.uptied == "1") { //ut1 or don't hv
+                                    //console.log("value3.uptied = 1")
+                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from2to3.thread;
+                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from1to2.thread;
+                                }
+                                if (value3.uptied == "0") { //don't hv
+                                    //console.log("value3.uptied = 0")
+                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from2to3.thread;
+                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from1to2.thread;
+                                    shardvalue += this.uptiethreadamount.sparkingshardamount.EGO;
+                                }
+                            }
+                            break;
+                    }
+                }
+                this.CalResult.ThreadAmount += threadvalue;
+                // console.log(key1, shardvalue);
+                switch (key1) {
+                    case "YiSangIDs":
+                        this.CalResult.YiSang = shardvalue;
+                        break;
+                    case "FaustIDs":
+                        this.CalResult.Faust = shardvalue;
+                        break;
+                    case "DonIDs":
+                        this.CalResult.Don = shardvalue;
+                        break;
+                    case "RyoshuIDs":
+                        this.CalResult.Ryoshu = shardvalue;
+                        break;
+                    case "MeurIDs":
+                        this.CalResult.Meur = shardvalue;
+                        break;
+                    case "HongLuIDs":
+                        this.CalResult.HongLu = shardvalue;
+                        break;
+                    case "HeathIDs":
+                        this.CalResult.Heath = shardvalue;
+                        break;
+                    case "IshIDs":
+                        this.CalResult.Ish = shardvalue;
+                        break;
+                    case "RodionIDs":
+                        this.CalResult.Rodion = shardvalue;
+                        break;
+                    case "SinclairIDs":
+                        this.CalResult.Sinclair = shardvalue;
+                        break;
+                    case "OutisIDs":
+                        this.CalResult.Outis = shardvalue;
+                        break;
+                    case "GregorIDs":
+                        this.CalResult.Gregor = shardvalue;
+                        break;
                 }
             }
         },
-        calculate_case_ut3only(restore_data) { },
-        calculate_case_ut4(restore_data) { },
-        calculate_case_ut4only(restore_data) { },
+        calculate_case_ut3only(restore_data) {
+            this.CalResult.ThreadAmount = 0
+            for (const [key1, value1] of Object.entries(restore_data)) {
+                // console.log(key1);      //this.CalResult.YiSang,this.CalResult.Faust....
+                var identityIDList = value1;//this.All_IDs.YiSangIDs,this.All_IDs.FaustIDs....
+                var shardvalue = 0;
+                var threadvalue = 0;
+                for (const [key2, value2] of Object.entries(identityIDList.IDs)) {
+                    //key2 = Molar Office Fixer Outis,LCB Sinner Meursault...
+                    //value2 = { rarity: "000", uptied: 0 },...
+                    switch (value2.rarity) {
+                        case "000":
+                            if (value2.uptied == "2") { //ut2 or below
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from2to3.thread;
+                            }
+                            if (value2.uptied == "1") { //ut1 or don't hv
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from1to2.thread;
+                            }
+                            break;
+                        case "00":
+                            if (value2.uptied == "2") { //ut2 or below
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from2to3.thread;
+                            }
+                            if (value2.uptied == "1") { //ut1 or don't hv
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from1to2.thread;
+                            }
+                            break;
+                        case "0": //do nothing as lcb sinner only do ut4
+                            break;
+                    }
+                }
+                for (const [key3, value3] of Object.entries(identityIDList.EGOs)) {
+                    //key3 = Chains of Others,Regret...
+                    //value3 = { rarity: "Z", uptied: 0 },...
+                    //need to filter out the original EGOs for each Sinner
+                    switch (value3.rarity) {
+                        case "T":
+                            if (value3.uptied == "2") { //ut2 or below
+                                //console.log("value3.uptied = 2")
+                                threadvalue += this.uptiethreadamount.EGOamount.T.from2to3.thread;
+                            }
+                            if (value3.uptied == "1") { //ut1 or don't hv
+                                //console.log("value3.uptied = 1")
+                                threadvalue += this.uptiethreadamount.EGOamount.T.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.EGOamount.T.from1to2.thread;
+                            }
+                            break;
+                        case "H":
+                            if (value3.uptied == "2") { //ut2 or below
+                                //console.log("value3.uptied = 2")
+                                threadvalue += this.uptiethreadamount.EGOamount.H.from2to3.thread;
+                            }
+                            if (value3.uptied == "1") { //ut1 or don't hv
+                                //console.log("value3.uptied = 1")
+                                threadvalue += this.uptiethreadamount.EGOamount.H.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.EGOamount.H.from1to2.thread;
+                            }
+                            break;
+                        case "Z":
+                            if (key3 in this.ZEGOnotOriginal) { //not original
+                                //console.log(key3);
+                                if (value3.uptied == "2") { //ut2 or below
+                                    //console.log("value3.uptied = 2")
+                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from2to3.thread;
+                                }
+                                if (value3.uptied == "1") { //ut1 or don't hv
+                                    //console.log("value3.uptied = 1")
+                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from2to3.thread;
+                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from1to2.thread;
+                                }
+                            }
+                            break;
+                    }
+                }
+                this.CalResult.ThreadAmount += threadvalue;
+                // console.log(key1, shardvalue);
+                switch (key1) {
+                    case "YiSangIDs":
+                        this.CalResult.YiSang = shardvalue;
+                        break;
+                    case "FaustIDs":
+                        this.CalResult.Faust = shardvalue;
+                        break;
+                    case "DonIDs":
+                        this.CalResult.Don = shardvalue;
+                        break;
+                    case "RyoshuIDs":
+                        this.CalResult.Ryoshu = shardvalue;
+                        break;
+                    case "MeurIDs":
+                        this.CalResult.Meur = shardvalue;
+                        break;
+                    case "HongLuIDs":
+                        this.CalResult.HongLu = shardvalue;
+                        break;
+                    case "HeathIDs":
+                        this.CalResult.Heath = shardvalue;
+                        break;
+                    case "IshIDs":
+                        this.CalResult.Ish = shardvalue;
+                        break;
+                    case "RodionIDs":
+                        this.CalResult.Rodion = shardvalue;
+                        break;
+                    case "SinclairIDs":
+                        this.CalResult.Sinclair = shardvalue;
+                        break;
+                    case "OutisIDs":
+                        this.CalResult.Outis = shardvalue;
+                        break;
+                    case "GregorIDs":
+                        this.CalResult.Gregor = shardvalue;
+                        break;
+                }
+            }
+        },
+        calculate_case_ut4(restore_data) {
+            this.CalResult.ThreadAmount = 0
+            for (const [key1, value1] of Object.entries(restore_data)) {
+                // console.log(key1);      //this.CalResult.YiSang,this.CalResult.Faust....
+                var identityIDList = value1;//this.All_IDs.YiSangIDs,this.All_IDs.FaustIDs....
+                var shardvalue = 0;
+                var threadvalue = 0;
+                for (const [key2, value2] of Object.entries(identityIDList.IDs)) {
+                    //key2 = Molar Office Fixer Outis,LCB Sinner Meursault...
+                    //value2 = { rarity: "000", uptied: 0 },...
+                    switch (value2.rarity) {
+                        case "000":
+                            if (value2.uptied == "3") { //ut3
+                                //console.log("value3.uptied = 2")
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.shard;
+                            }
+                            if (value2.uptied == "2") { //ut2 or below
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.shard;
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from2to3.thread;
+                            }
+                            if (value2.uptied == "1") { //ut1 or don't hv
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.shard;
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from1to2.thread;
+                            }
+                            if (value2.uptied == "0") { //don't hv
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.shard;
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from1to2.thread;
+                                shardvalue += this.uptiethreadamount.sparkingshardamount.Rarity000;
+                            }
+                            break;
+                        case "00":
+                            if (value2.uptied == "3") { //ut3
+                                //console.log("value3.uptied = 2")
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.shard;
+                            }
+                            if (value2.uptied == "2") { //ut2 or below
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.shard;
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from2to3.thread;
+                            }
+                            if (value2.uptied == "1") { //ut1 or don't hv
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.shard;
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from1to2.thread;
+                            }
+                            if (value2.uptied == "0") { //don't hv
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.shard;
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from1to2.thread;
+                                shardvalue += this.uptiethreadamount.sparkingshardamount.Rarity00;
+                            }
+                            break;
+                        case "0":
+                            if (value2.uptied != "4") { //ut3 or below
+                                //console.log("value3.uptied = 2")
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity0.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.IDamount.Rarity0.from3to4.shard;
+                            }
+                            break;
+                    }
+                }
+                for (const [key3, value3] of Object.entries(identityIDList.EGOs)) {
+                    //key3 = Chains of Others,Regret...
+                    //value3 = { rarity: "Z", uptied: 0 },...
+                    //need to filter out the original EGOs for each Sinner
+                    switch (value3.rarity) {
+                        case "T":
+                            if (value3.uptied == "3") { //ut3
+                                //console.log("value3.uptied = 2")
+                                threadvalue += this.uptiethreadamount.EGOamount.T.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.EGOamount.T.from3to4.shard;
+                            }
+                            if (value3.uptied == "2") { //ut2 or below
+                                //console.log("value3.uptied = 2")
+                                threadvalue += this.uptiethreadamount.EGOamount.T.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.EGOamount.T.from3to4.shard;
+                                threadvalue += this.uptiethreadamount.EGOamount.T.from2to3.thread;
+                            }
+                            if (value3.uptied == "1") { //ut1 or don't hv
+                                //console.log("value3.uptied = 1")
+                                threadvalue += this.uptiethreadamount.EGOamount.T.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.EGOamount.T.from3to4.shard;
+                                threadvalue += this.uptiethreadamount.EGOamount.T.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.EGOamount.T.from1to2.thread;
+                            }
+                            if (value3.uptied == "0") { //don't hv
+                                //console.log("value3.uptied = 0")
+                                threadvalue += this.uptiethreadamount.EGOamount.T.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.EGOamount.T.from3to4.shard;
+                                threadvalue += this.uptiethreadamount.EGOamount.T.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.EGOamount.T.from1to2.thread;
+                                shardvalue += this.uptiethreadamount.sparkingshardamount.EGO;
+                            }
+                            break;
+                        case "H":
+                            if (value3.uptied == "3") { //ut3
+                                //console.log("value3.uptied = 2")
+                                threadvalue += this.uptiethreadamount.EGOamount.H.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.EGOamount.H.from3to4.shard;
+                            }
+                            if (value3.uptied == "2") { //ut2 or below
+                                //console.log("value3.uptied = 2")
+                                threadvalue += this.uptiethreadamount.EGOamount.H.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.EGOamount.H.from3to4.shard;
+                                threadvalue += this.uptiethreadamount.EGOamount.H.from2to3.thread;
+                            }
+                            if (value3.uptied == "1") { //ut1 or don't hv
+                                //console.log("value3.uptied = 1")
+                                threadvalue += this.uptiethreadamount.EGOamount.H.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.EGOamount.H.from3to4.shard;
+                                threadvalue += this.uptiethreadamount.EGOamount.H.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.EGOamount.H.from1to2.thread;
+                            }
+                            if (value3.uptied == "0") { //don't hv
+                                //console.log("value3.uptied = 0")
+                                threadvalue += this.uptiethreadamount.EGOamount.H.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.EGOamount.H.from3to4.shard;
+                                threadvalue += this.uptiethreadamount.EGOamount.H.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.EGOamount.H.from1to2.thread;
+                                shardvalue += this.uptiethreadamount.sparkingshardamount.EGO;
+                            }
+                            break;
+                        case "Z":
+                            if (key3 in this.ZEGOnotOriginal) { //not original
+                                //console.log(key3);
+                                if (value3.uptied == "3") { //ut3
+                                    //console.log("value3.uptied = 2")
+                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.thread;
+                                    shardvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.shard;
+                                }
+                                if (value3.uptied == "2") { //ut2
+                                    //console.log("value3.uptied = 2")
+                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.thread;
+                                    shardvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.shard;
+                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from2to3.thread;
+                                }
+                                if (value3.uptied == "1") { //ut1
+                                    //console.log("value3.uptied = 1")
+                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.thread;
+                                    shardvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.shard;
+                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from2to3.thread;
+                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from1to2.thread;
+                                }
+                                if (value3.uptied == "0") { //don't hv
+                                    //console.log("value3.uptied = 0")
+                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.thread;
+                                    shardvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.shard;
+                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from2to3.thread;
+                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from1to2.thread;
+                                    shardvalue += this.uptiethreadamount.sparkingshardamount.EGO;
+                                }
+                            } else {
+                                if (value3.uptied != "4") { //ut2 or below
+                                    //console.log("value3.uptied = 2")
+                                    threadvalue += this.uptiethreadamount.EGOamount.Z.from3to4.thread;
+                                    shardvalue += this.uptiethreadamount.EGOamount.Z.from3to4.shard;
+                                }
+                            }
+                            break;
+                    }
+                }
+                this.CalResult.ThreadAmount += threadvalue;
+                // console.log(key1, shardvalue);
+                switch (key1) {
+                    case "YiSangIDs":
+                        this.CalResult.YiSang = shardvalue;
+                        break;
+                    case "FaustIDs":
+                        this.CalResult.Faust = shardvalue;
+                        break;
+                    case "DonIDs":
+                        this.CalResult.Don = shardvalue;
+                        break;
+                    case "RyoshuIDs":
+                        this.CalResult.Ryoshu = shardvalue;
+                        break;
+                    case "MeurIDs":
+                        this.CalResult.Meur = shardvalue;
+                        break;
+                    case "HongLuIDs":
+                        this.CalResult.HongLu = shardvalue;
+                        break;
+                    case "HeathIDs":
+                        this.CalResult.Heath = shardvalue;
+                        break;
+                    case "IshIDs":
+                        this.CalResult.Ish = shardvalue;
+                        break;
+                    case "RodionIDs":
+                        this.CalResult.Rodion = shardvalue;
+                        break;
+                    case "SinclairIDs":
+                        this.CalResult.Sinclair = shardvalue;
+                        break;
+                    case "OutisIDs":
+                        this.CalResult.Outis = shardvalue;
+                        break;
+                    case "GregorIDs":
+                        this.CalResult.Gregor = shardvalue;
+                        break;
+                }
+            }
+        },
+        calculate_case_ut4only(restore_data) {
+            this.CalResult.ThreadAmount = 0
+            for (const [key1, value1] of Object.entries(restore_data)) {
+                // console.log(key1);      //this.CalResult.YiSang,this.CalResult.Faust....
+                var identityIDList = value1;//this.All_IDs.YiSangIDs,this.All_IDs.FaustIDs....
+                var shardvalue = 0;
+                var threadvalue = 0;
+                for (const [key2, value2] of Object.entries(identityIDList.IDs)) {
+                    //key2 = Molar Office Fixer Outis,LCB Sinner Meursault...
+                    //value2 = { rarity: "000", uptied: 0 },...
+                    switch (value2.rarity) {
+                        case "000":
+                            if (value2.uptied == "3") { //ut3
+                                //console.log("value3.uptied = 2")
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.shard;
+                            }
+                            if (value2.uptied == "2") { //ut2 or below
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.shard;
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from2to3.thread;
+                            }
+                            if (value2.uptied == "1") { //ut1 or don't hv
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.shard;
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from1to2.thread;
+                            }
+                            break;
+                        case "00":
+                            if (value2.uptied == "3") { //ut3
+                                //console.log("value3.uptied = 2")
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.shard;
+                            }
+                            if (value2.uptied == "2") { //ut2 or below
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.shard;
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from2to3.thread;
+                            }
+                            if (value2.uptied == "1") { //ut1 or don't hv
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.shard;
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from1to2.thread;
+                            }
+                            break;
+                        case "0":
+                            if (value2.uptied != "4") { //ut3 or below
+                                //console.log("value3.uptied = 2")
+                                threadvalue += this.uptiethreadamount.IDamount.Rarity0.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.IDamount.Rarity0.from3to4.shard;
+                            }
+                            break;
+                    }
+                }
+                for (const [key3, value3] of Object.entries(identityIDList.EGOs)) {
+                    //key3 = Chains of Others,Regret...
+                    //value3 = { rarity: "Z", uptied: 0 },...
+                    //need to filter out the original EGOs for each Sinner
+                    switch (value3.rarity) {
+                        case "T":
+                            if (value3.uptied == "3") { //ut3
+                                //console.log("value3.uptied = 2")
+                                threadvalue += this.uptiethreadamount.EGOamount.T.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.EGOamount.T.from3to4.shard;
+                            }
+                            if (value3.uptied == "2") { //ut2 or below
+                                //console.log("value3.uptied = 2")
+                                threadvalue += this.uptiethreadamount.EGOamount.T.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.EGOamount.T.from3to4.shard;
+                                threadvalue += this.uptiethreadamount.EGOamount.T.from2to3.thread;
+                            }
+                            if (value3.uptied == "1") { //ut1 or don't hv
+                                //console.log("value3.uptied = 1")
+                                threadvalue += this.uptiethreadamount.EGOamount.T.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.EGOamount.T.from3to4.shard;
+                                threadvalue += this.uptiethreadamount.EGOamount.T.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.EGOamount.T.from1to2.thread;
+                            }
+                            break;
+                        case "H":
+                            if (value3.uptied == "3") { //ut3
+                                //console.log("value3.uptied = 2")
+                                threadvalue += this.uptiethreadamount.EGOamount.H.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.EGOamount.H.from3to4.shard;
+                            }
+                            if (value3.uptied == "2") { //ut2 or below
+                                //console.log("value3.uptied = 2")
+                                threadvalue += this.uptiethreadamount.EGOamount.H.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.EGOamount.H.from3to4.shard;
+                                threadvalue += this.uptiethreadamount.EGOamount.H.from2to3.thread;
+                            }
+                            if (value3.uptied == "1") { //ut1 or don't hv
+                                //console.log("value3.uptied = 1")
+                                threadvalue += this.uptiethreadamount.EGOamount.H.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.EGOamount.H.from3to4.shard;
+                                threadvalue += this.uptiethreadamount.EGOamount.H.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.EGOamount.H.from1to2.thread;
+                            }
+                            break;
+                        case "Z":
+                            if (key3 in this.ZEGOnotOriginal) { //not original
+                                //console.log(key3);
+                                if (value3.uptied == "3") { //ut3
+                                    //console.log("value3.uptied = 2")
+                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.thread;
+                                    shardvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.shard;
+                                }
+                                if (value3.uptied == "2") { //ut2
+                                    //console.log("value3.uptied = 2")
+                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.thread;
+                                    shardvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.shard;
+                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from2to3.thread;
+                                }
+                                if (value3.uptied == "1") { //ut1
+                                    //console.log("value3.uptied = 1")
+                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.thread;
+                                    shardvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.shard;
+                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from2to3.thread;
+                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from1to2.thread;
+                                }
+                            } else {
+                                if (value3.uptied != "4") { //ut2 or below
+                                    //console.log("value3.uptied = 2")
+                                    threadvalue += this.uptiethreadamount.EGOamount.Z.from3to4.thread;
+                                    shardvalue += this.uptiethreadamount.EGOamount.Z.from3to4.shard;
+                                }
+                            }
+                            break;
+                    }
+                }
+                this.CalResult.ThreadAmount += threadvalue;
+                // console.log(key1, shardvalue);
+                switch (key1) {
+                    case "YiSangIDs":
+                        this.CalResult.YiSang = shardvalue;
+                        break;
+                    case "FaustIDs":
+                        this.CalResult.Faust = shardvalue;
+                        break;
+                    case "DonIDs":
+                        this.CalResult.Don = shardvalue;
+                        break;
+                    case "RyoshuIDs":
+                        this.CalResult.Ryoshu = shardvalue;
+                        break;
+                    case "MeurIDs":
+                        this.CalResult.Meur = shardvalue;
+                        break;
+                    case "HongLuIDs":
+                        this.CalResult.HongLu = shardvalue;
+                        break;
+                    case "HeathIDs":
+                        this.CalResult.Heath = shardvalue;
+                        break;
+                    case "IshIDs":
+                        this.CalResult.Ish = shardvalue;
+                        break;
+                    case "RodionIDs":
+                        this.CalResult.Rodion = shardvalue;
+                        break;
+                    case "SinclairIDs":
+                        this.CalResult.Sinclair = shardvalue;
+                        break;
+                    case "OutisIDs":
+                        this.CalResult.Outis = shardvalue;
+                        break;
+                    case "GregorIDs":
+                        this.CalResult.Gregor = shardvalue;
+                        break;
+                }
+            }
+        },
         calculate_case_ut5(restore_data) { },
         calculate_case_ut5only(restore_data) { },
 
@@ -220,19 +830,19 @@ export default {
                         this.calculate_case_ut3(restore_data);
                         break;
                     case 'uptie3only':
-                        this.calculate_case_ut3only(restore_data)
+                        this.calculate_case_ut3only(restore_data);
                         break;
                     case 'uptie4':
-                        this.calculate_case_ut4(restore_data)
+                        this.calculate_case_ut4(restore_data);
                         break;
                     case 'uptie4only':
-                        this.calculate_case_ut4only(restore_data)
+                        this.calculate_case_ut4only(restore_data);
                         break;
                     case 'uptie5':
-                        this.calculate_case_ut5(restore_data)
+                        this.calculate_case_ut5(restore_data);
                         break;
                     case 'uptie5only':
-                        this.calculate_case_ut5only(restore_data)
+                        this.calculate_case_ut5only(restore_data);
                         break;
                 }
             }
