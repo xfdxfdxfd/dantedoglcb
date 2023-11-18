@@ -48,7 +48,13 @@ export default {
   },
   mounted() {
     //no reset the language after reload
-    this.$i18n.locale = localStorage.getItem('locate');
+    var language = localStorage.getItem('locate');
+    if (language) {
+      this.$i18n.locale = localStorage.getItem('locate');
+    } else {
+      localStorage.setItem('locate', 'en');
+      this.$i18n.locale = localStorage.getItem('locate');
+    }
   },
 }
 </script>

@@ -13,7 +13,9 @@
     "You need":"你需要",
     "StatusSetting":"更新設定",
     "StatusSettingSection":"設定人格和EGO的階級，資料會同步到所有工具上",
-    "StatusSettingSection2":"設定人格和EGO的階級\n點\"導入設定\"來導入存有設定的txt\n點\"重設\"清除所有選項",
+    "StatusSettingSection2":"設定人格和EGO的階級\n點\"導入設定\"來導入存有設定的txt\n點\"導出設定\"來下載存有設定的txt\n點\"重設\"清除所有選項",
+
+    "Changelog19-11-2023":"完成網站的基本功能(首頁，日誌，升階計算器，更新設定)",
 
     "Effloresced E.G.O::Spicebush YiSang":"花箱",
     "Blade Lineage Salsu YiSang":"劍箱",
@@ -108,6 +110,7 @@
     "Identities":"人格",
     "Restore previous progress":"加載記錄",
     "Import Setting":"導入設定",
+    "Export Setting":"導出設定",
     "Reset":"重設",
     "All Uptie 3":"全突3+全換",
     "All Uptie 4":"全突4+全換",

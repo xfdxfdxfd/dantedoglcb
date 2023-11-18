@@ -8,7 +8,9 @@
                 &nbsp;
                 <h3 class="box1h3text" style="color:#c2bfbf;margin:10px">{{ $t(`StatusSettingSection2`) }}</h3>
                 <div style="text-align: right;padding-right:10px">
-                    <button class="button-6" role="button" @click="testing()">{{ $t(`Import Setting`) }}</button>
+                    <input type="file" id="fileInput" style="visibility:hidden;width: 10px" @change="loadFileUpload()">
+                    <button class="button-6" role="button" @click="openFileUpload()">{{ $t(`Import Setting`) }}</button>
+                    <button class="button-6" role="button" @click="download()">{{ $t(`Export Setting`) }}</button>
                     <button class="button-6" role="button" style="background-color:rgb(211, 55, 16);color:#fff"
                         @click="resetprogress()">{{ $t(`Reset`) }}</button>
                 </div>
@@ -325,7 +327,47 @@ export default {
             var e = document.getElementById(item);
             return e.value;
         },
+        download() {
+            var type = "text/plain";
+            var text = JSON.stringify(this.All_IDs);
+            var filename = "StatusSetting.txt";
+            // Create an invisible A element
+            const a = document.createElement("a");
+            a.style.display = "none";
+            document.body.appendChild(a);
+            // Set the HREF to a Blob representation of the data to be downloaded
+            a.href = window.URL.createObjectURL(
+                new Blob([text], { type })
+            );
+            // Use download attribute to set set desired file name
+            a.setAttribute("download", filename);
+            // Trigger the download by simulating click
+            a.click();
+            // Cleanup
+            window.URL.revokeObjectURL(a.href);
+            document.body.removeChild(a);
+        },
+        openFileUpload() { //click the hidden file input button
+            document.getElementById("fileInput").click();
+        },
+        loadFileUpload() {
+            var fileInput = document.getElementById('fileInput');
+            var file = fileInput.files[0];
+            var textType = /text.*/;
 
+            if (file.type.match(textType)) {
+                var reader = new FileReader();
+
+                reader.onload = function (e) {
+                    var content = reader.result;
+                    //Here the content has been read successfuly
+                    localStorage.setItem('IDdata', content);
+                    // console.log(content);
+                }
+                reader.readAsText(file);
+                location.reload();
+            }
+        },
         //restore the progress, used in the mounted()
         restoreprogress() {
             var restoredata = JSON.parse(localStorage.getItem('IDdata'));

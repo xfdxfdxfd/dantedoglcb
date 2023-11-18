@@ -18,7 +18,11 @@
                 <h3 class="box1h3text">{{ $t(`UptieCalculatorSection1`) }}</h3>
                 &nbsp;
                 <h2 class="box1h2text">{{ $t(`ContactTitle`) }}</h2>
-                <h3 class="box1h3text">{{ $t(`ContactParagraph`) }}</h3>
+                <h3 class="box1h3text" style="margin-bottom: 10px;">{{ $t(`ContactParagraph`) }}</h3>
+                <a href="https://discord.gg/UdFrGmKfqE">
+                    <img style="margin: 0px;padding:0px;width: 150px;" class="pagetitle" alt="LC Dog Dante"
+                        src="../../src/assets/DanteLogoDiscord.png">
+                </a>
                 &nbsp;
             </div>
         </div>
@@ -61,4 +65,5 @@ export default {
     color: #ffffff;
     padding-left: 100px;
     padding-right: 100px;
-}</style>
+}
+</style>
