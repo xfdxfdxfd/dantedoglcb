@@ -1,23 +1,31 @@
 <template>
   <div class="navbar" style="z-index: 6;">
     <div class="toplineapp" style="position: relative;">
-        <router-link :class="this.$route.path == '/'? 'active':''" :to="{name:'Home'}"><img style="margin: 0px;padding-left: 20px;width: 150px;" class="pagetitle" alt="LC Dog Dante" src="./assets/DanteLogoBanner.png"></router-link>
-        <div style="text-align: right">
-          <b-button size="sm" class="locale-changer" type="submit" style="display:inline;color: #f2f2f2;cursor: pointer;" @click="$i18n.locale = 'en'">English</b-button>
-          &nbsp;
-          <b-button size="sm" class="locale-changer" type="submit" style="display:inline;color: #f2f2f2;cursor: pointer;padding-right:10%" @click="$i18n.locale = 'zh'">中文</b-button>
-        </div>
+      <router-link :class="this.$route.path == '/' ? 'active' : ''" :to="{ name: 'Home' }"><img
+          style="margin: 0px;padding-left: 20px;width: 150px;" class="pagetitle" alt="LC Dog Dante"
+          src="./assets/DanteLogoBanner.png"></router-link>
+      <div style="text-align: right">
+        <b-button size="sm" class="locale-changer" type="submit" style="display:inline;color: #f2f2f2;cursor: pointer;"
+          @click="$i18n.locale = 'en', updatelocate('en')">English</b-button>
+        &nbsp;
+        <b-button size="sm" class="locale-changer" type="submit"
+          style="display:inline;color: #f2f2f2;cursor: pointer;padding-right:10%"
+          @click="$i18n.locale = 'zh', updatelocate('zh')">中文</b-button>
+      </div>
     </div>
 
     <div class="topnav">
-      <router-link :class="this.$route.path == '/'? 'active':''" :to="{name:'Home'}">{{$t(`Home`)}}</router-link>
-      <router-link :class="this.$route.path == '/LCB/Changelog'? 'active':''" :to="{name:'Changelog'}">{{$t(`Changelog`)}}</router-link>
-      <router-link :class="this.$route.path == '/LCB/StatusSetting'? 'active':''" :to="{name:'StatusSetting'}">{{$t(`StatusSetting`)}}</router-link>
-      <router-link :class="this.$route.path == '/LCB/UptieCalculator'? 'active':''" :to="{name:'UptieCalculator'}">{{$t(`UptieCalculator`)}}</router-link>
+      <router-link :class="this.$route.path == '/' ? 'active' : ''" :to="{ name: 'Home' }">{{ $t(`Home`) }}</router-link>
+      <router-link :class="this.$route.path == '/LCB/Changelog' ? 'active' : ''" :to="{ name: 'Changelog' }">{{
+        $t(`Changelog`) }}</router-link>
+      <router-link :class="this.$route.path == '/LCB/StatusSetting' ? 'active' : ''" :to="{ name: 'StatusSetting' }">{{
+        $t(`StatusSetting`) }}</router-link>
+      <router-link :class="this.$route.path == '/LCB/UptieCalculator' ? 'active' : ''"
+        :to="{ name: 'UptieCalculator' }">{{ $t(`UptieCalculator`) }}</router-link>
     </div>
   </div>
   <div style="z-index: 5;padding-top:100px">
-    <router-view/>
+    <router-view />
   </div>
 </template>
 
@@ -30,11 +38,18 @@ export default {
   computed: {
   },
   methods: {
+    updatelocate(lang) {
+      localStorage.setItem('locate', lang);
+    },
   },
   components: {
   },
-  watch:{
-  }
+  watch: {
+  },
+  mounted() {
+    //no reset the language after reload
+    this.$i18n.locale = localStorage.getItem('locate');
+  },
 }
 </script>
 
@@ -46,7 +61,8 @@ export default {
   color: #333;
 }
 
-h1,h2{
+h1,
+h2 {
   margin: 0px;
   padding: 0px;
   border-top-width: 0px;
@@ -54,11 +70,12 @@ h1,h2{
   border-bottom-width: 0px;
   border-left-width: 0px;
 }
+
 .pagetitle {
   padding-top: 5px;
 }
-body
-{
+
+body {
   margin: 0px;
   padding: 0px;
   border-top-width: 0px;
@@ -72,6 +89,7 @@ body
   background-color: #232222;
   overflow: hidden;
 }
+
 /* Style the links inside the navigation bar */
 .topnav a {
   float: left;
@@ -81,39 +99,47 @@ body
   text-decoration: none;
   font-size: 17px;
 }
+
 /* Change the color of links on hover */
 .topnav a:hover {
   background-color: #ddd;
   color: black;
 }
+
 /* Add a color to the active/current link */
 .topnav a.active {
   background-color: rgb(211, 55, 16);
   color: white;
 }
 
-.toplineapp{
+.toplineapp {
   border-top: 3px solid rgb(211, 55, 16);
   background-size: cover;
   overflow: hidden;
 }
+
 .navbar {
-  background-image: url("./assets/E041X_2.png");
-  position: fixed; /* Set the navbar to fixed position */
-  top: 0; /* Position the navbar at the top of the page */
-  width: 100vw; /* Full width */
-  height: 150px;
+  background-image: url("./assets/E041X_3.png");
+  position: fixed;
+  /* Set the navbar to fixed position */
+  top: 0;
+  /* Position the navbar at the top of the page */
+  min-width: 100vw;
+  /* Full width */
+  height: 138px;
   background-repeat: no-repeat;
   background-size: cover;
   background-attachment: fixed;
-  background-size: 1700px 100px;
   overflow: hidden;
 }
+
 .bottombar {
-  width: 100%; /* Full width */
+  width: 100%;
+  /* Full width */
   height: 100%;
   overflow: hidden;
 }
+
 .content {
   background-image: url("./assets/maxresdefault.jpg");
   background-size: cover;
