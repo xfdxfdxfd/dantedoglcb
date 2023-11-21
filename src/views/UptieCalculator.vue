@@ -44,41 +44,41 @@
                     &nbsp;
                     <div>
                         <img class="shardimg" alt="YiSangShard" src="../../src/assets/icon_piece-501YiSang.png">:{{
-                            CalResult.YiSang
+                            CalResult.YiSangIDs
                         }}&nbsp;
                         <img class="shardimg" alt="FaustShard" src="../../src/assets/icon_piece-502Faust.png">:{{
-                            CalResult.Faust
+                            CalResult.FaustIDs
                         }}&nbsp;
                         <img class="shardimg" alt="DonShard" src="../../src/assets/icon_piece-503DonQuixote.png">:{{
-                            CalResult.Don
+                            CalResult.DonIDs
                         }}&nbsp;
                         <img class="shardimg" alt="RyoshuShard" src="../../src/assets/icon_piece-504Ryoshu.png">:{{
-                            CalResult.Ryoshu
+                            CalResult.RyoshuIDs
                         }}&nbsp;
                         <img class="shardimg" alt="MeurShard" src="../../src/assets/icon_piece-505Meursault.png">:{{
-                            CalResult.Meur
+                            CalResult.MeurIDs
                         }}&nbsp;
                         <img class="shardimg" alt="HongLuShard" src="../../src/assets/icon_piece-506HongLu.png">:{{
-                            CalResult.HongLu
+                            CalResult.HongLuIDs
                         }}&nbsp;
                     </div>
                     <div>
                         <img class="shardimg" alt="HeathShard" src="../../src/assets/icon_piece-507Heathcliff.png">:{{
-                            CalResult.Heath
+                            CalResult.HeathIDs
                         }}&nbsp;
                         <img class="shardimg" alt="IshShard" src="../../src/assets/icon_piece-508Ishmael.png">:{{
-                            CalResult.Ish
+                            CalResult.IshIDs
                         }}&nbsp;
                         <img class="shardimg" alt="RodionShard" src="../../src/assets/icon_piece-509Rodion.png">:{{
-                            CalResult.Rodion
+                            CalResult.RodionIDs
                         }}&nbsp;
                         <img class="shardimg" alt="SinclairShard" src="../../src/assets/icon_piece-510EmilSinclair.png">:{{
-                            CalResult.Sinclair }}&nbsp;
+                            CalResult.SinclairIDs }}&nbsp;
                         <img class="shardimg" alt="OutisShard" src="../../src/assets/icon_piece-511Outis.png">:{{
-                            CalResult.Outis
+                            CalResult.OutisIDs
                         }}&nbsp;
                         <img class="shardimg" alt="GregorShard" src="../../src/assets/icon_piece-512Gregor.png">:{{
-                            CalResult.Gregor
+                            CalResult.GregorIDs
                         }}&nbsp;
                     </div>
                     &nbsp;
@@ -96,18 +96,18 @@ export default {
         return {
             CalResult: {
                 ThreadAmount: 0,
-                YiSang: 0,
-                Faust: 0,
-                Don: 0,
-                Ryoshu: 0,
-                Meur: 0,
-                HongLu: 0,
-                Heath: 0,
-                Rodion: 0,
-                Ish: 0,
-                Sinclair: 0,
-                Outis: 0,
-                Gregor: 0,
+                YiSangIDs: 0,
+                FaustIDs: 0,
+                DonIDs: 0,
+                RyoshuIDs: 0,
+                MeurIDs: 0,
+                HongLuIDs: 0,
+                HeathIDs: 0,
+                RodionIDs: 0,
+                IshIDs: 0,
+                SinclairIDs: 0,
+                OutisIDs: 0,
+                GregorIDs: 0,
             },
 
             uptiethreadamount: {
@@ -273,44 +273,7 @@ export default {
                 }
                 this.CalResult.ThreadAmount += threadvalue;
                 // console.log(key1, shardvalue);
-                switch (key1) {
-                    case "YiSangIDs":
-                        this.CalResult.YiSang = shardvalue;
-                        break;
-                    case "FaustIDs":
-                        this.CalResult.Faust = shardvalue;
-                        break;
-                    case "DonIDs":
-                        this.CalResult.Don = shardvalue;
-                        break;
-                    case "RyoshuIDs":
-                        this.CalResult.Ryoshu = shardvalue;
-                        break;
-                    case "MeurIDs":
-                        this.CalResult.Meur = shardvalue;
-                        break;
-                    case "HongLuIDs":
-                        this.CalResult.HongLu = shardvalue;
-                        break;
-                    case "HeathIDs":
-                        this.CalResult.Heath = shardvalue;
-                        break;
-                    case "IshIDs":
-                        this.CalResult.Ish = shardvalue;
-                        break;
-                    case "RodionIDs":
-                        this.CalResult.Rodion = shardvalue;
-                        break;
-                    case "SinclairIDs":
-                        this.CalResult.Sinclair = shardvalue;
-                        break;
-                    case "OutisIDs":
-                        this.CalResult.Outis = shardvalue;
-                        break;
-                    case "GregorIDs":
-                        this.CalResult.Gregor = shardvalue;
-                        break;
-                }
+                this.CalResult[key1] = shardvalue;
             }
         },
         calculate_case_ut3only(restore_data) {
@@ -391,44 +354,7 @@ export default {
                 }
                 this.CalResult.ThreadAmount += threadvalue;
                 // console.log(key1, shardvalue);
-                switch (key1) {
-                    case "YiSangIDs":
-                        this.CalResult.YiSang = shardvalue;
-                        break;
-                    case "FaustIDs":
-                        this.CalResult.Faust = shardvalue;
-                        break;
-                    case "DonIDs":
-                        this.CalResult.Don = shardvalue;
-                        break;
-                    case "RyoshuIDs":
-                        this.CalResult.Ryoshu = shardvalue;
-                        break;
-                    case "MeurIDs":
-                        this.CalResult.Meur = shardvalue;
-                        break;
-                    case "HongLuIDs":
-                        this.CalResult.HongLu = shardvalue;
-                        break;
-                    case "HeathIDs":
-                        this.CalResult.Heath = shardvalue;
-                        break;
-                    case "IshIDs":
-                        this.CalResult.Ish = shardvalue;
-                        break;
-                    case "RodionIDs":
-                        this.CalResult.Rodion = shardvalue;
-                        break;
-                    case "SinclairIDs":
-                        this.CalResult.Sinclair = shardvalue;
-                        break;
-                    case "OutisIDs":
-                        this.CalResult.Outis = shardvalue;
-                        break;
-                    case "GregorIDs":
-                        this.CalResult.Gregor = shardvalue;
-                        break;
-                }
+                this.CalResult[key1] = shardvalue;
             }
         },
         calculate_case_ut4(restore_data) {
@@ -603,44 +529,7 @@ export default {
                 }
                 this.CalResult.ThreadAmount += threadvalue;
                 // console.log(key1, shardvalue);
-                switch (key1) {
-                    case "YiSangIDs":
-                        this.CalResult.YiSang = shardvalue;
-                        break;
-                    case "FaustIDs":
-                        this.CalResult.Faust = shardvalue;
-                        break;
-                    case "DonIDs":
-                        this.CalResult.Don = shardvalue;
-                        break;
-                    case "RyoshuIDs":
-                        this.CalResult.Ryoshu = shardvalue;
-                        break;
-                    case "MeurIDs":
-                        this.CalResult.Meur = shardvalue;
-                        break;
-                    case "HongLuIDs":
-                        this.CalResult.HongLu = shardvalue;
-                        break;
-                    case "HeathIDs":
-                        this.CalResult.Heath = shardvalue;
-                        break;
-                    case "IshIDs":
-                        this.CalResult.Ish = shardvalue;
-                        break;
-                    case "RodionIDs":
-                        this.CalResult.Rodion = shardvalue;
-                        break;
-                    case "SinclairIDs":
-                        this.CalResult.Sinclair = shardvalue;
-                        break;
-                    case "OutisIDs":
-                        this.CalResult.Outis = shardvalue;
-                        break;
-                    case "GregorIDs":
-                        this.CalResult.Gregor = shardvalue;
-                        break;
-                }
+                this.CalResult[key1] = shardvalue;
             }
         },
         calculate_case_ut4only(restore_data) {
@@ -777,44 +666,7 @@ export default {
                 }
                 this.CalResult.ThreadAmount += threadvalue;
                 // console.log(key1, shardvalue);
-                switch (key1) {
-                    case "YiSangIDs":
-                        this.CalResult.YiSang = shardvalue;
-                        break;
-                    case "FaustIDs":
-                        this.CalResult.Faust = shardvalue;
-                        break;
-                    case "DonIDs":
-                        this.CalResult.Don = shardvalue;
-                        break;
-                    case "RyoshuIDs":
-                        this.CalResult.Ryoshu = shardvalue;
-                        break;
-                    case "MeurIDs":
-                        this.CalResult.Meur = shardvalue;
-                        break;
-                    case "HongLuIDs":
-                        this.CalResult.HongLu = shardvalue;
-                        break;
-                    case "HeathIDs":
-                        this.CalResult.Heath = shardvalue;
-                        break;
-                    case "IshIDs":
-                        this.CalResult.Ish = shardvalue;
-                        break;
-                    case "RodionIDs":
-                        this.CalResult.Rodion = shardvalue;
-                        break;
-                    case "SinclairIDs":
-                        this.CalResult.Sinclair = shardvalue;
-                        break;
-                    case "OutisIDs":
-                        this.CalResult.Outis = shardvalue;
-                        break;
-                    case "GregorIDs":
-                        this.CalResult.Gregor = shardvalue;
-                        break;
-                }
+                this.CalResult[key1] = shardvalue;
             }
         },
         calculate_case_ut5(restore_data) { },
