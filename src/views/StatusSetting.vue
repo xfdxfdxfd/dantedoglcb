@@ -103,6 +103,7 @@ export default {
                     IDs: {
                         "Cinq Assoc. South Section 5 Director Don Quixote": { rarity: "000", uptied: "0" },
                         "W Corp. L3 Cleanup Agent Don Quixote": { rarity: "000", uptied: "0" },
+                        "The Middle Little Sister Don Quixote": { rarity: "000", uptied: "0" },
                         "Shi Assoc. South Section 5 Director Don Quixote": { rarity: "00", uptied: "0" },
                         "N Corp. Mittelhammer Don Quixote": { rarity: "00", uptied: "0" },
                         "LCB Sinner Don Quixote": { rarity: "0", uptied: "0" },
@@ -137,6 +138,7 @@ export default {
                         "N Corp. GroBHammer Meursault": { rarity: "000", uptied: "0" },
                         "W Corp. L2 Cleanup Agent Meursault": { rarity: "000", uptied: "0" },
                         "Liu Assoc. South Section 6 Meursault": { rarity: "00", uptied: "0" },
+                        "The Middle Little Brother Meursault": { rarity: "00", uptied: "0" },
                         "Rosespanner Workshop Fixer Meursault": { rarity: "00", uptied: "0" },
                         "LCB Sinner Meursault": { rarity: "0", uptied: "0" },
                     },
@@ -372,6 +374,31 @@ export default {
         restoreprogress() {
             var restoredata = JSON.parse(localStorage.getItem('IDdata'));
             if (restoredata) {
+
+                //for checking if there is newly added data(aka game updated new stuff)
+                for (const [key1, value1] of Object.entries(this.All_IDs)) {
+                    //key = YiSangIDs...  value1 = IDs, EGOs
+                    if (!restoredata[key1]) {
+                        console.log(key1);
+                    }
+                    for (const [key2, value2] of Object.entries(this.All_IDs[key1].IDs)) {
+                        //key2 = Effloresced E.G.O::Spicebush YiSang...  value2 = rarity, uptied
+
+                        //if something not in the restoredata, add it
+                        if (!restoredata[key1].IDs[key2]) {
+                            console.log(key1 + " IDs " + key2);
+                            restoredata[key1].IDs[key2] = this.All_IDs[key1].IDs[key2];
+                            localStorage.setItem('IDdata', JSON.stringify(restoredata));
+                        }
+                    }
+                    for (const [key3, value2] of Object.entries(this.All_IDs[key1].EGOs)) {
+                        if (!restoredata[key1].EGOs[key3]) {
+                            console.log(key1 + " EGOs " + key3);
+                            restoredata[key1].EGOs[key3] = this.All_IDs[key1].EGOs[key3];
+                            localStorage.setItem('IDdata', JSON.stringify(restoredata));
+                        }
+                    }
+                }
                 this.All_IDs = restoredata;
                 var restoreid;
                 for (const [key, value] of Object.entries(this.All_IDs)) {
