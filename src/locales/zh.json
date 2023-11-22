@@ -17,6 +17,7 @@
 
     "Changelog19-11-2023":"完成網站的基本功能(首頁，日誌，升階計算器，更新設定)",
     "Changelog21-11-2023":"在不影響使用者原有紀錄下新增中唐和中鎖人格",
+    "Changelog22-11-2023":"新增S3通行證EGO(不包括盲目瑪)",
 
     "Effloresced E.G.O::Spicebush YiSang":"花箱",
     "Blade Lineage Salsu YiSang":"劍箱",
@@ -183,5 +184,8 @@
     "To pathos Mathos":"致智慧與苦難",
     "Ebony Stem":"黑枝",
     "Suddenly,One Day":"變故日",
-    "Legerdemain":"蘋果"
+    "Legerdemain":"蘋果",
+    "Blind Obsession":"盲目",
+    "9:2":"9:2",
+    "Effervescent Corrosion":"蚌殼"
 }

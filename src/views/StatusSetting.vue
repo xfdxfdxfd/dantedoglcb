@@ -95,6 +95,7 @@ export default {
                     EGOs: {
                         "Representation Emitter": { rarity: "Z", uptied: "0" },
                         "Hex Nail": { rarity: "T", uptied: "0" },
+                        "9:2": { rarity: "T", uptied: "0" },
                         "Telepole": { rarity: "H", uptied: "0" },
                         "Fluid Sac": { rarity: "H", uptied: "0" },
                     },
@@ -128,6 +129,7 @@ export default {
                         "Forest for the Flames": { rarity: "Z", uptied: "0" },
                         "Soda": { rarity: "Z", uptied: "0" },
                         "Red Eyes": { rarity: "T", uptied: "0" },
+                        "Blind Obsession": { rarity: "T", uptied: "0" },
                         "4th Match Flame": { rarity: "H", uptied: "0" },
                         "Red Eyes (Open)": { rarity: "H", uptied: "0" },
                     },
@@ -165,6 +167,7 @@ export default {
                         "Roseate Desire": { rarity: "T", uptied: "0" },
                         "Soda": { rarity: "T", uptied: "0" },
                         "Dimension Shredder": { rarity: "H", uptied: "0" },
+                        "Effervescent Corrosion": { rarity: "H", uptied: "0" },
                     },
                 },
                 HeathIDs: {
@@ -198,6 +201,7 @@ export default {
                         "Roseate Desire": { rarity: "T", uptied: "0" },
                         "Capote": { rarity: "T", uptied: "0" },
                         "Ardor Blossom Star": { rarity: "H", uptied: "0" },
+                        // "Blind Obsession": { rarity: "W", uptied: "0" },
                     },
                 },
                 RodionIDs: {
@@ -213,6 +217,7 @@ export default {
                     EGOs: {
                         "What is Cast": { rarity: "Z", uptied: "0" },
                         "Rime Shank": { rarity: "T", uptied: "0" },
+                        "Effervescent Corrosion": { rarity: "T", uptied: "0" },
                         "4th Match Flame": { rarity: "H", uptied: "0" },
                     },
                 },
@@ -231,6 +236,7 @@ export default {
                         "Impending Day": { rarity: "T", uptied: "0" },
                         "Lifetime Stew": { rarity: "T", uptied: "0" },
                         "Lantern": { rarity: "H", uptied: "0" },
+                        "9:2": { rarity: "H", uptied: "0" },
                     },
                 },
                 OutisIDs: {

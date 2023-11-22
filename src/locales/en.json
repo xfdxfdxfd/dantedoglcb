@@ -17,6 +17,7 @@
 
     "Changelog19-11-2023":"Finish the basic functions of the website(Home,Changelog,UptieCalculator,StatusSetting)",
     "Changelog21-11-2023":"Add the 2 new IDs without changing the stored data in users' browser",
+    "Changelog22-11-2023":"Add the S3 battle pass EGOs(excluding Ishmael's WAW Blind Obsession)",
 
     "Effloresced E.G.O::Spicebush YiSang":"Effloresced E.G.O::Spicebush YiSang",
     "Blade Lineage Salsu YiSang":"Blade Lineage Salsu YiSang",
@@ -184,6 +185,9 @@
     "To pathos Mathos":"To pathos Mathos",
     "Ebony Stem":"Ebony Stem",
     "Suddenly,One Day":"Suddenly,One Day",
-    "Legerdemain":"Legerdemain"
+    "Legerdemain":"Legerdemain",
+    "Blind Obsession":"Blind Obsession",
+    "9:2":"9:2",
+    "Effervescent Corrosion":"Effervescent Corrosion"
 
 }
