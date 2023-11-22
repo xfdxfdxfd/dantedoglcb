@@ -20,7 +20,7 @@
                     <h3 class="box1h3text" style="text-align: left;font-size: 1.5rem">{{ $t(`Identities`) }}</h3>
                     <li style="text-align: left;padding-left:150px;font-size: 1.15rem" v-for="(id, index) in ID_id.IDs"
                         :key="index">
-                        {{ $t(index) }}
+                        {{ id.rarity }}&nbsp;{{ $t(index) }}
                         &nbsp;
                         <div>
                             <select :id='ID_index + index' :v-model="ID_id.IDs"
@@ -37,7 +37,7 @@
                     <h3 class="box1h3text" style="text-align: left;font-size: 1.5rem">EGO</h3>
                     <li style="text-align: left;padding-left:150px;font-size: 1.15rem" v-for="(id, index) in ID_id.EGOs"
                         :key="index">
-                        {{ $t(index) }}
+                        {{ id.rarity }}&nbsp;{{ $t(index) }}
                         &nbsp;
                         <div>
                             <select :id='ID_index + index' :v-model="ID_id.EGOs"
