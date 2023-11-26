@@ -1,7 +1,7 @@
 <template>
     <div style="min-height: 100vh;" class="content">
         <div style="position: relative;">
-            <div class="box box1">
+            <div class="box1">
                 <h1 style="font-size: 40px;padding-top: 20px;color: #ffffff;">{{ $t(`Welcome`) }}</h1>
                 <h2 style="color: #c2bfbf;">{{ $t(`WelcomeText`) }}</h2>
                 &nbsp;
@@ -50,7 +50,9 @@ export default {
     color: #fff;
     background-color: rgba(255, 255, 255, 0.3);
     text-align: center;
-    margin: 100px;
+    margin-top: max(100px, 10vh);
+    margin-left: 5vw;
+    margin-right: 5vw;
     border-radius: 25px;
 }
 
@@ -58,12 +60,15 @@ export default {
     white-space: pre-line;
     color: #ffffff;
     font-size: 25px;
+    padding-left: 3vw;
+    padding-right: 3vw;
+
 }
 
 .box1h3text {
     white-space: pre-line;
     color: #ffffff;
-    padding-left: 100px;
-    padding-right: 100px;
+    padding-left: 5vw;
+    padding-right: 5vw;
 }
 </style>

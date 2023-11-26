@@ -16,10 +16,9 @@
                 </div>
                 <div v-for="(ID_id, ID_index) in All_IDs" :key="ID_index">
                     <h2 style="border-bottom: 3px solid rgb(172, 172, 172);"></h2>
-                    <h2 class="box1h2text" style="font-size: 2.2rem;">{{ $t(ID_to_name(ID_index)) }}</h2>
-                    <h3 class="box1h3text" style="text-align: left;font-size: 1.5rem">{{ $t(`Identities`) }}</h3>
-                    <li style="text-align: left;padding-left:150px;font-size: 1.15rem" v-for="(id, index) in ID_id.IDs"
-                        :key="index">
+                    <h2 class="box1h2text">{{ $t(ID_to_name(ID_index)) }}</h2>
+                    <h3 class="box1h3text" style="text-align: left;">{{ $t(`Identities`) }}</h3>
+                    <li style="text-align: left;padding-left:10vw;" v-for="(id, index) in ID_id.IDs" :key="index">
                         {{ id.rarity }}&nbsp;{{ $t(index) }}
                         &nbsp;
                         <div>
@@ -34,9 +33,8 @@
                         </div>
                         &nbsp;
                     </li>
-                    <h3 class="box1h3text" style="text-align: left;font-size: 1.5rem">EGO</h3>
-                    <li style="text-align: left;padding-left:150px;font-size: 1.15rem" v-for="(id, index) in ID_id.EGOs"
-                        :key="index">
+                    <h3 class="box1h3text" style="text-align: left;">EGO</h3>
+                    <li style="text-align: left;padding-left:10vw;" v-for="(id, index) in ID_id.EGOs" :key="index">
                         {{ id.rarity }}&nbsp;{{ $t(index) }}
                         &nbsp;
                         <div>
@@ -466,7 +464,8 @@ select {
     /* safari */
     -webkit-appearance: none;
     /* other styles for aesthetics */
-    width: 20%;
+    width: auto;
+    min-width: 15vw;
     font-size: 1rem;
     padding: 0.675em 1em 0.675em 1em;
     background-color: #fff;

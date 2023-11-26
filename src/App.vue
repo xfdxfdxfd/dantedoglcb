@@ -24,7 +24,7 @@
         :to="{ name: 'UptieCalculator' }">{{ $t(`UptieCalculator`) }}</router-link>
     </div>
   </div>
-  <div style="z-index: 5;padding-top:100px">
+  <div style="z-index: 5;padding-top:10vh">
     <router-view />
   </div>
 </template>
@@ -132,7 +132,7 @@ body {
   /* Position the navbar at the top of the page */
   min-width: 100vw;
   /* Full width */
-  height: 138px;
+  min-height: 138px;
   background-repeat: no-repeat;
   background-size: cover;
   background-attachment: fixed;

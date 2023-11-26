@@ -36,7 +36,7 @@
 
                 <!--result below-->
                 <h2 class="box1h2text">
-                    <div style="text-align: left;padding-left:100px">
+                    <div style="text-align: left;padding-left:5vw">
                         <img class="shardimg" alt="ThreadAmount" src="../../src/assets/icon_twine.png">:{{
                             CalResult.ThreadAmount
                         }}&nbsp;
@@ -723,6 +723,6 @@ export default {
 
 <style>
 .shardimg {
-    width: 50px
+    width: min(50px, 8vw);
 }
 </style>
