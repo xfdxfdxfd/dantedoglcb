@@ -154,6 +154,11 @@ export default {
                         "from2to3": { thread: 80, shard: 0 },
                         "from3to4": { thread: 150, shard: 100 },
                     },
+                    "W": {
+                        "from1to2": { thread: 35, shard: 0 },
+                        "from2to3": { thread: 90, shard: 0 },
+                        "from3to4": { thread: 170, shard: 150 },
+                    }
                 }
             },
 
@@ -215,6 +220,23 @@ export default {
                     //value3 = { rarity: "Z", uptied: 0 },...
                     //need to filter out the original EGOs for each Sinner
                     switch (value3.rarity) {
+                        case "W":
+                            if (value3.uptied == "2") { //ut2 or below
+                                //console.log("value3.uptied = 2")
+                                threadvalue += this.uptiethreadamount.EGOamount.W.from2to3.thread;
+                            }
+                            if (value3.uptied == "1") { //ut1 or don't hv
+                                //console.log("value3.uptied = 1")
+                                threadvalue += this.uptiethreadamount.EGOamount.W.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.EGOamount.W.from1to2.thread;
+                            }
+                            if (value3.uptied == "0") { //don't hv
+                                //console.log("value3.uptied = 0")
+                                threadvalue += this.uptiethreadamount.EGOamount.W.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.EGOamount.W.from1to2.thread;
+                                shardvalue += this.uptiethreadamount.sparkingshardamount.EGO;
+                            }
+                            break;
                         case "T":
                             if (value3.uptied == "2") { //ut2 or below
                                 //console.log("value3.uptied = 2")
@@ -314,6 +336,17 @@ export default {
                     //value3 = { rarity: "Z", uptied: 0 },...
                     //need to filter out the original EGOs for each Sinner
                     switch (value3.rarity) {
+                        case "W":
+                            if (value3.uptied == "2") { //ut2 or below
+                                //console.log("value3.uptied = 2")
+                                threadvalue += this.uptiethreadamount.EGOamount.W.from2to3.thread;
+                            }
+                            if (value3.uptied == "1") { //ut1 or don't hv
+                                //console.log("value3.uptied = 1")
+                                threadvalue += this.uptiethreadamount.EGOamount.W.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.EGOamount.W.from1to2.thread;
+                            }
+                            break;
                         case "T":
                             if (value3.uptied == "2") { //ut2 or below
                                 //console.log("value3.uptied = 2")
@@ -432,6 +465,34 @@ export default {
                     //value3 = { rarity: "Z", uptied: 0 },...
                     //need to filter out the original EGOs for each Sinner
                     switch (value3.rarity) {
+                        case "W":
+                            if (value3.uptied == "3") { //ut3
+                                //console.log("value3.uptied = 2")
+                                threadvalue += this.uptiethreadamount.EGOamount.W.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.EGOamount.W.from3to4.shard;
+                            }
+                            if (value3.uptied == "2") { //ut2 or below
+                                //console.log("value3.uptied = 2")
+                                threadvalue += this.uptiethreadamount.EGOamount.W.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.EGOamount.W.from3to4.shard;
+                                threadvalue += this.uptiethreadamount.EGOamount.W.from2to3.thread;
+                            }
+                            if (value3.uptied == "1") { //ut1 or don't hv
+                                //console.log("value3.uptied = 1")
+                                threadvalue += this.uptiethreadamount.EGOamount.W.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.EGOamount.W.from3to4.shard;
+                                threadvalue += this.uptiethreadamount.EGOamount.W.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.EGOamount.W.from1to2.thread;
+                            }
+                            if (value3.uptied == "0") { //don't hv
+                                //console.log("value3.uptied = 0")
+                                threadvalue += this.uptiethreadamount.EGOamount.W.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.EGOamount.W.from3to4.shard;
+                                threadvalue += this.uptiethreadamount.EGOamount.W.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.EGOamount.W.from1to2.thread;
+                                shardvalue += this.uptiethreadamount.sparkingshardamount.EGO;
+                            }
+                            break;
                         case "T":
                             if (value3.uptied == "3") { //ut3
                                 //console.log("value3.uptied = 2")
@@ -593,6 +654,26 @@ export default {
                     //value3 = { rarity: "Z", uptied: 0 },...
                     //need to filter out the original EGOs for each Sinner
                     switch (value3.rarity) {
+                        case "W":
+                            if (value3.uptied == "3") { //ut3
+                                //console.log("value3.uptied = 2")
+                                threadvalue += this.uptiethreadamount.EGOamount.W.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.EGOamount.W.from3to4.shard;
+                            }
+                            if (value3.uptied == "2") { //ut2 or below
+                                //console.log("value3.uptied = 2")
+                                threadvalue += this.uptiethreadamount.EGOamount.W.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.EGOamount.W.from3to4.shard;
+                                threadvalue += this.uptiethreadamount.EGOamount.W.from2to3.thread;
+                            }
+                            if (value3.uptied == "1") { //ut1 or don't hv
+                                //console.log("value3.uptied = 1")
+                                threadvalue += this.uptiethreadamount.EGOamount.W.from3to4.thread;
+                                shardvalue += this.uptiethreadamount.EGOamount.W.from3to4.shard;
+                                threadvalue += this.uptiethreadamount.EGOamount.W.from2to3.thread;
+                                threadvalue += this.uptiethreadamount.EGOamount.W.from1to2.thread;
+                            }
+                            break;
                         case "T":
                             if (value3.uptied == "3") { //ut3
                                 //console.log("value3.uptied = 2")

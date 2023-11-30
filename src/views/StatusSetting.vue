@@ -199,7 +199,7 @@ export default {
                         "Roseate Desire": { rarity: "T", uptied: "0" },
                         "Capote": { rarity: "T", uptied: "0" },
                         "Ardor Blossom Star": { rarity: "H", uptied: "0" },
-                        // "Blind Obsession": { rarity: "W", uptied: "0" },
+                        "Blind Obsession": { rarity: "W", uptied: "0" },
                     },
                 },
                 RodionIDs: {
