@@ -20,10 +20,12 @@
     "Changelog22-11-2023":"新增S3通行證EGO(不包括盲目瑪)，新增名字中顯示人格的稀有度和EGO的危險度",
     "Changelog26-11-2023":"改善手機上的用戶介面",
     "Changelog30-11-2023":"新增S3通行證EGO盲目瑪",
+    "Changelog06-12-2023":"新增星巴箱和魁魁希，更新李箱的狐雨的危險度",
 
     "Effloresced E.G.O::Spicebush YiSang":"花箱",
     "Blade Lineage Salsu YiSang":"劍箱",
     "W Corp. L3 Cleanup Agent YiSang":"W箱",
+    "The Pequod First Mate Yi Sang":"星巴箱",
     "Seven Assoc. South Section 6 YiSang":"七箱",
     "Molar Office Fixer YiSang":"臼箱",
     "LCB Sinner YiSang":"初始箱",
@@ -68,6 +70,7 @@
 
     "R Corp. 4th Pack Rabbit Heathcliff":"兔子",
     "Lobotomy E.G.O::Sunshower Heathcliff":"傘希",
+    "The Pequod Harpooneer Heathcliff":"魁魁希",
     "Shi Assoc. South Section 5 Heathcliff":"四希",
     "Seven Assoc. South Section 4 Heathcliff":"七希",
     "N Corp. Kleinhammer Heathcliff":"N希",

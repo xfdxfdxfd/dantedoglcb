@@ -70,6 +70,7 @@ export default {
                         "W Corp. L3 Cleanup Agent YiSang": { rarity: "000", uptied: "0" },
                         "Seven Assoc. South Section 6 YiSang": { rarity: "00", uptied: "0" },
                         "Molar Office Fixer YiSang": { rarity: "00", uptied: "0" },
+                        "The Pequod First Mate Yi Sang": { rarity: "00", uptied: "0" },
                         "LCB Sinner YiSang": { rarity: "0", uptied: "0" },
                     },
                     EGOs: {
@@ -77,7 +78,7 @@ export default {
                         "4th Match Flame": { rarity: "T", uptied: "0" },
                         "Wishing Cairn": { rarity: "T", uptied: "0" },
                         "Dimension Shredder": { rarity: "H", uptied: "0" },
-                        "Sunshower": { rarity: "H", uptied: "0" }
+                        "Sunshower": { rarity: "W", uptied: "0" }
                     },
                 },
                 FaustIDs: {
@@ -171,6 +172,7 @@ export default {
                 HeathIDs: {
                     IDs: {
                         "R Corp. 4th Pack Rabbit Heathcliff": { rarity: "000", uptied: "0" },
+                        "The Pequod Harpooneer Heathcliff": { rarity: "000", uptied: "0" },
                         "Lobotomy E.G.O::Sunshower Heathcliff": { rarity: "000", uptied: "0" },
                         "Shi Assoc. South Section 5 Heathcliff": { rarity: "00", uptied: "0" },
                         "Seven Assoc. South Section 4 Heathcliff": { rarity: "00", uptied: "0" },
@@ -394,11 +396,24 @@ export default {
                             restoredata[key1].IDs[key2] = this.All_IDs[key1].IDs[key2];
                             localStorage.setItem('IDdata', JSON.stringify(restoredata));
                         }
+                        //if the rarity is different, update it
+                        if (restoredata[key1].IDs[key2].rarity != this.All_IDs[key1].IDs[key2].rarity) {
+                            console.log(key1 + " IDs " + key2);
+                            restoredata[key1].IDs[key2].rarity = this.All_IDs[key1].IDs[key2].rarity;
+                            localStorage.setItem('IDdata', JSON.stringify(restoredata));
+                        }
                     }
                     for (const [key3, value2] of Object.entries(this.All_IDs[key1].EGOs)) {
+                        //if something not in the restoredata, add it
                         if (!restoredata[key1].EGOs[key3]) {
                             console.log(key1 + " EGOs " + key3);
                             restoredata[key1].EGOs[key3] = this.All_IDs[key1].EGOs[key3];
+                            localStorage.setItem('IDdata', JSON.stringify(restoredata));
+                        }
+                        //if the rarity is different, update it
+                        if (restoredata[key1].EGOs[key3].rarity != this.All_IDs[key1].EGOs[key3].rarity) {
+                            console.log(key1 + " EGOs " + key3);
+                            restoredata[key1].EGOs[key3].rarity = this.All_IDs[key1].EGOs[key3].rarity;
                             localStorage.setItem('IDdata', JSON.stringify(restoredata));
                         }
                     }

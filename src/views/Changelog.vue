@@ -6,6 +6,10 @@
                 &nbsp;
                 <h2 style="border-bottom: 3px solid rgb(172, 172, 172);"></h2>
                 &nbsp;
+                <h3 class="box1h2text" style="text-align: left;">06-12-2023</h3>
+                <h3 class="box1h3text" style="text-align: left;color:#c2bfbf">{{ $t(`Changelog06-12-2023`) }}
+                </h3>
+                &nbsp;
                 <h3 class="box1h2text" style="text-align: left;">30-11-2023</h3>
                 <h3 class="box1h3text" style="text-align: left;color:#c2bfbf">{{ $t(`Changelog30-11-2023`) }}
                 </h3>
