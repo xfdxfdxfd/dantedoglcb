@@ -24,6 +24,11 @@
                         src="../../src/assets/DanteLogoDiscord.png">
                 </a>
                 &nbsp;
+                <a href="https://github.com/xfdxfdxfd/dantedoglcb">
+                    <img style="margin: 0px;padding:0px;width: 150px;" class="pagetitle" alt="LC Dog Dante"
+                        src="../../src/assets/DanteLogoGithub.png">
+                </a>
+                &nbsp;
             </div>
         </div>
     </div>

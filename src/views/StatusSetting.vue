@@ -219,6 +219,7 @@ export default {
                         "Rime Shank": { rarity: "T", uptied: "0" },
                         "Effervescent Corrosion": { rarity: "T", uptied: "0" },
                         "4th Match Flame": { rarity: "H", uptied: "0" },
+                        "Pursuance": { rarity: "H", uptied: "0" },
                     },
                 },
                 SinclairIDs: {

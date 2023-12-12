@@ -1,24 +1,49 @@
-# xgaydog
+<div align="center">
+<a href="https://github.com/xfdxfdxfd/dantedoglcb">
+   <img src="src/assets/DanteLogo.png" width=10% />
+</a>
 
-## Project setup
-```
-npm install
-```
+# DanteDog
 
-### Compiles and hot-reloads for development
-```
-npm run serve
-```
+## FACE THE GRINDING, SAVE YOUR MONEY
 
-### Compiles and minifies for production
-```
-npm run build
-```
+### The all-in-one site for planning your future grinding
 
-### Lints and fixes files
-```
-npm run lint
-```
+[![DanteDogGithub](https://img.shields.io/badge/DanteDog-Github-white)](https://github.com/xfdxfdxfd/dantedoglcb)
+[![DanteDogDiscord](https://img.shields.io/badge/DanteDog-Discord-purple)](https://discord.gg/UdFrGmKfqE)
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+</div>
+
+## Introduction
+
+- Please be aware that this website is still under active developing.
+
+  Its main purpose is to provide simple and reliable tools to faciliate your gameplay.
+
+  Ensuring the accuracy of our tools is our top priority.
+
+- Please use Google Chrome for the best experience
+
+## What tools are included in this website
+
+### Update Settings
+
+- Set the status of your IDs and EGOs to update the information in all tools.
+
+### Uptie Calculator
+
+- Calculate the amount of threads and shards you need after setting the status in the "Update Settings"
+
+## Future plan
+
+### Level calculator
+
+- Calculate the amount of exp you need for upgrading the ids
+
+### Mirror Dungeon calculator
+
+- Calculate the amount of md runs you need (and the resources you need) to get enough shards/threads
+
+## License
+
+- [![DanteDogLicense](https://img.shields.io/badge/DanteDog-License-green)](https://github.com/xfdxfdxfd/dantedoglcb/blob/master/LICENSE)
