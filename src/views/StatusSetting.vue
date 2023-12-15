@@ -421,15 +421,14 @@ export default {
                         }
                     }
                 }
-                this.All_IDs = restoredata;
-                var restoreid;
                 for (const [key, value] of Object.entries(this.All_IDs)) {
-                    restoreid = key;
                     for (const [key2, value2] of Object.entries(value.IDs)) {
-                        document.getElementById(restoreid + key2).value = value2.uptied;
+                        value2.uptied = restoredata[key].IDs[key2].uptied;
+                        document.getElementById(key + key2).value = value2.uptied;
                     }
                     for (const [key3, value3] of Object.entries(value.EGOs)) {
-                        document.getElementById(restoreid + key3).value = value3.uptied;
+                        value3.uptied = restoredata[key].EGOs[key3].uptied;
+                        document.getElementById(key + key3).value = value3.uptied;
                     }
                 }
             } else {
