@@ -225,6 +225,7 @@ export default {
                 SinclairIDs: {
                     IDs: {
                         "Blade Lineage Salsu Sinclair": { rarity: "000", uptied: "0" },
+                        "Cinq Association South Section 4 Director Sinclair": { rarity: "000", uptied: "0" },
                         "The One Who Shall Grip Sinclair": { rarity: "000", uptied: "0" },
                         "Zwei Assoc. South Section 6 Sinclair": { rarity: "00", uptied: "0" },
                         "Los Mariachis Jefe Sinclair": { rarity: "00", uptied: "0" },
@@ -246,6 +247,7 @@ export default {
                         "Molar Office Fixer Outis": { rarity: "000", uptied: "0" },
                         "G Corp. Head Manager Outis": { rarity: "00", uptied: "0" },
                         "Blade Lineage Cutthroat Outis": { rarity: "00", uptied: "0" },
+                        "Cinq Association South Section 4 Outis": { rarity: "00", uptied: "0" },
                         "LCB Sinner Outis": { rarity: "0", uptied: "0" },
                     },
                     EGOs: {
