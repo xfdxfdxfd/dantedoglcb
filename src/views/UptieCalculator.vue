@@ -115,6 +115,7 @@ export default {
                     "EGO": 400,
                     "Rarity000": 400,
                     "Rarity00": 150,
+                    "Rarity0": 0,
                 },
                 IDamount: {
                     "Rarity000": {
