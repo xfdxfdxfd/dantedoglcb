@@ -1,6 +1,6 @@
 <div align="center">
 <a href="https://github.com/xfdxfdxfd/dantedoglcb">
-   <img src="src/assets/DanteLogo.png" width=10% />
+   <div style="max-width: 100%;height: auto;width: auto;"><img src="src/assets/DanteLogo.png"/></div>
 </a>
 
 # DanteDog

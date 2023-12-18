@@ -2,6 +2,7 @@
     "Home" :"Home",
     "Changelog":"Changelog",
     "UptieCalculator":"Uptie Calculator",
+    "MDCalculator":"MD Calculator",
     "Welcome": "FACE THE GRINDING, SAVE YOUR MONEY",
     "WelcomeTitle": "Welcome, Manager",
     "WelcomeText": "The all-in-one site for planning your future grinding.",
@@ -22,7 +23,7 @@
     "Changelog30-11-2023":"Add Blind Obsession Ish EGO",
     "Changelog06-12-2023":"Add the 2 new Pequod IDs, Update the YiSang Sunshower's risk level",
     "Changelog12-12-2023":"Add Rodion's EGO Pursuance. Add the Github project link",
-    "Changelog15-12-2023":"Add 2 new cinq IDs",
+    "Changelog18-12-2023":"Add 2 cinq IDs, change the setting of Calculator so that it will not count the sparking resources for LCB IDs and original EGOs, improve the performance of the website.",
 
     "Effloresced E.G.O::Spicebush YiSang":"Effloresced E.G.O::Spicebush YiSang",
     "Blade Lineage Salsu YiSang":"Blade Lineage Salsu YiSang",

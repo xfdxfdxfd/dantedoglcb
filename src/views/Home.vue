@@ -21,12 +21,12 @@
                 <h3 class="box1h3text" style="margin-bottom: 10px;">{{ $t(`ContactParagraph`) }}</h3>
                 <a href="https://discord.gg/UdFrGmKfqE">
                     <img style="margin: 0px;padding:0px;width: 150px;" class="pagetitle" alt="LC Dog Dante"
-                        src="../../src/assets/DanteLogoDiscord.png">
+                        src="../../src/assets/DanteLogoDiscord.webp">
                 </a>
                 &nbsp;
                 <a href="https://github.com/xfdxfdxfd/dantedoglcb">
                     <img style="margin: 0px;padding:0px;width: 150px;" class="pagetitle" alt="LC Dog Dante"
-                        src="../../src/assets/DanteLogoGithub.png">
+                        src="../../src/assets/DanteLogoGithub.webp">
                 </a>
                 &nbsp;
             </div>

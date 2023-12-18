@@ -37,47 +37,47 @@
                 <!--result below-->
                 <h2 class="box1h2text">
                     <div style="text-align: left;padding-left:5vw">
-                        <img class="shardimg" alt="ThreadAmount" src="../../src/assets/icon_twine.png">:{{
+                        <img class="shardimg" alt="ThreadAmount" src="../../src/assets/icon_twine.webp">:{{
                             CalResult.ThreadAmount
                         }}&nbsp;
                     </div>
                     &nbsp;
                     <div>
-                        <img class="shardimg" alt="YiSangShard" src="../../src/assets/icon_piece-501YiSang.png">:{{
+                        <img class="shardimg" alt="YiSangShard" src="../../src/assets/icon_piece-501YiSang.webp">:{{
                             CalResult.YiSangIDs
                         }}&nbsp;
-                        <img class="shardimg" alt="FaustShard" src="../../src/assets/icon_piece-502Faust.png">:{{
+                        <img class="shardimg" alt="FaustShard" src="../../src/assets/icon_piece-502Faust.webp">:{{
                             CalResult.FaustIDs
                         }}&nbsp;
-                        <img class="shardimg" alt="DonShard" src="../../src/assets/icon_piece-503DonQuixote.png">:{{
+                        <img class="shardimg" alt="DonShard" src="../../src/assets/icon_piece-503DonQuixote.webp">:{{
                             CalResult.DonIDs
                         }}&nbsp;
-                        <img class="shardimg" alt="RyoshuShard" src="../../src/assets/icon_piece-504Ryoshu.png">:{{
+                        <img class="shardimg" alt="RyoshuShard" src="../../src/assets/icon_piece-504Ryoshu.webp">:{{
                             CalResult.RyoshuIDs
                         }}&nbsp;
-                        <img class="shardimg" alt="MeurShard" src="../../src/assets/icon_piece-505Meursault.png">:{{
+                        <img class="shardimg" alt="MeurShard" src="../../src/assets/icon_piece-505Meursault.webp">:{{
                             CalResult.MeurIDs
                         }}&nbsp;
-                        <img class="shardimg" alt="HongLuShard" src="../../src/assets/icon_piece-506HongLu.png">:{{
+                        <img class="shardimg" alt="HongLuShard" src="../../src/assets/icon_piece-506HongLu.webp">:{{
                             CalResult.HongLuIDs
                         }}&nbsp;
                     </div>
                     <div>
-                        <img class="shardimg" alt="HeathShard" src="../../src/assets/icon_piece-507Heathcliff.png">:{{
+                        <img class="shardimg" alt="HeathShard" src="../../src/assets/icon_piece-507Heathcliff.webp">:{{
                             CalResult.HeathIDs
                         }}&nbsp;
-                        <img class="shardimg" alt="IshShard" src="../../src/assets/icon_piece-508Ishmael.png">:{{
+                        <img class="shardimg" alt="IshShard" src="../../src/assets/icon_piece-508Ishmael.webp">:{{
                             CalResult.IshIDs
                         }}&nbsp;
-                        <img class="shardimg" alt="RodionShard" src="../../src/assets/icon_piece-509Rodion.png">:{{
+                        <img class="shardimg" alt="RodionShard" src="../../src/assets/icon_piece-509Rodion.webp">:{{
                             CalResult.RodionIDs
                         }}&nbsp;
-                        <img class="shardimg" alt="SinclairShard" src="../../src/assets/icon_piece-510EmilSinclair.png">:{{
+                        <img class="shardimg" alt="SinclairShard" src="../../src/assets/icon_piece-510EmilSinclair.webp">:{{
                             CalResult.SinclairIDs }}&nbsp;
-                        <img class="shardimg" alt="OutisShard" src="../../src/assets/icon_piece-511Outis.png">:{{
+                        <img class="shardimg" alt="OutisShard" src="../../src/assets/icon_piece-511Outis.webp">:{{
                             CalResult.OutisIDs
                         }}&nbsp;
-                        <img class="shardimg" alt="GregorShard" src="../../src/assets/icon_piece-512Gregor.png">:{{
+                        <img class="shardimg" alt="GregorShard" src="../../src/assets/icon_piece-512Gregor.webp">:{{
                             CalResult.GregorIDs
                         }}&nbsp;
                     </div>
@@ -162,623 +162,74 @@ export default {
                     }
                 }
             },
-
-            ZEGOnotOriginal: {
-                Soda: "Soda",
-                Legerdemain: "Legerdemain",
-            }
         }
     },
     computed: {
     },
     methods: {
+        calculate_case(restore_data, mode) {
+            this.CalResult.ThreadAmount = 0
+            for (const [key1, value1] of Object.entries(restore_data)) {
+                // console.log(key1);      //this.CalResult.YiSang,this.CalResult.Faust....
+                var identityIDList = value1;//this.All_IDs.YiSangIDs,this.All_IDs.FaustIDs....
+                var shardvalue = 0;
+                var threadvalue = 0;
+                var only_owned = (mode == "uptie3only") || (mode == "uptie4only") || (mode == "uptie5only");
 
-        calculate_case_ut3(restore_data) {
-            this.CalResult.ThreadAmount = 0
-            for (const [key1, value1] of Object.entries(restore_data)) {
-                // console.log(key1);      //this.CalResult.YiSang,this.CalResult.Faust....
-                var identityIDList = value1;//this.All_IDs.YiSangIDs,this.All_IDs.FaustIDs....
-                var shardvalue = 0;
-                var threadvalue = 0;
                 for (const [key2, value2] of Object.entries(identityIDList.IDs)) {
-                    //key2 = Molar Office Fixer Outis,LCB Sinner Meursault...
-                    //value2 = { rarity: "000", uptied: 0 },...
-                    switch (value2.rarity) {
-                        case "000":
-                            if (value2.uptied == "2") { //ut2 or below
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from2to3.thread;
-                            }
-                            if (value2.uptied == "1") { //ut1 or don't hv
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from1to2.thread;
-                            }
-                            if (value2.uptied == "0") { //don't hv
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from1to2.thread;
-                                shardvalue += this.uptiethreadamount.sparkingshardamount.Rarity000;
-                            }
-                            break;
-                        case "00":
-                            if (value2.uptied == "2") { //ut2 or below
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from2to3.thread;
-                            }
-                            if (value2.uptied == "1") { //ut1 or don't hv
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from1to2.thread;
-                            }
-                            if (value2.uptied == "0") { //don't hv
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from1to2.thread;
-                                shardvalue += this.uptiethreadamount.sparkingshardamount.Rarity00;
-                            }
-                            break;
-                        case "0": //do nothing as lcb sinner only do ut4
-                            break;
+                    // console.log(key2, value2);
+                    if (only_owned && value2.uptied == 0 && value2.rarity != "Rarity0") {
+                        continue;
                     }
-                }
-                for (const [key3, value3] of Object.entries(identityIDList.EGOs)) {
-                    //key3 = Chains of Others,Regret...
-                    //value3 = { rarity: "Z", uptied: 0 },...
-                    //need to filter out the original EGOs for each Sinner
-                    switch (value3.rarity) {
-                        case "W":
-                            if (value3.uptied == "2") { //ut2 or below
-                                //console.log("value3.uptied = 2")
-                                threadvalue += this.uptiethreadamount.EGOamount.W.from2to3.thread;
-                            }
-                            if (value3.uptied == "1") { //ut1 or don't hv
-                                //console.log("value3.uptied = 1")
-                                threadvalue += this.uptiethreadamount.EGOamount.W.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.EGOamount.W.from1to2.thread;
-                            }
-                            if (value3.uptied == "0") { //don't hv
-                                //console.log("value3.uptied = 0")
-                                threadvalue += this.uptiethreadamount.EGOamount.W.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.EGOamount.W.from1to2.thread;
-                                shardvalue += this.uptiethreadamount.sparkingshardamount.EGO;
-                            }
-                            break;
-                        case "T":
-                            if (value3.uptied == "2") { //ut2 or below
-                                //console.log("value3.uptied = 2")
-                                threadvalue += this.uptiethreadamount.EGOamount.T.from2to3.thread;
-                            }
-                            if (value3.uptied == "1") { //ut1 or don't hv
-                                //console.log("value3.uptied = 1")
-                                threadvalue += this.uptiethreadamount.EGOamount.T.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.EGOamount.T.from1to2.thread;
-                            }
-                            if (value3.uptied == "0") { //don't hv
-                                //console.log("value3.uptied = 0")
-                                threadvalue += this.uptiethreadamount.EGOamount.T.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.EGOamount.T.from1to2.thread;
-                                shardvalue += this.uptiethreadamount.sparkingshardamount.EGO;
-                            }
-                            break;
-                        case "H":
-                            if (value3.uptied == "2") { //ut2 or below
-                                //console.log("value3.uptied = 2")
-                                threadvalue += this.uptiethreadamount.EGOamount.H.from2to3.thread;
-                            }
-                            if (value3.uptied == "1") { //ut1 or don't hv
-                                //console.log("value3.uptied = 1")
-                                threadvalue += this.uptiethreadamount.EGOamount.H.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.EGOamount.H.from1to2.thread;
-                            }
-                            if (value3.uptied == "0") { //don't hv
-                                //console.log("value3.uptied = 0")
-                                threadvalue += this.uptiethreadamount.EGOamount.H.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.EGOamount.H.from1to2.thread;
-                                shardvalue += this.uptiethreadamount.sparkingshardamount.EGO;
-                            }
-                            break;
-                        case "Z":
-                            if (key3 in this.ZEGOnotOriginal) { //not original
-                                //console.log(key3);
-                                if (value3.uptied == "2") { //ut2 or below
-                                    //console.log("value3.uptied = 2")
-                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from2to3.thread;
-                                }
-                                if (value3.uptied == "1") { //ut1 or don't hv
-                                    //console.log("value3.uptied = 1")
-                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from2to3.thread;
-                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from1to2.thread;
-                                }
-                                if (value3.uptied == "0") { //don't hv
-                                    //console.log("value3.uptied = 0")
-                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from2to3.thread;
-                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from1to2.thread;
-                                    shardvalue += this.uptiethreadamount.sparkingshardamount.EGO;
-                                }
-                            }
-                            break;
+                    else {
+                        if (value2.uptied < 1 && value2.rarity != "Rarity0") {
+                            shardvalue += this.uptiethreadamount.sparkingshardamount[value2.rarity];
+                        }
+                        if (value2.uptied < 2) {
+                            threadvalue += this.uptiethreadamount.IDamount[value2.rarity].from1to2.thread;
+                        }
+                        if (value2.uptied < 3) {
+                            threadvalue += this.uptiethreadamount.IDamount[value2.rarity].from2to3.thread;
+                        }
+                        if (value2.uptied < 4 && !(mode == "uptie3only" || mode == "uptie3")) {
+                            threadvalue += this.uptiethreadamount.IDamount[value2.rarity].from3to4.thread;
+                            shardvalue += this.uptiethreadamount.IDamount[value2.rarity].from3to4.shard;
+                        }
                     }
-                }
-                this.CalResult.ThreadAmount += threadvalue;
-                // console.log(key1, shardvalue);
-                this.CalResult[key1] = shardvalue;
-            }
-        },
-        calculate_case_ut3only(restore_data) {
-            this.CalResult.ThreadAmount = 0
-            for (const [key1, value1] of Object.entries(restore_data)) {
-                // console.log(key1);      //this.CalResult.YiSang,this.CalResult.Faust....
-                var identityIDList = value1;//this.All_IDs.YiSangIDs,this.All_IDs.FaustIDs....
-                var shardvalue = 0;
-                var threadvalue = 0;
-                for (const [key2, value2] of Object.entries(identityIDList.IDs)) {
-                    //key2 = Molar Office Fixer Outis,LCB Sinner Meursault...
-                    //value2 = { rarity: "000", uptied: 0 },...
-                    switch (value2.rarity) {
-                        case "000":
-                            if (value2.uptied == "2") { //ut2 or below
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from2to3.thread;
-                            }
-                            if (value2.uptied == "1") { //ut1 or don't hv
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from1to2.thread;
-                            }
-                            break;
-                        case "00":
-                            if (value2.uptied == "2") { //ut2 or below
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from2to3.thread;
-                            }
-                            if (value2.uptied == "1") { //ut1 or don't hv
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from1to2.thread;
-                            }
-                            break;
-                        case "0": //do nothing as lcb sinner only do ut4
-                            break;
-                    }
-                }
-                for (const [key3, value3] of Object.entries(identityIDList.EGOs)) {
-                    //key3 = Chains of Others,Regret...
-                    //value3 = { rarity: "Z", uptied: 0 },...
-                    //need to filter out the original EGOs for each Sinner
-                    switch (value3.rarity) {
-                        case "W":
-                            if (value3.uptied == "2") { //ut2 or below
-                                //console.log("value3.uptied = 2")
-                                threadvalue += this.uptiethreadamount.EGOamount.W.from2to3.thread;
-                            }
-                            if (value3.uptied == "1") { //ut1 or don't hv
-                                //console.log("value3.uptied = 1")
-                                threadvalue += this.uptiethreadamount.EGOamount.W.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.EGOamount.W.from1to2.thread;
-                            }
-                            break;
-                        case "T":
-                            if (value3.uptied == "2") { //ut2 or below
-                                //console.log("value3.uptied = 2")
-                                threadvalue += this.uptiethreadamount.EGOamount.T.from2to3.thread;
-                            }
-                            if (value3.uptied == "1") { //ut1 or don't hv
-                                //console.log("value3.uptied = 1")
-                                threadvalue += this.uptiethreadamount.EGOamount.T.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.EGOamount.T.from1to2.thread;
-                            }
-                            break;
-                        case "H":
-                            if (value3.uptied == "2") { //ut2 or below
-                                //console.log("value3.uptied = 2")
-                                threadvalue += this.uptiethreadamount.EGOamount.H.from2to3.thread;
-                            }
-                            if (value3.uptied == "1") { //ut1 or don't hv
-                                //console.log("value3.uptied = 1")
-                                threadvalue += this.uptiethreadamount.EGOamount.H.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.EGOamount.H.from1to2.thread;
-                            }
-                            break;
-                        case "Z":
-                            if (key3 in this.ZEGOnotOriginal) { //not original
-                                //console.log(key3);
-                                if (value3.uptied == "2") { //ut2 or below
-                                    //console.log("value3.uptied = 2")
-                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from2to3.thread;
-                                }
-                                if (value3.uptied == "1") { //ut1 or don't hv
-                                    //console.log("value3.uptied = 1")
-                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from2to3.thread;
-                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from1to2.thread;
-                                }
-                            }
-                            break;
-                    }
-                }
-                this.CalResult.ThreadAmount += threadvalue;
-                // console.log(key1, shardvalue);
-                this.CalResult[key1] = shardvalue;
-            }
-        },
-        calculate_case_ut4(restore_data) {
-            this.CalResult.ThreadAmount = 0
-            for (const [key1, value1] of Object.entries(restore_data)) {
-                // console.log(key1);      //this.CalResult.YiSang,this.CalResult.Faust....
-                var identityIDList = value1;//this.All_IDs.YiSangIDs,this.All_IDs.FaustIDs....
-                var shardvalue = 0;
-                var threadvalue = 0;
-                for (const [key2, value2] of Object.entries(identityIDList.IDs)) {
-                    //key2 = Molar Office Fixer Outis,LCB Sinner Meursault...
-                    //value2 = { rarity: "000", uptied: 0 },...
-                    switch (value2.rarity) {
-                        case "000":
-                            if (value2.uptied == "3") { //ut3
-                                //console.log("value3.uptied = 2")
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.shard;
-                            }
-                            if (value2.uptied == "2") { //ut2 or below
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.shard;
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from2to3.thread;
-                            }
-                            if (value2.uptied == "1") { //ut1 or don't hv
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.shard;
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from1to2.thread;
-                            }
-                            if (value2.uptied == "0") { //don't hv
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.shard;
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from1to2.thread;
-                                shardvalue += this.uptiethreadamount.sparkingshardamount.Rarity000;
-                            }
-                            break;
-                        case "00":
-                            if (value2.uptied == "3") { //ut3
-                                //console.log("value3.uptied = 2")
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.shard;
-                            }
-                            if (value2.uptied == "2") { //ut2 or below
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.shard;
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from2to3.thread;
-                            }
-                            if (value2.uptied == "1") { //ut1 or don't hv
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.shard;
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from1to2.thread;
-                            }
-                            if (value2.uptied == "0") { //don't hv
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.shard;
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from1to2.thread;
-                                shardvalue += this.uptiethreadamount.sparkingshardamount.Rarity00;
-                            }
-                            break;
-                        case "0":
-                            if (value2.uptied != "4") { //ut3 or below
-                                //console.log("value3.uptied = 2")
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity0.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.IDamount.Rarity0.from3to4.shard;
-                            }
-                            break;
-                    }
-                }
-                for (const [key3, value3] of Object.entries(identityIDList.EGOs)) {
-                    //key3 = Chains of Others,Regret...
-                    //value3 = { rarity: "Z", uptied: 0 },...
-                    //need to filter out the original EGOs for each Sinner
-                    switch (value3.rarity) {
-                        case "W":
-                            if (value3.uptied == "3") { //ut3
-                                //console.log("value3.uptied = 2")
-                                threadvalue += this.uptiethreadamount.EGOamount.W.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.EGOamount.W.from3to4.shard;
-                            }
-                            if (value3.uptied == "2") { //ut2 or below
-                                //console.log("value3.uptied = 2")
-                                threadvalue += this.uptiethreadamount.EGOamount.W.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.EGOamount.W.from3to4.shard;
-                                threadvalue += this.uptiethreadamount.EGOamount.W.from2to3.thread;
-                            }
-                            if (value3.uptied == "1") { //ut1 or don't hv
-                                //console.log("value3.uptied = 1")
-                                threadvalue += this.uptiethreadamount.EGOamount.W.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.EGOamount.W.from3to4.shard;
-                                threadvalue += this.uptiethreadamount.EGOamount.W.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.EGOamount.W.from1to2.thread;
-                            }
-                            if (value3.uptied == "0") { //don't hv
-                                //console.log("value3.uptied = 0")
-                                threadvalue += this.uptiethreadamount.EGOamount.W.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.EGOamount.W.from3to4.shard;
-                                threadvalue += this.uptiethreadamount.EGOamount.W.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.EGOamount.W.from1to2.thread;
-                                shardvalue += this.uptiethreadamount.sparkingshardamount.EGO;
-                            }
-                            break;
-                        case "T":
-                            if (value3.uptied == "3") { //ut3
-                                //console.log("value3.uptied = 2")
-                                threadvalue += this.uptiethreadamount.EGOamount.T.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.EGOamount.T.from3to4.shard;
-                            }
-                            if (value3.uptied == "2") { //ut2 or below
-                                //console.log("value3.uptied = 2")
-                                threadvalue += this.uptiethreadamount.EGOamount.T.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.EGOamount.T.from3to4.shard;
-                                threadvalue += this.uptiethreadamount.EGOamount.T.from2to3.thread;
-                            }
-                            if (value3.uptied == "1") { //ut1 or don't hv
-                                //console.log("value3.uptied = 1")
-                                threadvalue += this.uptiethreadamount.EGOamount.T.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.EGOamount.T.from3to4.shard;
-                                threadvalue += this.uptiethreadamount.EGOamount.T.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.EGOamount.T.from1to2.thread;
-                            }
-                            if (value3.uptied == "0") { //don't hv
-                                //console.log("value3.uptied = 0")
-                                threadvalue += this.uptiethreadamount.EGOamount.T.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.EGOamount.T.from3to4.shard;
-                                threadvalue += this.uptiethreadamount.EGOamount.T.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.EGOamount.T.from1to2.thread;
-                                shardvalue += this.uptiethreadamount.sparkingshardamount.EGO;
-                            }
-                            break;
-                        case "H":
-                            if (value3.uptied == "3") { //ut3
-                                //console.log("value3.uptied = 2")
-                                threadvalue += this.uptiethreadamount.EGOamount.H.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.EGOamount.H.from3to4.shard;
-                            }
-                            if (value3.uptied == "2") { //ut2 or below
-                                //console.log("value3.uptied = 2")
-                                threadvalue += this.uptiethreadamount.EGOamount.H.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.EGOamount.H.from3to4.shard;
-                                threadvalue += this.uptiethreadamount.EGOamount.H.from2to3.thread;
-                            }
-                            if (value3.uptied == "1") { //ut1 or don't hv
-                                //console.log("value3.uptied = 1")
-                                threadvalue += this.uptiethreadamount.EGOamount.H.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.EGOamount.H.from3to4.shard;
-                                threadvalue += this.uptiethreadamount.EGOamount.H.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.EGOamount.H.from1to2.thread;
-                            }
-                            if (value3.uptied == "0") { //don't hv
-                                //console.log("value3.uptied = 0")
-                                threadvalue += this.uptiethreadamount.EGOamount.H.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.EGOamount.H.from3to4.shard;
-                                threadvalue += this.uptiethreadamount.EGOamount.H.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.EGOamount.H.from1to2.thread;
-                                shardvalue += this.uptiethreadamount.sparkingshardamount.EGO;
-                            }
-                            break;
-                        case "Z":
-                            if (key3 in this.ZEGOnotOriginal) { //not original
-                                //console.log(key3);
-                                if (value3.uptied == "3") { //ut3
-                                    //console.log("value3.uptied = 2")
-                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.thread;
-                                    shardvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.shard;
-                                }
-                                if (value3.uptied == "2") { //ut2
-                                    //console.log("value3.uptied = 2")
-                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.thread;
-                                    shardvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.shard;
-                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from2to3.thread;
-                                }
-                                if (value3.uptied == "1") { //ut1
-                                    //console.log("value3.uptied = 1")
-                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.thread;
-                                    shardvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.shard;
-                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from2to3.thread;
-                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from1to2.thread;
-                                }
-                                if (value3.uptied == "0") { //don't hv
-                                    //console.log("value3.uptied = 0")
-                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.thread;
-                                    shardvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.shard;
-                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from2to3.thread;
-                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from1to2.thread;
-                                    shardvalue += this.uptiethreadamount.sparkingshardamount.EGO;
-                                }
-                            } else {
-                                if (value3.uptied != "4") { //ut2 or below
-                                    //console.log("value3.uptied = 2")
-                                    threadvalue += this.uptiethreadamount.EGOamount.Z.from3to4.thread;
-                                    shardvalue += this.uptiethreadamount.EGOamount.Z.from3to4.shard;
-                                }
-                            }
-                            break;
-                    }
-                }
-                this.CalResult.ThreadAmount += threadvalue;
-                // console.log(key1, shardvalue);
-                this.CalResult[key1] = shardvalue;
-            }
-        },
-        calculate_case_ut4only(restore_data) {
-            this.CalResult.ThreadAmount = 0
-            for (const [key1, value1] of Object.entries(restore_data)) {
-                // console.log(key1);      //this.CalResult.YiSang,this.CalResult.Faust....
-                var identityIDList = value1;//this.All_IDs.YiSangIDs,this.All_IDs.FaustIDs....
-                var shardvalue = 0;
-                var threadvalue = 0;
-                for (const [key2, value2] of Object.entries(identityIDList.IDs)) {
-                    //key2 = Molar Office Fixer Outis,LCB Sinner Meursault...
-                    //value2 = { rarity: "000", uptied: 0 },...
-                    switch (value2.rarity) {
-                        case "000":
-                            if (value2.uptied == "3") { //ut3
-                                //console.log("value3.uptied = 2")
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.shard;
-                            }
-                            if (value2.uptied == "2") { //ut2 or below
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.shard;
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from2to3.thread;
-                            }
-                            if (value2.uptied == "1") { //ut1 or don't hv
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.IDamount.Rarity000.from3to4.shard;
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity000.from1to2.thread;
-                            }
-                            break;
-                        case "00":
-                            if (value2.uptied == "3") { //ut3
-                                //console.log("value3.uptied = 2")
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.shard;
-                            }
-                            if (value2.uptied == "2") { //ut2 or below
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.shard;
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from2to3.thread;
-                            }
-                            if (value2.uptied == "1") { //ut1 or don't hv
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.IDamount.Rarity00.from3to4.shard;
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity00.from1to2.thread;
-                            }
-                            break;
-                        case "0":
-                            if (value2.uptied != "4") { //ut3 or below
-                                //console.log("value3.uptied = 2")
-                                threadvalue += this.uptiethreadamount.IDamount.Rarity0.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.IDamount.Rarity0.from3to4.shard;
-                            }
-                            break;
-                    }
-                }
-                for (const [key3, value3] of Object.entries(identityIDList.EGOs)) {
-                    //key3 = Chains of Others,Regret...
-                    //value3 = { rarity: "Z", uptied: 0 },...
-                    //need to filter out the original EGOs for each Sinner
-                    switch (value3.rarity) {
-                        case "W":
-                            if (value3.uptied == "3") { //ut3
-                                //console.log("value3.uptied = 2")
-                                threadvalue += this.uptiethreadamount.EGOamount.W.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.EGOamount.W.from3to4.shard;
-                            }
-                            if (value3.uptied == "2") { //ut2 or below
-                                //console.log("value3.uptied = 2")
-                                threadvalue += this.uptiethreadamount.EGOamount.W.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.EGOamount.W.from3to4.shard;
-                                threadvalue += this.uptiethreadamount.EGOamount.W.from2to3.thread;
-                            }
-                            if (value3.uptied == "1") { //ut1 or don't hv
-                                //console.log("value3.uptied = 1")
-                                threadvalue += this.uptiethreadamount.EGOamount.W.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.EGOamount.W.from3to4.shard;
-                                threadvalue += this.uptiethreadamount.EGOamount.W.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.EGOamount.W.from1to2.thread;
-                            }
-                            break;
-                        case "T":
-                            if (value3.uptied == "3") { //ut3
-                                //console.log("value3.uptied = 2")
-                                threadvalue += this.uptiethreadamount.EGOamount.T.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.EGOamount.T.from3to4.shard;
-                            }
-                            if (value3.uptied == "2") { //ut2 or below
-                                //console.log("value3.uptied = 2")
-                                threadvalue += this.uptiethreadamount.EGOamount.T.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.EGOamount.T.from3to4.shard;
-                                threadvalue += this.uptiethreadamount.EGOamount.T.from2to3.thread;
-                            }
-                            if (value3.uptied == "1") { //ut1 or don't hv
-                                //console.log("value3.uptied = 1")
-                                threadvalue += this.uptiethreadamount.EGOamount.T.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.EGOamount.T.from3to4.shard;
-                                threadvalue += this.uptiethreadamount.EGOamount.T.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.EGOamount.T.from1to2.thread;
-                            }
-                            break;
-                        case "H":
-                            if (value3.uptied == "3") { //ut3
-                                //console.log("value3.uptied = 2")
-                                threadvalue += this.uptiethreadamount.EGOamount.H.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.EGOamount.H.from3to4.shard;
-                            }
-                            if (value3.uptied == "2") { //ut2 or below
-                                //console.log("value3.uptied = 2")
-                                threadvalue += this.uptiethreadamount.EGOamount.H.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.EGOamount.H.from3to4.shard;
-                                threadvalue += this.uptiethreadamount.EGOamount.H.from2to3.thread;
-                            }
-                            if (value3.uptied == "1") { //ut1 or don't hv
-                                //console.log("value3.uptied = 1")
-                                threadvalue += this.uptiethreadamount.EGOamount.H.from3to4.thread;
-                                shardvalue += this.uptiethreadamount.EGOamount.H.from3to4.shard;
-                                threadvalue += this.uptiethreadamount.EGOamount.H.from2to3.thread;
-                                threadvalue += this.uptiethreadamount.EGOamount.H.from1to2.thread;
-                            }
-                            break;
-                        case "Z":
-                            if (key3 in this.ZEGOnotOriginal) { //not original
-                                //console.log(key3);
-                                if (value3.uptied == "3") { //ut3
-                                    //console.log("value3.uptied = 2")
-                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.thread;
-                                    shardvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.shard;
-                                }
-                                if (value3.uptied == "2") { //ut2
-                                    //console.log("value3.uptied = 2")
-                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.thread;
-                                    shardvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.shard;
-                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from2to3.thread;
-                                }
-                                if (value3.uptied == "1") { //ut1
-                                    //console.log("value3.uptied = 1")
-                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.thread;
-                                    shardvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from3to4.shard;
-                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from2to3.thread;
-                                    threadvalue += this.uptiethreadamount.EGOamount.ZnotOriginal.from1to2.thread;
-                                }
-                            } else {
-                                if (value3.uptied != "4") { //ut2 or below
-                                    //console.log("value3.uptied = 2")
-                                    threadvalue += this.uptiethreadamount.EGOamount.Z.from3to4.thread;
-                                    shardvalue += this.uptiethreadamount.EGOamount.Z.from3to4.shard;
-                                }
-                            }
-                            break;
-                    }
-                }
-                this.CalResult.ThreadAmount += threadvalue;
-                // console.log(key1, shardvalue);
-                this.CalResult[key1] = shardvalue;
-            }
-        },
-        calculate_case_ut5(restore_data) { },
-        calculate_case_ut5only(restore_data) { },
 
+                }
+                for (const [key3, value3] of Object.entries(identityIDList.EGOs)) {
+                    //key3 = Chains of Others,Regret...
+                    //value3 = { rarity: "Z", uptied: 0 },...
+                    if (only_owned && value3.uptied == 0 && value3.rarity != "Z") {
+                        continue;
+                    }
+                    else {
+                        if (value3.uptied < 1 && value3.rarity != "Z") {
+                            shardvalue += this.uptiethreadamount.sparkingshardamount.EGO;
+                        }
+                        if (value3.uptied < 2) {
+                            threadvalue += this.uptiethreadamount.EGOamount[value3.rarity].from1to2.thread;
+                        }
+                        if (value3.uptied < 3) {
+                            threadvalue += this.uptiethreadamount.EGOamount[value3.rarity].from2to3.thread;
+                        }
+                        if (value3.uptied < 4 && !(mode == "uptie3only" || mode == "uptie3")) {
+                            threadvalue += this.uptiethreadamount.EGOamount[value3.rarity].from3to4.thread;
+                            shardvalue += this.uptiethreadamount.EGOamount[value3.rarity].from3to4.shard;
+                        }
+                    }
+                }
+                this.CalResult.ThreadAmount += threadvalue;
+                // console.log(key1, shardvalue);
+                this.CalResult[key1] = shardvalue;
+            }
+        },
         calculate(mode) {
             var restore_data = JSON.parse(localStorage.getItem('IDdata'));
-
             //set the value according to the mode
             if (restore_data) {
-                switch (mode) {
-                    case 'uptie3':
-                        this.calculate_case_ut3(restore_data);
-                        break;
-                    case 'uptie3only':
-                        this.calculate_case_ut3only(restore_data);
-                        break;
-                    case 'uptie4':
-                        this.calculate_case_ut4(restore_data);
-                        break;
-                    case 'uptie4only':
-                        this.calculate_case_ut4only(restore_data);
-                        break;
-                    case 'uptie5':
-                        this.calculate_case_ut5(restore_data);
-                        break;
-                    case 'uptie5only':
-                        this.calculate_case_ut5only(restore_data);
-                        break;
-                }
+                this.calculate_case(restore_data, mode);
             }
         },
 

@@ -3,7 +3,7 @@
     <div class="toplineapp" style="position: relative;">
       <router-link :class="this.$route.path == '/' ? 'active' : ''" :to="{ name: 'Home' }"><img
           style="margin: 0px;padding-left: 20px;width: 150px;" class="pagetitle" alt="LC Dog Dante"
-          src="./assets/DanteLogoBanner.png"></router-link>
+          src="./assets/DanteLogoBanner.webp"></router-link>
       <div style="text-align: right">
         <b-button size="sm" class="locale-changer" type="submit" style="display:inline;color: #f2f2f2;cursor: pointer;"
           @click="$i18n.locale = 'en', updatelocate('en')">English</b-button>
@@ -125,7 +125,7 @@ body {
 }
 
 .navbar {
-  background-image: url("./assets/E041X_3.png");
+  background-image: url("./assets/E041X_3.webp");
   position: fixed;
   /* Set the navbar to fixed position */
   top: 0;
@@ -147,7 +147,7 @@ body {
 }
 
 .content {
-  background-image: url("./assets/maxresdefault.jpg");
+  background-image: url("./assets/maxresdefault.webp");
   background-size: cover;
   background-attachment: fixed;
   background-repeat: no-repeat;
