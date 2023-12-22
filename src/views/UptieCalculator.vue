@@ -238,16 +238,6 @@ export default {
         },
     },
     mounted() {
-        // //call restoreprogress funct when DOMContentLoaded
-        // document.addEventListener('DOMContentLoaded', this.calculateresult);
-        // //reload the page for addeventlistener rlly show result
-        // if (localStorage.getItem('reloaded')) { //just reloaded
-        //     localStorage.removeItem('reloaded');
-        // } else {
-        //     // Set a flag so that we know not to reload the page twice.
-        //     localStorage.setItem('reloaded', '1');
-        //     location.reload();
-        // }
     },
     watch: {
     }

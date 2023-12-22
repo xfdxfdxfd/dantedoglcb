@@ -181,6 +181,7 @@ export default {
                     },
                     EGOs: {
                         "Bodysack": { rarity: "Z", uptied: "0" },
+                        "Holiday": { rarity: "ZnotOriginal", uptied: "0" },
                         "AEDD": { rarity: "T", uptied: "0" },
                         "Ya Sunyata Tad Rupam": { rarity: "H", uptied: "0" },
                         "Telepole": { rarity: "H", uptied: "0" },
@@ -255,6 +256,7 @@ export default {
                         "Sunshower": { rarity: "T", uptied: "0" },
                         "Ya Sunyata Tad Rupam": { rarity: "T", uptied: "0" },
                         "Ebony Stem": { rarity: "H", uptied: "0" },
+                        "Holiday": { rarity: "H", uptied: "0" },
                     },
                 },
                 GregorIDs: {
