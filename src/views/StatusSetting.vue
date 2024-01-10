@@ -105,6 +105,7 @@ export default {
                         "W Corp. L3 Cleanup Agent Don Quixote": { rarity: "Rarity000", uptied: "0" },
                         "The Middle Little Sister Don Quixote": { rarity: "Rarity000", uptied: "0" },
                         "Shi Assoc. South Section 5 Director Don Quixote": { rarity: "Rarity00", uptied: "0" },
+                        "Lobotomy E.G.O::Lantern Don Quixote": { rarity: "Rarity00", uptied: "0" },
                         "N Corp. Mittelhammer Don Quixote": { rarity: "Rarity00", uptied: "0" },
                         "LCB Sinner Don Quixote": { rarity: "Rarity0", uptied: "0" },
                     },
@@ -245,6 +246,7 @@ export default {
                 OutisIDs: {
                     IDs: {
                         "Seven Assoc. South Section 6 Director Outis": { rarity: "Rarity000", uptied: "0" },
+                        "Lobotomy E.G.O::Magic Bullet Outis": { rarity: "Rarity000", uptied: "0" },
                         "Molar Office Fixer Outis": { rarity: "Rarity000", uptied: "0" },
                         "G Corp. Head Manager Outis": { rarity: "Rarity00", uptied: "0" },
                         "Blade Lineage Cutthroat Outis": { rarity: "Rarity00", uptied: "0" },
