@@ -1,24 +1,23 @@
 <template>
     <div class="content">
-        <div style="position: relative;">
+        <div>
             <div class="box box1">
                 <h1 class="subtitle">{{ $t(`Welcome`) }}</h1>
                 <h2 style="color: #c2bfbf;">{{ $t(`WelcomeText`) }}</h2>
                 &nbsp;
                 <h2 class="separator"></h2>
                 &nbsp;
-                <h2 style="white-space: pre-line;padding:10px;color:rgb(255, 220, 161);font-size: 35px;">
-                    {{ $t(`WelcomeTitle`) }}</h2>
+                <h2 class="welcomeparagraph_yellow">{{ $t(`WelcomeTitle`) }}</h2>
                 <h3 class="box1h3text" style="color:#c2bfbf">{{ $t(`WelcomeParagraph`) }}</h3>
                 &nbsp;
                 <h2 class="box1h2text">1. {{ $t(`StatusSetting`) }}</h2>
-                <h3 class="box1h3text">{{ $t(`StatusSettingSection`) }}</h3>
+                <h3 class="box1h3text" style="color:#c2bfbf">{{ $t(`StatusSettingSection`) }}</h3>
                 &nbsp;
                 <h2 class="box1h2text">2. {{ $t(`UptieCalculator`) }}</h2>
-                <h3 class="box1h3text">{{ $t(`UptieCalculatorSection1`) }}</h3>
+                <h3 class="box1h3text" style="color:#c2bfbf">{{ $t(`UptieCalculatorSection1`) }}</h3>
                 &nbsp;
                 <h2 class="box1h2text">{{ $t(`ContactTitle`) }}</h2>
-                <h3 class="box1h3text" style="margin-bottom: 10px;">{{ $t(`ContactParagraph`) }}</h3>
+                <h3 class="box1h3text" style="margin-bottom: 10px;color:#c2bfbf;">{{ $t(`ContactParagraph`) }}</h3>
                 <a href="https://discord.gg/UdFrGmKfqE">
                     <img class="pagetitle" alt="LC Dog Dante" src="../../src/assets/DanteLogoDiscord.webp">
                 </a>

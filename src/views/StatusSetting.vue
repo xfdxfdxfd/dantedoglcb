@@ -1,6 +1,6 @@
 <template>
     <div class="content">
-        <div style="position: relative;">
+        <div>
             <div class="box box1">
                 <h1 class="subtitle">{{ $t(`StatusSetting`) }}</h1>
                 &nbsp;
@@ -18,9 +18,8 @@
                     <h2 class="separator"></h2>
                     <h2 class="box1h2text">{{ $t(ID_to_name(ID_index)) }}</h2>
                     <h3 class="box1h3text" style="text-align: left;">{{ $t(`Identities`) }}</h3>
-                    <div style="display:flex;flex-flow: row wrap;justify-content:flex-start">
-                        <div style="text-align: left;padding-left:10vw;word-wrap: break-word;width:12vw;min-width:10px"
-                            v-for="(id, index) in ID_id.IDs" :key="index">
+                    <div class="optionBlock">
+                        <div class="optionText" v-for="(id, index) in ID_id.IDs" :key="index">
                             {{ id.rarity.replace('Rarity', '') }}&nbsp;{{ $t(index) }}
                             &nbsp;
                             <div>
@@ -37,9 +36,8 @@
                         </div>
                     </div>
                     <h3 class="box1h3text" style="text-align: left;">EGO</h3>
-                    <div style="display:flex;flex-flow: row wrap;justify-content:flex-start">
-                        <div style="text-align: left;padding-left:10vw;word-wrap: break-word;;width:12vw;min-width:10px"
-                            v-for="(id, index) in ID_id.EGOs" :key="index">
+                    <div class="optionBlock">
+                        <div class="optionText" v-for="(id, index) in ID_id.EGOs" :key="index">
                             {{ id.rarity.replace('notOriginal', '') }}&nbsp;{{ $t(index) }}
                             &nbsp;
                             <div>
@@ -248,6 +246,9 @@ export default {
         // console.log(this.$data);
     },
     mounted() {
+        //calc the reposition of the content
+        document.getElementById("appContent").style.paddingTop = document.getElementById("navbar2").clientHeight - 20 + "px";
+
         //call restoreprogress funct when DOMContentLoaded
         document.addEventListener('DOMContentLoaded', this.restoreprogress);
 

@@ -1,6 +1,6 @@
 <template>
     <div class="content">
-        <div style="position: relative;">
+        <div>
             <div class="box box1">
                 <h1 class="subtitle">{{ $t(`UptieCalculator`) }}</h1>
                 &nbsp;
