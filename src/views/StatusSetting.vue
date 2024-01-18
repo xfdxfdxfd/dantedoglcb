@@ -1,10 +1,10 @@
 <template>
-    <div style="min-height: 100vh;" class="content">
+    <div class="content">
         <div style="position: relative;">
             <div class="box box1">
-                <h1 style="font-size: 40px;padding-top: 20px;color: #ffffff;">{{ $t(`StatusSetting`) }}</h1>
+                <h1 class="subtitle">{{ $t(`StatusSetting`) }}</h1>
                 &nbsp;
-                <h2 style="border-bottom: 3px solid rgb(172, 172, 172);"></h2>
+                <h2 class="separator"></h2>
                 &nbsp;
                 <h3 class="box1h3text" style="color:#c2bfbf;margin:10px">{{ $t(`StatusSettingSection2`) }}</h3>
                 <div style="text-align: right;padding-right:10px">
@@ -15,40 +15,46 @@
                         @click="resetprogress()">{{ $t(`Reset`) }}</button>
                 </div>
                 <div v-for="(ID_id, ID_index) in All_IDs" :key="ID_index">
-                    <h2 style="border-bottom: 3px solid rgb(172, 172, 172);"></h2>
+                    <h2 class="separator"></h2>
                     <h2 class="box1h2text">{{ $t(ID_to_name(ID_index)) }}</h2>
                     <h3 class="box1h3text" style="text-align: left;">{{ $t(`Identities`) }}</h3>
-                    <li style="text-align: left;padding-left:10vw;" v-for="(id, index) in ID_id.IDs" :key="index">
-                        {{ id.rarity.replace('Rarity', '') }}&nbsp;{{ $t(index) }}
-                        &nbsp;
-                        <div>
-                            <select :id='ID_index + index' :v-model="ID_id.IDs"
-                                @change="id.uptied = getitemselected(ID_index + index), updateIDdata()">
-                                <option value=0>{{ $t(`Don't have`) }}</option>
-                                <option value=1>{{ $t(`Uptie`) }}1</option>
-                                <option value=2>{{ $t(`Uptie`) }}2</option>
-                                <option value=3>{{ $t(`Uptie`) }}3</option>
-                                <option value=4>{{ $t(`Uptie`) }}4</option>
-                            </select>
+                    <div style="display:flex;flex-flow: row wrap;justify-content:flex-start">
+                        <div style="text-align: left;padding-left:10vw;word-wrap: break-word;width:12vw;min-width:10px"
+                            v-for="(id, index) in ID_id.IDs" :key="index">
+                            {{ id.rarity.replace('Rarity', '') }}&nbsp;{{ $t(index) }}
+                            &nbsp;
+                            <div>
+                                <select :id='ID_index + index' :v-model="ID_id.IDs"
+                                    @change="id.uptied = getitemselected(ID_index + index), updateIDdata()">
+                                    <option value=0>{{ $t(`Don't have`) }}</option>
+                                    <option value=1>{{ $t(`Uptie`) }}1</option>
+                                    <option value=2>{{ $t(`Uptie`) }}2</option>
+                                    <option value=3>{{ $t(`Uptie`) }}3</option>
+                                    <option value=4>{{ $t(`Uptie`) }}4</option>
+                                </select>
+                            </div>
+                            &nbsp;
                         </div>
-                        &nbsp;
-                    </li>
+                    </div>
                     <h3 class="box1h3text" style="text-align: left;">EGO</h3>
-                    <li style="text-align: left;padding-left:10vw;" v-for="(id, index) in ID_id.EGOs" :key="index">
-                        {{ id.rarity.replace('notOriginal', '') }}&nbsp;{{ $t(index) }}
-                        &nbsp;
-                        <div>
-                            <select :id='ID_index + index' :v-model="ID_id.EGOs"
-                                @change="id.uptied = getitemselected(ID_index + index), updateIDdata()">
-                                <option value=0>{{ $t(`Don't have`) }}</option>
-                                <option value=1>{{ $t(`Uptie`) }}1</option>
-                                <option value=2>{{ $t(`Uptie`) }}2</option>
-                                <option value=3>{{ $t(`Uptie`) }}3</option>
-                                <option value=4>{{ $t(`Uptie`) }}4</option>
-                            </select>
+                    <div style="display:flex;flex-flow: row wrap;justify-content:flex-start">
+                        <div style="text-align: left;padding-left:10vw;word-wrap: break-word;;width:12vw;min-width:10px"
+                            v-for="(id, index) in ID_id.EGOs" :key="index">
+                            {{ id.rarity.replace('notOriginal', '') }}&nbsp;{{ $t(index) }}
+                            &nbsp;
+                            <div>
+                                <select :id='ID_index + index' :v-model="ID_id.EGOs"
+                                    @change="id.uptied = getitemselected(ID_index + index), updateIDdata()">
+                                    <option value=0>{{ $t(`Don't have`) }}</option>
+                                    <option value=1>{{ $t(`Uptie`) }}1</option>
+                                    <option value=2>{{ $t(`Uptie`) }}2</option>
+                                    <option value=3>{{ $t(`Uptie`) }}3</option>
+                                    <option value=4>{{ $t(`Uptie`) }}4</option>
+                                </select>
+                            </div>
+                            &nbsp;
                         </div>
-                        &nbsp;
-                    </li>
+                    </div>
                 </div>
                 <!-- <button @click="getcurrentiddata()">Submit</button> -->
             </div>
@@ -57,237 +63,14 @@
 </template>
 
 <script>
+import statusdata from '../components/data.js';
 export default {
     name: 'StatusSetting',
     props: ['StatusData'],
     data() {
-        return {
-            All_IDs: {
-                YiSangIDs: {
-                    IDs: {
-                        "Effloresced E.G.O::Spicebush YiSang": { rarity: "Rarity000", uptied: "0" },
-                        "Blade Lineage Salsu YiSang": { rarity: "Rarity000", uptied: "0" },
-                        "W Corp. L3 Cleanup Agent YiSang": { rarity: "Rarity000", uptied: "0" },
-                        "Seven Assoc. South Section 6 YiSang": { rarity: "Rarity00", uptied: "0" },
-                        "Molar Office Fixer YiSang": { rarity: "Rarity00", uptied: "0" },
-                        "The Pequod First Mate Yi Sang": { rarity: "Rarity00", uptied: "0" },
-                        "LCB Sinner YiSang": { rarity: "Rarity0", uptied: "0" },
-                    },
-                    EGOs: {
-                        "Crow's Eye View": { rarity: "Z", uptied: "0" },
-                        "4th Match Flame": { rarity: "T", uptied: "0" },
-                        "Wishing Cairn": { rarity: "T", uptied: "0" },
-                        "Dimension Shredder": { rarity: "H", uptied: "0" },
-                        "Sunshower": { rarity: "W", uptied: "0" }
-                    },
-                },
-                FaustIDs: {
-                    IDs: {
-                        "Seven Assoc. South Section 4 Faust": { rarity: "Rarity000", uptied: "0" },
-                        "The One Who Grips Faust": { rarity: "Rarity000", uptied: "0" },
-                        "Lobotomy E.G.O::Regret Faust": { rarity: "Rarity000", uptied: "0" },
-                        "Lobotomy Corp Remnant Faust": { rarity: "Rarity00", uptied: "0" },
-                        "W Corp. L2 Cleanup Agent Faust": { rarity: "Rarity00", uptied: "0" },
-                        "Zwei Assoc. South Section 4 Faust": { rarity: "Rarity00", uptied: "0" },
-                        "LCB Sinner Faust": { rarity: "Rarity0", uptied: "0" },
-                    },
-                    EGOs: {
-                        "Representation Emitter": { rarity: "Z", uptied: "0" },
-                        "Hex Nail": { rarity: "T", uptied: "0" },
-                        "9:2": { rarity: "T", uptied: "0" },
-                        "Telepole": { rarity: "H", uptied: "0" },
-                        "Fluid Sac": { rarity: "H", uptied: "0" },
-                    },
-                },
-                DonIDs: {
-                    IDs: {
-                        "Cinq Assoc. South Section 5 Director Don Quixote": { rarity: "Rarity000", uptied: "0" },
-                        "W Corp. L3 Cleanup Agent Don Quixote": { rarity: "Rarity000", uptied: "0" },
-                        "The Middle Little Sister Don Quixote": { rarity: "Rarity000", uptied: "0" },
-                        "Shi Assoc. South Section 5 Director Don Quixote": { rarity: "Rarity00", uptied: "0" },
-                        "Lobotomy E.G.O::Lantern Don Quixote": { rarity: "Rarity00", uptied: "0" },
-                        "N Corp. Mittelhammer Don Quixote": { rarity: "Rarity00", uptied: "0" },
-                        "LCB Sinner Don Quixote": { rarity: "Rarity0", uptied: "0" },
-                    },
-                    EGOs: {
-                        "La Sangre de Sancho": { rarity: "Z", uptied: "0" },
-                        "Lifetime Stew": { rarity: "T", uptied: "0" },
-                        "Fluid Sac": { rarity: "H", uptied: "0" },
-                        "Telepole": { rarity: "H", uptied: "0" },
-                    },
-                },
-                RyoshuIDs: {
-                    IDs: {
-                        "W Corp. L3 Cleanup Agent Ryoshu": { rarity: "Rarity000", uptied: "0" },
-                        "R.B. Chef de Cuisine Ryoshu": { rarity: "Rarity000", uptied: "0" },
-                        "Kurokumo Clan Wakashu Ryoshu": { rarity: "Rarity000", uptied: "0" },
-                        "Seven Assoc. South Section 6 Ryoshu": { rarity: "Rarity00", uptied: "0" },
-                        "LCCB Assistant Manager Ryoshu": { rarity: "Rarity00", uptied: "0" },
-                        "LCB Sinner Ryoshu": { rarity: "Rarity0", uptied: "0" },
-                    },
-                    EGOs: {
-                        "Forest for the Flames": { rarity: "Z", uptied: "0" },
-                        "Soda": { rarity: "ZnotOriginal", uptied: "0" },
-                        "Red Eyes": { rarity: "T", uptied: "0" },
-                        "Blind Obsession": { rarity: "T", uptied: "0" },
-                        "4th Match Flame": { rarity: "H", uptied: "0" },
-                        "Red Eyes (Open)": { rarity: "H", uptied: "0" },
-                    },
-                },
-                MeurIDs: {
-                    IDs: {
-                        "R Corp. 4th Pack Rhino Meursault": { rarity: "Rarity000", uptied: "0" },
-                        "N Corp. GroBHammer Meursault": { rarity: "Rarity000", uptied: "0" },
-                        "W Corp. L2 Cleanup Agent Meursault": { rarity: "Rarity000", uptied: "0" },
-                        "Liu Assoc. South Section 6 Meursault": { rarity: "Rarity00", uptied: "0" },
-                        "The Middle Little Brother Meursault": { rarity: "Rarity00", uptied: "0" },
-                        "Rosespanner Workshop Fixer Meursault": { rarity: "Rarity00", uptied: "0" },
-                        "LCB Sinner Meursault": { rarity: "Rarity0", uptied: "0" },
-                    },
-                    EGOs: {
-                        "Chains of Others": { rarity: "Z", uptied: "0" },
-                        "Screwloose Wallop": { rarity: "T", uptied: "0" },
-                        "Regret": { rarity: "T", uptied: "0" },
-                        "Capote": { rarity: "H", uptied: "0" },
-                        "Pursuance": { rarity: "H", uptied: "0" },
-                    },
-                },
-                HongLuIDs: {
-                    IDs: {
-                        "Ting Tang Gang Gangleader Hong Lu": { rarity: "Rarity000", uptied: "0" },
-                        "K Corp. Class 3 Excision Staff Hong Lu": { rarity: "Rarity000", uptied: "0" },
-                        "Kurokumo Clan Wakashu Hong Lu": { rarity: "Rarity00", uptied: "0" },
-                        "W Corp. L2 Cleanup Agent Hong Lu": { rarity: "Rarity00", uptied: "0" },
-                        "Liu Assoc. South Section 5 Hong Lu": { rarity: "Rarity00", uptied: "0" },
-                        "Hook Office Fixer Hong Lu": { rarity: "Rarity00", uptied: "0" },
-                        "LCB Sinner Hong Lu": { rarity: "Rarity0", uptied: "0" },
-                    },
-                    EGOs: {
-                        "Land of Illusion": { rarity: "Z", uptied: "0" },
-                        "Roseate Desire": { rarity: "T", uptied: "0" },
-                        "Soda": { rarity: "T", uptied: "0" },
-                        "Dimension Shredder": { rarity: "H", uptied: "0" },
-                        "Effervescent Corrosion": { rarity: "H", uptied: "0" },
-                    },
-                },
-                HeathIDs: {
-                    IDs: {
-                        "R Corp. 4th Pack Rabbit Heathcliff": { rarity: "Rarity000", uptied: "0" },
-                        "The Pequod Harpooneer Heathcliff": { rarity: "Rarity000", uptied: "0" },
-                        "Lobotomy E.G.O::Sunshower Heathcliff": { rarity: "Rarity000", uptied: "0" },
-                        "Shi Assoc. South Section 5 Heathcliff": { rarity: "Rarity00", uptied: "0" },
-                        "Seven Assoc. South Section 4 Heathcliff": { rarity: "Rarity00", uptied: "0" },
-                        "N Corp. Kleinhammer Heathcliff": { rarity: "Rarity00", uptied: "0" },
-                        "LCB Sinner Heathcliff": { rarity: "Rarity0", uptied: "0" },
-                    },
-                    EGOs: {
-                        "Bodysack": { rarity: "Z", uptied: "0" },
-                        "Holiday": { rarity: "ZnotOriginal", uptied: "0" },
-                        "AEDD": { rarity: "T", uptied: "0" },
-                        "Ya Sunyata Tad Rupam": { rarity: "H", uptied: "0" },
-                        "Telepole": { rarity: "H", uptied: "0" },
-                    },
-                },
-                IshIDs: {
-                    IDs: {
-                        "Molar Boatworks Fixer Ishmael": { rarity: "Rarity000", uptied: "0" },
-                        "R Corp. 4th Pack Reindeer Ishmael": { rarity: "Rarity000", uptied: "0" },
-                        "Liu Assoc. South Section 4 Ishmael": { rarity: "Rarity000", uptied: "0" },
-                        "Lobotomy E.G.O::Sloshing Ishmael": { rarity: "Rarity00", uptied: "0" },
-                        "Shi Assoc. South Section 5 Ishmael": { rarity: "Rarity00", uptied: "0" },
-                        "LCCB Assistant Manager Ishmael": { rarity: "Rarity00", uptied: "0" },
-                        "LCB Sinner Ishmael": { rarity: "Rarity0", uptied: "0" },
-                    },
-                    EGOs: {
-                        "Snagharpoon": { rarity: "Z", uptied: "0" },
-                        "Roseate Desire": { rarity: "T", uptied: "0" },
-                        "Capote": { rarity: "T", uptied: "0" },
-                        "Ardor Blossom Star": { rarity: "H", uptied: "0" },
-                        "Blind Obsession": { rarity: "W", uptied: "0" },
-                    },
-                },
-                RodionIDs: {
-                    IDs: {
-                        "Kurokumo Clan Wakashu Rodion": { rarity: "Rarity000", uptied: "0" },
-                        "Rosespanner Workshop Rep Rodion": { rarity: "Rarity000", uptied: "0" },
-                        "Dieci Assoc. South Section 4 Rodion": { rarity: "Rarity000", uptied: "0" },
-                        "LCCB Assistant Manager Rodion": { rarity: "Rarity00", uptied: "0" },
-                        "Zwei Assoc. South Section 5 Rodion": { rarity: "Rarity00", uptied: "0" },
-                        "N Corp. Mittelhammer Rodion": { rarity: "Rarity00", uptied: "0" },
-                        "LCB Sinner Rodion": { rarity: "Rarity0", uptied: "0" },
-                    },
-                    EGOs: {
-                        "What is Cast": { rarity: "Z", uptied: "0" },
-                        "Rime Shank": { rarity: "T", uptied: "0" },
-                        "Effervescent Corrosion": { rarity: "T", uptied: "0" },
-                        "4th Match Flame": { rarity: "H", uptied: "0" },
-                        "Pursuance": { rarity: "H", uptied: "0" },
-                    },
-                },
-                SinclairIDs: {
-                    IDs: {
-                        "Blade Lineage Salsu Sinclair": { rarity: "Rarity000", uptied: "0" },
-                        "Cinq Association South Section 4 Director Sinclair": { rarity: "Rarity000", uptied: "0" },
-                        "The One Who Shall Grip Sinclair": { rarity: "Rarity000", uptied: "0" },
-                        "Zwei Assoc. South Section 6 Sinclair": { rarity: "Rarity00", uptied: "0" },
-                        "Los Mariachis Jefe Sinclair": { rarity: "Rarity00", uptied: "0" },
-                        "Lobotomy E.G.O::Red Sheet Sinclair": { rarity: "Rarity00", uptied: "0" },
-                        "Molar Boatworks Fixer Sinclair": { rarity: "Rarity00", uptied: "0" },
-                        "LCB Sinner Sinclair": { rarity: "Rarity0", uptied: "0" },
-                    },
-                    EGOs: {
-                        "Branch of Knowledge": { rarity: "Z", uptied: "0" },
-                        "Impending Day": { rarity: "T", uptied: "0" },
-                        "Lifetime Stew": { rarity: "T", uptied: "0" },
-                        "Lantern": { rarity: "H", uptied: "0" },
-                        "9:2": { rarity: "H", uptied: "0" },
-                    },
-                },
-                OutisIDs: {
-                    IDs: {
-                        "Seven Assoc. South Section 6 Director Outis": { rarity: "Rarity000", uptied: "0" },
-                        "Lobotomy E.G.O::Magic Bullet Outis": { rarity: "Rarity000", uptied: "0" },
-                        "Molar Office Fixer Outis": { rarity: "Rarity000", uptied: "0" },
-                        "G Corp. Head Manager Outis": { rarity: "Rarity00", uptied: "0" },
-                        "Blade Lineage Cutthroat Outis": { rarity: "Rarity00", uptied: "0" },
-                        "Cinq Association South Section 4 Outis": { rarity: "Rarity00", uptied: "0" },
-                        "LCB Sinner Outis": { rarity: "Rarity0", uptied: "0" },
-                    },
-                    EGOs: {
-                        "To pathos Mathos": { rarity: "Z", uptied: "0" },
-                        "Sunshower": { rarity: "T", uptied: "0" },
-                        "Ya Sunyata Tad Rupam": { rarity: "T", uptied: "0" },
-                        "Ebony Stem": { rarity: "H", uptied: "0" },
-                        "Holiday": { rarity: "H", uptied: "0" },
-                    },
-                },
-                GregorIDs: {
-                    IDs: {
-                        "G Corp. Manager Corporal Gregor": { rarity: "Rarity000", uptied: "0" },
-                        "Twinhook Pirates First Mate Gregor": { rarity: "Rarity000", uptied: "0" },
-                        "Zwei Assoc. South Section 4 Gregor": { rarity: "Rarity000", uptied: "0" },
-                        "Rosespanner Workshop Fixer Gregor": { rarity: "Rarity00", uptied: "0" },
-                        "Liu Assoc. South Section 6 Gregor": { rarity: "Rarity00", uptied: "0" },
-                        "R.B. Sous-chef Gregor": { rarity: "Rarity00", uptied: "0" },
-                        "LCB Sinner Gregor": { rarity: "Rarity0", uptied: "0" },
-                    },
-                    EGOs: {
-                        "Suddenly,One Day": { rarity: "Z", uptied: "0" },
-                        "Legerdemain": { rarity: "ZnotOriginal", uptied: "0" },
-                        "AEDD": { rarity: "T", uptied: "0" },
-                        "Lantern": { rarity: "H", uptied: "0" },
-                    },
-                },
-            }
-        }
-    },
-    computed: {
+        return statusdata.data();
     },
     methods: {
-        //for debugging
-        testing() {
-            console.log(this.$data);
-        },
         ID_to_name(itemID) {
             var CorrName;
             switch (itemID) {
@@ -330,6 +113,7 @@ export default {
             }
             return CorrName;
         },
+        //for testing
         testinglog(item) {
             console.log(item);
         },
@@ -480,69 +264,7 @@ export default {
 </script>
 
 <style>
-select {
-    appearance: none;
-    /* safari */
-    -webkit-appearance: none;
-    /* other styles for aesthetics */
-    width: auto;
-    min-width: 15vw;
-    font-size: 1rem;
-    padding: 0.675em 1em 0.675em 1em;
-    background-color: #fff;
-    border: 1px solid #caced1;
-    border-radius: 0.25rem;
-    color: black;
-    cursor: pointer;
-}
-
-/* CSS */
-.button-6 {
-    align-items: center;
-    background-color: #fff;
-    border: 1px solid rgba(255, 59, 59, 0.1);
-    border-radius: .25rem;
-    box-shadow: rgba(0, 0, 0, 0.02) 0 1px 3px 0;
-    box-sizing: border-box;
-    color: rgba(0, 0, 0, 0.85);
-    cursor: pointer;
-    display: inline-flex;
-    font-family: system-ui, -apple-system, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-size: 15px;
-    font-weight: 500;
-    justify-content: center;
-    line-height: 1.25;
-    margin: 0;
-    min-height: 3rem;
-    padding: calc(.775rem - 1px) calc(1.2rem - 1px);
-    position: relative;
-    text-decoration: none;
-    transition: all 250ms;
-    user-select: none;
-    -webkit-user-select: none;
-    touch-action: manipulation;
-    vertical-align: baseline;
-    width: auto;
-}
-
-.button-6:hover,
-.button-6:focus {
-    border-color: rgba(0, 0, 0, 0.15);
-    box-shadow: rgba(0, 0, 0, 0.1) 0 4px 12px;
-    color: rgba(0, 0, 0, 0.65);
-}
-
-.button-6:hover {
-    transform: translateY(-1px);
-}
-
-.button-6:active {
-    background-color: #F0F0F1;
-    border-color: rgba(0, 0, 0, 0.15);
-    box-shadow: rgba(0, 0, 0, 0.06) 0 2px 4px;
-    color: rgba(0, 0, 0, 0.65);
-    transform: translateY(0);
-}
+@import '../components/format.css';
 </style>
   
 

@@ -1,10 +1,10 @@
 <template>
-    <div style="min-height: 100vh;" class="content">
+    <div class="content">
         <div style="position: relative;">
             <div class="box box1">
-                <h1 style="font-size: 40px;padding-top: 20px;color: #ffffff;">{{ $t(`UptieCalculator`) }}</h1>
+                <h1 class="subtitle">{{ $t(`UptieCalculator`) }}</h1>
                 &nbsp;
-                <h2 style="border-bottom: 3px solid rgb(172, 172, 172);"></h2>
+                <h2 class="separator"></h2>
                 &nbsp;
                 <h3 class="box1h3text" style="color:#c2bfbf;margin:10px">{{ $t(`UptieCalculatorSection2`) }}</h3>
                 <div style="text-align: right;padding-right:10px">
@@ -30,7 +30,7 @@
                         $t(`Reset`)
                     }}</button>
                 </div> -->
-                <h2 style="border-bottom: 3px solid rgb(172, 172, 172);"></h2>
+                <h2 class="separator"></h2>
                 &nbsp;
                 <h3 class="box1h3text" style="text-align:left;">{{ $t(`You need`) }}:</h3>
 
@@ -89,6 +89,7 @@
 </template>
 
 <script>
+import uptiethreadamount from '../components/uptiedata.js';
 
 export default {
     name: 'UptieCalculator',
@@ -110,58 +111,7 @@ export default {
                 GregorIDs: 0,
             },
 
-            uptiethreadamount: {
-                sparkingshardamount: {
-                    "EGO": 400,
-                    "Rarity000": 400,
-                    "Rarity00": 150,
-                    "Rarity0": 0,
-                },
-                IDamount: {
-                    "Rarity000": {
-                        "from1to2": { thread: 20, shard: 0 },
-                        "from2to3": { thread: 80, shard: 0 },
-                        "from3to4": { thread: 150, shard: 50 },
-                    },
-                    "Rarity00": {
-                        "from1to2": { thread: 10, shard: 0 },
-                        "from2to3": { thread: 40, shard: 0 },
-                        "from3to4": { thread: 100, shard: 30 },
-                    },
-                    "Rarity0": {
-                        "from1to2": { thread: 0, shard: 0 },
-                        "from2to3": { thread: 0, shard: 0 },
-                        "from3to4": { thread: 50, shard: 20 },
-                    },
-                },
-                EGOamount: {
-                    "Z": {
-                        "from1to2": { thread: 0, shard: 0 },
-                        "from2to3": { thread: 0, shard: 0 },
-                        "from3to4": { thread: 110, shard: 80 },
-                    },
-                    "ZnotOriginal": {
-                        "from1to2": { thread: 20, shard: 0 },
-                        "from2to3": { thread: 60, shard: 0 },
-                        "from3to4": { thread: 110, shard: 80 },
-                    },
-                    "T": {
-                        "from1to2": { thread: 25, shard: 0 },
-                        "from2to3": { thread: 70, shard: 0 },
-                        "from3to4": { thread: 130, shard: 90 },
-                    },
-                    "H": {
-                        "from1to2": { thread: 30, shard: 0 },
-                        "from2to3": { thread: 80, shard: 0 },
-                        "from3to4": { thread: 150, shard: 100 },
-                    },
-                    "W": {
-                        "from1to2": { thread: 35, shard: 0 },
-                        "from2to3": { thread: 90, shard: 0 },
-                        "from3to4": { thread: 170, shard: 150 },
-                    }
-                }
-            },
+            uptiethreadamount: uptiethreadamount.data().uptiethreadamount,
         }
     },
     computed: {
@@ -245,7 +195,5 @@ export default {
 </script>
 
 <style>
-.shardimg {
-    width: min(50px, 8vw);
-}
+@import '../components/format.css';
 </style>

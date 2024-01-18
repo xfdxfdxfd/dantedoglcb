@@ -1,10 +1,10 @@
 <template>
-    <div style="min-height: 100vh;" class="content">
+    <div class="content">
         <div style="position: relative">
             <div class="box box1">
-                <h1 style="font-size: 40px;padding-top: 20px;color: #ffffff;">{{ $t(`Changelog`) }}</h1>
+                <h1 class="subtitle">{{ $t(`Changelog`) }}</h1>
                 &nbsp;
-                <h2 style="border-bottom: 3px solid rgb(172, 172, 172);"></h2>
+                <h2 class="separator"></h2>
                 &nbsp;
                 <h3 class="box1h2text" style="text-align: left;">10-01-2024</h3>
                 <h3 class="box1h3text" style="text-align: left;color:#c2bfbf">{{ $t(`Changelog10-01-2024`) }}
@@ -49,3 +49,7 @@
         </div>
     </div>
 </template>
+
+<style>
+@import '../components/format.css';
+</style>
