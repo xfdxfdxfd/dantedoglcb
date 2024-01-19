@@ -65,11 +65,11 @@ export default {
     }
 
     //calc the reposition of the content
-    document.getElementById("appContent").style.paddingTop = document.getElementById("navbar2").clientHeight - 20 + "px";
+    document.getElementById("appContent").style.paddingTop = document.getElementById("navbar2").offsetHeight - 20 + "px";
     window.onresize = () => {
-      let height = document.getElementById("navbar2").clientHeight;
+      let height = document.getElementById("navbar2").offsetHeight;
       console.log(height);
-      document.getElementById("appContent").style.paddingTop = height - 10 + "px";
+      document.getElementById("appContent").style.paddingTop = height - 20 + "px";
     };
   },
 }

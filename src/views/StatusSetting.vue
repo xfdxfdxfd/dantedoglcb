@@ -246,9 +246,6 @@ export default {
         // console.log(this.$data);
     },
     mounted() {
-        //calc the reposition of the content
-        document.getElementById("appContent").style.paddingTop = document.getElementById("navbar2").clientHeight - 20 + "px";
-
         //call restoreprogress funct when DOMContentLoaded
         document.addEventListener('DOMContentLoaded', this.restoreprogress);
 

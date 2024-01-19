@@ -50,6 +50,19 @@
     </div>
 </template>
 
+<script>
+export default {
+    name: 'Changelog',
+    computed: {
+    },
+    methods: {
+    },
+    mounted() {
+    }
+}
+</script>
+
+
 <style>
 @import '../components/format.css';
 </style>

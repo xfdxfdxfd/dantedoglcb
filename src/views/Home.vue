@@ -39,9 +39,7 @@ export default {
     },
     methods: {
     },
-    components: {
-    },
-    watch: {
+    mounted() {
     }
 }
 </script>
