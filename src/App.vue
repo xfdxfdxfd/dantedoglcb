@@ -68,7 +68,7 @@ export default {
     document.getElementById("appContent").style.paddingTop = document.getElementById("navbar2").offsetHeight - 20 + "px";
     window.onresize = () => {
       let height = document.getElementById("navbar2").offsetHeight;
-      console.log(height);
+      // console.log(height);
       document.getElementById("appContent").style.paddingTop = height - 20 + "px";
     };
   },
