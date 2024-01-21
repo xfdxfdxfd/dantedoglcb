@@ -7,29 +7,29 @@
                 <h2 class="separator"></h2>
                 &nbsp;
                 <h3 class="box1h3text" style="color:#c2bfbf;margin:10px">{{ $t(`UptieCalculatorSection2`) }}</h3>
-                <div style="text-align: right;padding-right:10px">
-                    <button class="button-6" role="button" style="background-color:rgb(255, 220, 161)"
-                        @click="updateuptiemode('uptie3'), calculate('uptie3')">{{ $t(`All Uptie 3`)
-                        }}</button>
-                    <button class="button-6" role="button" style="background-color:rgb(255, 220, 161)"
-                        @click="updateuptiemode('uptie4'), calculate('uptie4')">{{ $t(`All Uptie 4`)
-                        }}</button>
-                    <!-- <button class="button-6" role="button" @click="updateuptiemode('uptie5')">{{ $t(`All Uptie 5`)
-                    }}</button> -->
-                    <button class="button-6" role="button"
-                        @click="updateuptiemode('uptie3only'), calculate('uptie3only')">{{
-                            $t(`All Uptie 3-2`)
-                        }}</button>
-                    <button class="button-6" role="button"
-                        @click="updateuptiemode('uptie4only'), calculate('uptie4only')">{{ $t(`All Uptie 4-2`)
-                        }}</button>
-                    <!-- <button class="button-6" role="button" @click="updateuptiemode('uptie5only')">{{ $t(`All Uptie 5-2`)}}</button> -->
+                <div style="text-align: right;">
+                    <div style="display:inline-flex;flex-flow:row wrap;justify-content: flex-end">
+                        <div style="padding-right:10px">
+                            <button class="button-6" role="button" style="background-color:rgb(255, 220, 161)"
+                                @click="updateuptiemode('uptie3'), calculate('uptie3')">{{ $t(`All Uptie 3`)
+                                }}</button>
+                            <button class="button-6" role="button" style="background-color:rgb(255, 220, 161)"
+                                @click="updateuptiemode('uptie4'), calculate('uptie4')">{{ $t(`All Uptie 4`)
+                                }}</button>
+                            <!-- <button class="button-6" role="button" @click="updateuptiemode('uptie5')">{{ $t(`All Uptie 5`)}}</button> -->
+                        </div>
+                        <div style="padding-right:10px">
+                            <button class="button-6" role="button"
+                                @click="updateuptiemode('uptie3only'), calculate('uptie3only')">{{
+                                    $t(`All Uptie 3-2`)
+                                }}</button>
+                            <button class="button-6" role="button"
+                                @click="updateuptiemode('uptie4only'), calculate('uptie4only')">{{ $t(`All Uptie 4-2`)
+                                }}</button>
+                            <!-- <button class="button-6" role="button" @click="updateuptiemode('uptie5only')">{{ $t(`All Uptie 5-2`)}}</button> -->
+                        </div>
+                    </div>
                 </div>
-                <!-- <div style="text-align: right;padding-right:10px">
-                    <button class="button-6" role="button" style="background-color:rgb(211, 55, 16);color:#fff">{{
-                        $t(`Reset`)
-                    }}</button>
-                </div> -->
                 <h2 class="separator"></h2>
                 &nbsp;
                 <h3 class="box1h3text" style="text-align:left;">{{ $t(`You need`) }}:</h3>
