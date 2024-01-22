@@ -110,6 +110,7 @@ select {
 
 .shardimg {
     width: min(50px, 8vw);
+    padding-left: 4vw;
 }
 
 #app {

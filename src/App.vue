@@ -26,6 +26,8 @@
           $t(`StatusSetting`) }}</router-link>
         <router-link :class="this.$route.path == '/LCB/UptieCalculator' ? 'active' : ''"
           :to="{ name: 'UptieCalculator' }">{{ $t(`UptieCalculator`) }}</router-link>
+        <router-link :class="this.$route.path == '/LCB/ExpCalculator' ? 'active' : ''" :to="{ name: 'ExpCalculator' }">{{
+          $t(`ExpCalculator`) }}</router-link>
       </div>
     </div>
   </div>

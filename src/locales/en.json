@@ -15,6 +15,7 @@
     "StatusSetting":"Update Settings",
     "statusSettingHomepage":"Set the status of your IDs and EGOs to update the information in all tools.",
     "statusSettingToolPage":"Select the uptie level of your IDs and EGOs\nClick \"Import Setting\" to import txt file of your setting\nClick \"Export Setting\" to download txt file of your setting\nClick \"Reset\" to clear the setting",
+    "ExpCalculator":"EXP Calculator",
 
     "Changelog19-11-2023":"Finish the basic functions of the website (Home, Changelog, UptieCalculator, StatusSetting)",
     "Changelog21-11-2023":"Add the 2 new IDs without changing the stored data in users' browser",

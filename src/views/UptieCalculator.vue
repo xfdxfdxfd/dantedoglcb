@@ -42,46 +42,67 @@
                         }}&nbsp;
                     </div>
                     &nbsp;
-                    <div>
-                        <img class="shardimg" alt="YiSangShard" src="../../src/assets/icon_piece-501YiSang.webp">:{{
-                            CalResult.YiSangIDs
-                        }}&nbsp;
-                        <img class="shardimg" alt="FaustShard" src="../../src/assets/icon_piece-502Faust.webp">:{{
-                            CalResult.FaustIDs
-                        }}&nbsp;
-                        <img class="shardimg" alt="DonShard" src="../../src/assets/icon_piece-503DonQuixote.webp">:{{
-                            CalResult.DonIDs
-                        }}&nbsp;
-                        <img class="shardimg" alt="RyoshuShard" src="../../src/assets/icon_piece-504Ryoshu.webp">:{{
-                            CalResult.RyoshuIDs
-                        }}&nbsp;
-                        <img class="shardimg" alt="MeurShard" src="../../src/assets/icon_piece-505Meursault.webp">:{{
-                            CalResult.MeurIDs
-                        }}&nbsp;
-                        <img class="shardimg" alt="HongLuShard" src="../../src/assets/icon_piece-506HongLu.webp">:{{
-                            CalResult.HongLuIDs
-                        }}&nbsp;
+                    <div style="display:flex;flex-flow:row wrap;padding-left:5vw">
+                        <div>
+                            <img class="shardimg" alt="YiSangShard" src="../../src/assets/icon_piece-501YiSang.webp">:{{
+                                CalResult.YiSangIDs
+                            }}
+                        </div>
+                        <div>
+                            <img class="shardimg" alt="FaustShard" src="../../src/assets/icon_piece-502Faust.webp">:{{
+                                CalResult.FaustIDs
+                            }}
+                        </div>
+                        <div>
+                            <img class="shardimg" alt="DonShard" src="../../src/assets/icon_piece-503DonQuixote.webp">:{{
+                                CalResult.DonIDs
+                            }}
+                        </div>
+                        <div>
+                            <img class="shardimg" alt="RyoshuShard" src="../../src/assets/icon_piece-504Ryoshu.webp">:{{
+                                CalResult.RyoshuIDs
+                            }}
+                        </div>
+                        <div>
+                            <img class="shardimg" alt="MeurShard" src="../../src/assets/icon_piece-505Meursault.webp">:{{
+                                CalResult.MeurIDs
+                            }}
+                        </div>
+                        <div>
+                            <img class="shardimg" alt="HongLuShard" src="../../src/assets/icon_piece-506HongLu.webp">:{{
+                                CalResult.HongLuIDs
+                            }}
+                        </div>
+                        <div>
+                            <img class="shardimg" alt="HeathShard" src="../../src/assets/icon_piece-507Heathcliff.webp">:{{
+                                CalResult.HeathIDs
+                            }}
+                        </div>
+                        <div>
+                            <img class="shardimg" alt="IshShard" src="../../src/assets/icon_piece-508Ishmael.webp">:{{
+                                CalResult.IshIDs
+                            }}
+                        </div>
+                        <div>
+                            <img class="shardimg" alt="RodionShard" src="../../src/assets/icon_piece-509Rodion.webp">:{{
+                                CalResult.RodionIDs
+                            }}
+                        </div>
+                        <div>
+                            <img class="shardimg" alt="SinclairShard"
+                                src="../../src/assets/icon_piece-510EmilSinclair.webp">:{{ CalResult.SinclairIDs }}
+                        </div>
+                        <div>
+                            <img class="shardimg" alt="OutisShard" src="../../src/assets/icon_piece-511Outis.webp">:{{
+                                CalResult.OutisIDs
+                            }}
+                        </div>
+                        <div>
+                            <img class="shardimg" alt="GregorShard" src="../../src/assets/icon_piece-512Gregor.webp">:{{
+                                CalResult.GregorIDs
+                            }}
+                        </div>
                     </div>
-                    <div>
-                        <img class="shardimg" alt="HeathShard" src="../../src/assets/icon_piece-507Heathcliff.webp">:{{
-                            CalResult.HeathIDs
-                        }}&nbsp;
-                        <img class="shardimg" alt="IshShard" src="../../src/assets/icon_piece-508Ishmael.webp">:{{
-                            CalResult.IshIDs
-                        }}&nbsp;
-                        <img class="shardimg" alt="RodionShard" src="../../src/assets/icon_piece-509Rodion.webp">:{{
-                            CalResult.RodionIDs
-                        }}&nbsp;
-                        <img class="shardimg" alt="SinclairShard" src="../../src/assets/icon_piece-510EmilSinclair.webp">:{{
-                            CalResult.SinclairIDs }}&nbsp;
-                        <img class="shardimg" alt="OutisShard" src="../../src/assets/icon_piece-511Outis.webp">:{{
-                            CalResult.OutisIDs
-                        }}&nbsp;
-                        <img class="shardimg" alt="GregorShard" src="../../src/assets/icon_piece-512Gregor.webp">:{{
-                            CalResult.GregorIDs
-                        }}&nbsp;
-                    </div>
-                    &nbsp;
                 </h2>
             </div>
         </div>
