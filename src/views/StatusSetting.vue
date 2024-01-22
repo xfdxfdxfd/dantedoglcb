@@ -6,7 +6,7 @@
                 &nbsp;
                 <h2 class="separator"></h2>
                 &nbsp;
-                <h3 class="box1h3text" style="color:#c2bfbf;margin:10px">{{ $t(`StatusSettingSection2`) }}</h3>
+                <h3 class="box1h3text" style="color:#c2bfbf;margin:10px">{{ $t(`statusSettingToolPage`) }}</h3>
                 <div style="text-align: right;padding-right:10px">
                     <input type="file" id="fileInput" style="visibility:hidden;width: 10px" @change="loadFileUpload()">
                     <button class="button-6" role="button" @click="openFileUpload()">{{ $t(`Import Setting`) }}</button>

@@ -3,7 +3,7 @@
         <div>
             <div class="box box1">
                 <h1 class="subtitle">{{ $t(`Welcome`) }}</h1>
-                <h2 style="color: #c2bfbf;">{{ $t(`WelcomeText`) }}</h2>
+                <h2 style="color: #c2bfbf;font-size:1.25rem">{{ $t(`WelcomeText`) }}</h2>
                 &nbsp;
                 <h2 class="separator"></h2>
                 &nbsp;
@@ -11,10 +11,10 @@
                 <h3 class="box1h3text" style="color:#c2bfbf">{{ $t(`WelcomeParagraph`) }}</h3>
                 &nbsp;
                 <h2 class="box1h2text">1. {{ $t(`StatusSetting`) }}</h2>
-                <h3 class="box1h3text" style="color:#c2bfbf">{{ $t(`StatusSettingSection`) }}</h3>
+                <h3 class="box1h3text" style="color:#c2bfbf">{{ $t(`statusSettingHomepage`) }}</h3>
                 &nbsp;
                 <h2 class="box1h2text">2. {{ $t(`UptieCalculator`) }}</h2>
-                <h3 class="box1h3text" style="color:#c2bfbf">{{ $t(`UptieCalculatorSection1`) }}</h3>
+                <h3 class="box1h3text" style="color:#c2bfbf">{{ $t(`uptieCalculatorHomepage`) }}</h3>
                 &nbsp;
                 <h2 class="box1h2text">{{ $t(`ContactTitle`) }}</h2>
                 <h3 class="box1h3text" style="margin-bottom: 10px;color:#c2bfbf;">{{ $t(`ContactParagraph`) }}</h3>

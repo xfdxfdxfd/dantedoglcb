@@ -6,7 +6,7 @@
                 &nbsp;
                 <h2 class="separator"></h2>
                 &nbsp;
-                <h3 class="box1h3text" style="color:#c2bfbf;margin:10px">{{ $t(`UptieCalculatorSection2`) }}</h3>
+                <h3 class="box1h3text" style="color:#c2bfbf;margin:10px">{{ $t(`uptieCalculatorToolPage`) }}</h3>
                 <div style="text-align: right;">
                     <div style="display:inline-flex;flex-flow:row wrap;justify-content: flex-end">
                         <div style="padding-right:10px">
