@@ -16,6 +16,10 @@
     "statusSettingHomepage":"設定人格和EGO的階級，資料會同步到所有工具上",
     "statusSettingToolPage":"設定人格和EGO的階級\n點\"導入設定\"來導入存有設定的txt\n點\"導出設定\"來下載存有設定的txt\n點\"重設\"清除所有選項",
     "ExpCalculator":"升等計算器",
+    "All40":"全升上40",
+    "All35":"全升上35",
+    "uptie":"階級",
+    "level":"等級",
 
     "Changelog19-11-2023":"完成網站的基本功能(首頁，日誌，升階計算器，更新設定)",
     "Changelog21-11-2023":"在不影響使用者原有紀錄下新增中唐和中鎖人格",
@@ -31,6 +35,7 @@
     "Effloresced E.G.O::Spicebush YiSang":"花箱",
     "Blade Lineage Salsu YiSang":"劍箱",
     "W Corp. L3 Cleanup Agent YiSang":"W箱",
+    "Dieci South Section 4 Yi Sang":"十箱",
     "The Pequod First Mate Yi Sang":"星巴箱",
     "Seven Assoc. South Section 6 YiSang":"七箱",
     "Molar Office Fixer YiSang":"臼箱",
@@ -69,6 +74,7 @@
 
     "Ting Tang Gang Gangleader Hong Lu":"叮噹鴻",
     "K Corp. Class 3 Excision Staff Hong Lu":"K鴻",
+    "Dieci South Section 4 Hong Lu":"十鴻",
     "Kurokumo Clan Wakashu Hong Lu":"黑雲鴻",
     "W Corp. L2 Cleanup Agent Hong Lu":"W鴻",
     "Liu Assoc. South Section 5 Hong Lu":"六鴻",

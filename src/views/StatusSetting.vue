@@ -23,6 +23,10 @@
                             {{ id.rarity.replace('Rarity', '') }}&nbsp;{{ $t(index) }}
                             &nbsp;
                             <div>
+                                <div class="labelForInput">{{ $t(`uptie`) }}</div>
+                                <div class="labelForInput">{{ $t(`level`) }}</div>
+                            </div>
+                            <div>
                                 <select :id='ID_index + index' :v-model="ID_id.IDs"
                                     @change="id.uptied = getitemselected(ID_index + index), updateIDdata()">
                                     <option value=0>{{ $t(`Don't have`) }}</option>
@@ -31,6 +35,7 @@
                                     <option value=3>{{ $t(`Uptie`) }}3</option>
                                     <option value=4>{{ $t(`Uptie`) }}4</option>
                                 </select>
+                                <input type="text" :id='ID_index + index + "level"' style="width:10vw">
                             </div>
                             &nbsp;
                         </div>
@@ -40,6 +45,9 @@
                         <div class="optionText" v-for="(id, index) in ID_id.EGOs" :key="index">
                             {{ id.rarity.replace('notOriginal', '') }}&nbsp;{{ $t(index) }}
                             &nbsp;
+                            <div>
+                                <div class="labelForInput">{{ $t(`uptie`) }}</div>
+                            </div>
                             <div>
                                 <select :id='ID_index + index' :v-model="ID_id.EGOs"
                                     @change="id.uptied = getitemselected(ID_index + index), updateIDdata()">
@@ -191,6 +199,12 @@ export default {
                             restoredata[key1].IDs[key2].rarity = this.All_IDs[key1].IDs[key2].rarity;
                             localStorage.setItem('IDdata', JSON.stringify(restoredata));
                         }
+                        //if no level, add it
+                        if (restoredata[key1].IDs[key2].level == undefined) {
+                            console.log(key1 + " IDs " + key2);
+                            restoredata[key1].IDs[key2].level = this.All_IDs[key1].IDs[key2].level;
+                            localStorage.setItem('IDdata', JSON.stringify(restoredata));
+                        }
                     }
                     for (const [key3, value2] of Object.entries(this.All_IDs[key1].EGOs)) {
                         //if something not in the restoredata, add it
@@ -203,6 +217,12 @@ export default {
                         if (restoredata[key1].EGOs[key3].rarity != this.All_IDs[key1].EGOs[key3].rarity) {
                             console.log(key1 + " EGOs " + key3);
                             restoredata[key1].EGOs[key3].rarity = this.All_IDs[key1].EGOs[key3].rarity;
+                            localStorage.setItem('IDdata', JSON.stringify(restoredata));
+                        }
+                        //if no level, add it
+                        if (restoredata[key1].EGOs[key3].level == undefined) {
+                            console.log(key1 + " EGOs " + key3);
+                            restoredata[key1].EGOs[key3].level = this.All_IDs[key1].EGOs[key3].level;
                             localStorage.setItem('IDdata', JSON.stringify(restoredata));
                         }
                     }

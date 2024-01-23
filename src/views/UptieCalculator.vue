@@ -201,6 +201,8 @@ export default {
             //set the value according to the mode
             if (restore_data) {
                 this.calculate_case(restore_data, mode);
+            } else {
+                alert("Please import your data first!")
             }
         },
 

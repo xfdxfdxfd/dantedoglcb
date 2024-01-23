@@ -16,6 +16,10 @@
     "statusSettingHomepage":"Set the status of your IDs and EGOs to update the information in all tools.",
     "statusSettingToolPage":"Select the uptie level of your IDs and EGOs\nClick \"Import Setting\" to import txt file of your setting\nClick \"Export Setting\" to download txt file of your setting\nClick \"Reset\" to clear the setting",
     "ExpCalculator":"EXP Calculator",
+    "All40":"All level up to 40",
+    "All35":"All level up to 35",
+    "uptie":"Uptie",
+    "level":"Level",
 
     "Changelog19-11-2023":"Finish the basic functions of the website (Home, Changelog, UptieCalculator, StatusSetting)",
     "Changelog21-11-2023":"Add the 2 new IDs without changing the stored data in users' browser",
@@ -31,6 +35,7 @@
     "Effloresced E.G.O::Spicebush YiSang":"Effloresced E.G.O::Spicebush YiSang",
     "Blade Lineage Salsu YiSang":"Blade Lineage Salsu YiSang",
     "W Corp. L3 Cleanup Agent YiSang":"W Corp. L3 Cleanup Agent YiSang",
+    "Dieci South Section 4 Yi Sang":"Dieci South Section 4 Yi Sang",
     "Seven Assoc. South Section 6 YiSang":"Seven Assoc. South Section 6 YiSang",
     "Molar Office Fixer YiSang":"Molar Office Fixer YiSang",
     "The Pequod First Mate Yi Sang":"The Pequod First Mate Yi Sang",
@@ -69,6 +74,7 @@
 
     "Ting Tang Gang Gangleader Hong Lu":"Ting Tang Gang Gangleader Hong Lu",
     "K Corp. Class 3 Excision Staff Hong Lu":"K Corp. Class 3 Excision Staff Hong Lu",
+    "Dieci South Section 4 Hong Lu":"Dieci South Section 4 Hong Lu",
     "Kurokumo Clan Wakashu Hong Lu":"Kurokumo Clan Wakashu Hong Lu",
     "W Corp. L2 Cleanup Agent Hong Lu":"W Corp. L2 Cleanup Agent Hong Lu",
     "Liu Assoc. South Section 5 Hong Lu":"Liu Assoc. South Section 5 Hong Lu",
