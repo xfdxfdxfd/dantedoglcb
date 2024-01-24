@@ -113,11 +113,13 @@ export default {
             var IDI = parseInt((parseInt(this.calExpResult) % 200) / 50);
             parseInt((parseInt(this.calExpResult) % 50)) > 0 ? IDI += 1 : IDI;
             this.TicketI = IDI;
-            console.log(this.TicketIV, this.TicketIII, this.TicketII, this.TicketI);
+            // console.log(this.TicketIV, this.TicketIII, this.TicketII, this.TicketI);
 
         }
     }
 }
 </script>
 
-<style>@import '../components/format.css';</style>
+<style>
+@import '../components/format.css';
+</style>

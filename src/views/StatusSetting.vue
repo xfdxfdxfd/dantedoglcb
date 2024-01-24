@@ -123,7 +123,7 @@ export default {
         },
         //for testing
         testinglog(item) {
-            console.log(item);
+            //console.log(item);
         },
         //update the data to local storage
         updateIDdata() {
@@ -184,26 +184,26 @@ export default {
                 for (const [key1, value1] of Object.entries(this.All_IDs)) {
                     //key = YiSangIDs...  value1 = IDs, EGOs
                     if (!restoredata[key1]) {
-                        console.log(key1);
+                        // console.log(key1);
                     }
                     for (const [key2, value2] of Object.entries(this.All_IDs[key1].IDs)) {
                         //key2 = Effloresced E.G.O::Spicebush YiSang...  value2 = rarity, uptied
 
                         //if something not in the restoredata, add it
                         if (!restoredata[key1].IDs[key2]) {
-                            console.log(key1 + " IDs " + key2);
+                            // console.log(key1 + " IDs " + key2);
                             restoredata[key1].IDs[key2] = this.All_IDs[key1].IDs[key2];
                             localStorage.setItem('IDdata', JSON.stringify(restoredata));
                         }
                         //if the rarity is different, update it
                         if (restoredata[key1].IDs[key2].rarity != this.All_IDs[key1].IDs[key2].rarity) {
-                            console.log(key1 + " IDs " + key2);
+                            // console.log(key1 + " IDs " + key2);
                             restoredata[key1].IDs[key2].rarity = this.All_IDs[key1].IDs[key2].rarity;
                             localStorage.setItem('IDdata', JSON.stringify(restoredata));
                         }
                         //if no level, add it
                         if (restoredata[key1].IDs[key2].level == undefined) {
-                            console.log(key1 + " IDs " + key2);
+                            // console.log(key1 + " IDs " + key2);
                             restoredata[key1].IDs[key2].level = this.All_IDs[key1].IDs[key2].level;
                             localStorage.setItem('IDdata', JSON.stringify(restoredata));
                         }
@@ -211,19 +211,19 @@ export default {
                     for (const [key3, value2] of Object.entries(this.All_IDs[key1].EGOs)) {
                         //if something not in the restoredata, add it
                         if (!restoredata[key1].EGOs[key3]) {
-                            console.log(key1 + " EGOs " + key3);
+                            // console.log(key1 + " EGOs " + key3);
                             restoredata[key1].EGOs[key3] = this.All_IDs[key1].EGOs[key3];
                             localStorage.setItem('IDdata', JSON.stringify(restoredata));
                         }
                         //if the rarity is different, update it
                         if (restoredata[key1].EGOs[key3].rarity != this.All_IDs[key1].EGOs[key3].rarity) {
-                            console.log(key1 + " EGOs " + key3);
+                            // console.log(key1 + " EGOs " + key3);
                             restoredata[key1].EGOs[key3].rarity = this.All_IDs[key1].EGOs[key3].rarity;
                             localStorage.setItem('IDdata', JSON.stringify(restoredata));
                         }
                         //if no level, add it
                         if (restoredata[key1].EGOs[key3].level == undefined) {
-                            console.log(key1 + " EGOs " + key3);
+                            // console.log(key1 + " EGOs " + key3);
                             restoredata[key1].EGOs[key3].level = this.All_IDs[key1].EGOs[key3].level;
                             localStorage.setItem('IDdata', JSON.stringify(restoredata));
                         }
