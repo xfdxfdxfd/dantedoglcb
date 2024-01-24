@@ -11,22 +11,20 @@
                     <div style="display:inline-flex;flex-flow:row wrap;justify-content: flex-end">
                         <div style="padding-right:10px">
                             <button class="button-6" role="button" style="background-color:rgb(255, 220, 161)"
-                                @click="updateuptiemode('uptie3'), calculate('uptie3')">{{ $t(`All Uptie 3`)
+                                @click="calculate('uptie3')">{{ $t(`All Uptie 3`)
                                 }}</button>
                             <button class="button-6" role="button" style="background-color:rgb(255, 220, 161)"
-                                @click="updateuptiemode('uptie4'), calculate('uptie4')">{{ $t(`All Uptie 4`)
+                                @click="calculate('uptie4')">{{ $t(`All Uptie 4`)
                                 }}</button>
-                            <!-- <button class="button-6" role="button" @click="updateuptiemode('uptie5')">{{ $t(`All Uptie 5`)}}</button> -->
+                            <!-- <button class="button-6" role="button" @click="calculate('uptie5')">{{ $t(`All Uptie 5`)}}</button> -->
                         </div>
                         <div style="padding-right:10px">
-                            <button class="button-6" role="button"
-                                @click="updateuptiemode('uptie3only'), calculate('uptie3only')">{{
-                                    $t(`All Uptie 3-2`)
-                                }}</button>
-                            <button class="button-6" role="button"
-                                @click="updateuptiemode('uptie4only'), calculate('uptie4only')">{{ $t(`All Uptie 4-2`)
-                                }}</button>
-                            <!-- <button class="button-6" role="button" @click="updateuptiemode('uptie5only')">{{ $t(`All Uptie 5-2`)}}</button> -->
+                            <button class="button-6" role="button" @click="calculate('uptie3only')">{{
+                                $t(`All Uptie 3-2`)
+                            }}</button>
+                            <button class="button-6" role="button" @click="calculate('uptie4only')">{{ $t(`All Uptie 4-2`)
+                            }}</button>
+                            <!-- <button class="button-6" role="button" @click="calculate('uptie5only')">{{ $t(`All Uptie 5-2`)}}</button> -->
                         </div>
                     </div>
                 </div>
@@ -197,17 +195,11 @@ export default {
             }
         },
         calculate(mode) {
+            //store the mode in case will use it later
+            localStorage.setItem('calmode', mode);
             var restore_data = JSON.parse(localStorage.getItem('IDdata'));
             //set the value according to the mode
-            if (restore_data) {
-                this.calculate_case(restore_data, mode);
-            } else {
-                alert("Please import your data first!")
-            }
-        },
-
-        updateuptiemode(mode) {
-            localStorage.setItem('calmode', mode);
+            restore_data ? this.calculate_case(restore_data, mode) : alert("Please import your data first!");
         },
     },
     mounted() {

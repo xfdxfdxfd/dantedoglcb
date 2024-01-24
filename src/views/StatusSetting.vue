@@ -23,8 +23,8 @@
                             {{ id.rarity.replace('Rarity', '') }}&nbsp;{{ $t(index) }}
                             &nbsp;
                             <div>
-                                <div class="labelForInput">{{ $t(`uptie`) }}</div>
-                                <div class="labelForInput">{{ $t(`level`) }}</div>
+                                <div class="labelForUptie">{{ $t(`uptie`) }}</div>
+                                <div class="labelForLevel">{{ $t(`level`) }}</div>
                             </div>
                             <div>
                                 <select :id='ID_index + index' :v-model="ID_id.IDs"
@@ -35,7 +35,8 @@
                                     <option value=3>{{ $t(`Uptie`) }}3</option>
                                     <option value=4>{{ $t(`Uptie`) }}4</option>
                                 </select>
-                                <input type="text" :id='ID_index + index + "level"' style="width:10vw">
+                                <input @change="id.level = getitemselected(ID_index + index + 'level'), updateIDdata()"
+                                    type="text" placeholder=1 :id='ID_index + index + "level"' style="width:10vw">
                             </div>
                             &nbsp;
                         </div>
@@ -46,7 +47,7 @@
                             {{ id.rarity.replace('notOriginal', '') }}&nbsp;{{ $t(index) }}
                             &nbsp;
                             <div>
-                                <div class="labelForInput">{{ $t(`uptie`) }}</div>
+                                <div class="labelForUptie">{{ $t(`uptie`) }}</div>
                             </div>
                             <div>
                                 <select :id='ID_index + index' :v-model="ID_id.EGOs"
@@ -230,10 +231,13 @@ export default {
                 for (const [key, value] of Object.entries(this.All_IDs)) {
                     for (const [key2, value2] of Object.entries(value.IDs)) {
                         value2.uptied = restoredata[key].IDs[key2].uptied;
+                        value2.level = restoredata[key].IDs[key2].level;
                         document.getElementById(key + key2).value = value2.uptied;
+                        restoredata[key].IDs[key2].level != 1 ? document.getElementById(key + key2 + "level").value = value2.level : '';
                     }
                     for (const [key3, value3] of Object.entries(value.EGOs)) {
                         value3.uptied = restoredata[key].EGOs[key3].uptied;
+                        value3.level = restoredata[key].EGOs[key3].level;
                         document.getElementById(key + key3).value = value3.uptied;
                     }
                 }
@@ -245,22 +249,9 @@ export default {
         //remove the localstorage data + reset everything
         resetprogress() {
             localStorage.removeItem('IDdata');
-            for (const [key1, value1] of Object.entries(this.All_IDs)) {
-                var selectvalue = value1;
-                var selectkey = key1;
-                for (const [key2, value2] of Object.entries(selectvalue.IDs)) {
-                    // console.log(selectkey+key2);
-                    document.getElementById(selectkey + key2).value = 0;
-                    value2.uptied = 0;
-                }
-                for (const [key2, value2] of Object.entries(selectvalue.EGOs)) {
-                    // console.log(selectkey+key2);
-                    document.getElementById(selectkey + key2).value = 0;
-                    value2.uptied = 0;
-                }
-            }
-            localStorage.setItem('IDdata', JSON.stringify(this.All_IDs));
+            location.reload();
         }
+        // localStorage.setItem('IDdata', JSON.stringify(this.All_IDs));
     },
     created() {
         // console.log(this.$data);

@@ -3,32 +3,40 @@ select,input {
     /* safari */
     -webkit-appearance: none;
     /* other styles for aesthetics */
-    width: 15vw;
+    width: max(15vw,83px);
     font-size: 0.9rem;
-    padding: 0.675rem 1rem 0.675rem 1rem;
+    padding: 0.675rem 0.1rem 0.675rem 0.5rem;
     background-color: #fff;
     border: 1px solid #caced1;
     border-radius: 0.25rem;
     color: black;
     cursor: pointer;
+    max-width: 130px;
     
 }
-
-.labelForInput {
+.labelForUptie {
     display: inline-block;
-    width: 15vw;
+    width: max(15vw, 83px);
     color:#caced1;
     font-weight: bold;
+    max-width: 130px;
+}
+.labelForLevel {
+    display: inline-block;
+    width: max(15vw, 83px);
+    color: #caced1;
+    font-weight: bold;
+    max-width: 130px;
 }
 
 .optionText {
+    padding: 0 5vw 0 5vw;
     text-align: left;
-    padding-left: 5vw;
-    padding-right: 5vw;
     word-wrap: break-word;
     font-size: 1rem;
-    min-width: 30vw;
+    min-width: 15vw;
     font-weight: bold;
+    max-width: 300px;
 }
 
 .optionBlock {
