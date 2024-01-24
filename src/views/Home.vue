@@ -16,6 +16,9 @@
                 <h2 class="box1h2text">2. {{ $t(`UptieCalculator`) }}</h2>
                 <h3 class="box1h3text" style="color:#c2bfbf">{{ $t(`uptieCalculatorHomepage`) }}</h3>
                 &nbsp;
+                <h2 class="box1h2text">3. {{ $t(`ExpCalculator`) }}</h2>
+                <h3 class="box1h3text" style="color:#c2bfbf">{{ $t(`ExpCalculatorHomepage`) }}</h3>
+                &nbsp;
                 <h2 class="box1h2text">{{ $t(`ContactTitle`) }}</h2>
                 <h3 class="box1h3text" style="margin-bottom: 10px;color:#c2bfbf;">{{ $t(`ContactParagraph`) }}</h3>
                 <a href="https://discord.gg/UdFrGmKfqE">

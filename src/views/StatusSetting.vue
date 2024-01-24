@@ -35,8 +35,9 @@
                                     <option value=3>{{ $t(`Uptie`) }}3</option>
                                     <option value=4>{{ $t(`Uptie`) }}4</option>
                                 </select>
-                                <input @change="id.level = getitemselected(ID_index + index + 'level'), updateIDdata()"
-                                    type="text" placeholder=1 :id='ID_index + index + "level"' style="width:10vw">
+                                <input
+                                    @change="getitemselected(ID_index + index + 'level'), id.level = limitInputValue(ID_index + index + 'level'), updateIDdata()"
+                                    type="number" placeholder=1 :id='ID_index + index + "level"' style="width:10vw">
                             </div>
                             &nbsp;
                         </div>
@@ -245,13 +246,17 @@ export default {
                 localStorage.setItem('IDdata', JSON.stringify(this.All_IDs));
             }
         },
-
         //remove the localstorage data + reset everything
         resetprogress() {
             localStorage.removeItem('IDdata');
             location.reload();
-        }
-        // localStorage.setItem('IDdata', JSON.stringify(this.All_IDs));
+        },
+        //limit the input value in level text box
+        limitInputValue(item) {
+            document.getElementById(item).value > 40 ? document.getElementById(item).value = 40 : '';
+            document.getElementById(item).value < 1 ? document.getElementById(item).value = 1 : document.getElementById(item).value = parseInt(document.getElementById(item).value);
+            return this.getitemselected(item);
+        },
     },
     created() {
         // console.log(this.$data);

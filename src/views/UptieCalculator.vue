@@ -40,7 +40,7 @@
                         }}&nbsp;
                     </div>
                     &nbsp;
-                    <div style="display:flex;flex-flow:row wrap;padding-left:5vw">
+                    <div class="resultimg">
                         <div>
                             <img class="shardimg" alt="YiSangShard" src="../../src/assets/icon_piece-501YiSang.webp">:{{
                                 CalResult.YiSangIDs
@@ -136,7 +136,7 @@ export default {
     computed: {
     },
     methods: {
-        calculate_case(restore_data, mode) {
+        calculateUptieCase(restore_data, mode) {
             this.CalResult.ThreadAmount = 0
             for (const [key1, value1] of Object.entries(restore_data)) {
                 // console.log(key1);      //this.CalResult.YiSang,this.CalResult.Faust....
@@ -199,7 +199,7 @@ export default {
             localStorage.setItem('calmode', mode);
             var restore_data = JSON.parse(localStorage.getItem('IDdata'));
             //set the value according to the mode
-            restore_data ? this.calculate_case(restore_data, mode) : alert("Please import your data first!");
+            restore_data ? this.calculateUptieCase(restore_data, mode) : alert(this.$t('dataNullAlert'));
         },
     },
     mounted() {

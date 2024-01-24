@@ -10,6 +10,16 @@
                 <div class="timeline">
                     <div class="container black">
                         <div class="timelinecontent_black">
+                            <h3 style="text-align:left;">24-01-2024</h3>
+                            <p style="text-align:left;">{{ $t(`Changelog24-01-2024`) }}
+                            </p>
+
+                        </div>
+                    </div>
+                </div>
+                <div class="timeline">
+                    <div class="container black">
+                        <div class="timelinecontent_black">
                             <h3 style="text-align:left;">10-01-2024</h3>
                             <p style="text-align:left;">{{ $t(`Changelog10-01-2024`) }}
                             </p>
