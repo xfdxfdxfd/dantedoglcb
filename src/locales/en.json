@@ -17,6 +17,7 @@
     "statusSettingHomepage":"Set the status of your IDs and EGOs to update the information in all tools.",
     "statusSettingToolPage":"Select the uptie level of your IDs and EGOs\nClick \"Import Setting\" to import txt file of your setting\nClick \"Export Setting\" to download txt file of your setting\nClick \"Reset\" to clear the setting",
     "ExpCalculator":"EXP Calculator",
+    "ExpCalculatorHomepage":"Calculate the amount of identity tickets you need after setting the status in the \"Update Settings\"",
     "ExpCalculatorToolPage":"Calculate Exp you need to upgrade all your IDs",
     "All40":"All level up to 40",
     "All35":"All level up to 35",
@@ -36,6 +37,7 @@
     "Changelog22-12-2023":"Add 2 Chiristmas event EGO",
     "Changelog10-01-2024":"Add 2 2nd Walpurgis Night IDs",
     "Changelog24-01-2024":"Add 2 Dieci IDs, add the EXP Calculator, improve UI",
+    "Changelog07-02-2024":"Add The Pequod Captain Ishmael",
 
     "Effloresced E.G.O::Spicebush YiSang":"Effloresced E.G.O::Spicebush YiSang",
     "Blade Lineage Salsu YiSang":"Blade Lineage Salsu YiSang",
@@ -95,6 +97,7 @@
     "LCB Sinner Heathcliff":"LCB Sinner Heathcliff",
 
     "Molar Boatworks Fixer Ishmael":"Molar Boatworks Fixer Ishmael",
+    "The Pequod Captain Ishmael":"The Pequod Captain Ishmael",
     "R Corp. 4th Pack Reindeer Ishmael":"R Corp. 4th Pack Reindeer Ishmael",
     "Liu Assoc. South Section 4 Ishmael":"Liu Assoc. South Section 4 Ishmael",
     "Lobotomy E.G.O::Sloshing Ishmael":"Lobotomy E.G.O::Sloshing Ishmael",

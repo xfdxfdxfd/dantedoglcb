@@ -131,6 +131,7 @@ export default {
                 },
                 IshIDs: {
                     IDs: {
+                        "The Pequod Captain Ishmael": { rarity: "Rarity000", uptied: "0", level:1 },
                         "Molar Boatworks Fixer Ishmael": { rarity: "Rarity000", uptied: "0", level:1 },
                         "R Corp. 4th Pack Reindeer Ishmael": { rarity: "Rarity000", uptied: "0", level:1 },
                         "Liu Assoc. South Section 4 Ishmael": { rarity: "Rarity000", uptied: "0", level:1 },
