@@ -23,7 +23,8 @@ export default {
                 },
                 FaustIDs: {
                     IDs: {
-                        "Seven Assoc. South Section 4 Faust": { rarity: "Rarity000", uptied: "0", level:1 },
+                        "Seven Assoc. South Section 4 Faust": { rarity: "Rarity000", uptied: "0", level: 1 },
+                        "Blade Lineage Salsu Faust": { rarity: "Rarity000", uptied: "0", level:1 },
                         "The One Who Grips Faust": { rarity: "Rarity000", uptied: "0", level:1 },
                         "Lobotomy E.G.O::Regret Faust": { rarity: "Rarity000", uptied: "0", level:1 },
                         "Lobotomy Corp Remnant Faust": { rarity: "Rarity00", uptied: "0", level:1 },
@@ -41,17 +42,19 @@ export default {
                 },
                 DonIDs: {
                     IDs: {
-                        "Cinq Assoc. South Section 5 Director Don Quixote": { rarity: "Rarity000", uptied: "0", level:1 },
+                        "Cinq Assoc. South Section 5 Director Don Quixote": { rarity: "Rarity000", uptied: "0", level: 1 },
                         "W Corp. L3 Cleanup Agent Don Quixote": { rarity: "Rarity000", uptied: "0", level:1 },
                         "The Middle Little Sister Don Quixote": { rarity: "Rarity000", uptied: "0", level:1 },
-                        "Shi Assoc. South Section 5 Director Don Quixote": { rarity: "Rarity00", uptied: "0", level:1 },
+                        "Shi Assoc. South Section 5 Director Don Quixote": { rarity: "Rarity00", uptied: "0", level: 1 },
+                        "Blade Lineage Salsu Don Quixote": { rarity: "Rarity00", uptied: "0", level:1 },
                         "Lobotomy E.G.O::Lantern Don Quixote": { rarity: "Rarity00", uptied: "0", level:1 },
                         "N Corp. Mittelhammer Don Quixote": { rarity: "Rarity00", uptied: "0", level:1 },
                         "LCB Sinner Don Quixote": { rarity: "Rarity0", uptied: "0", level:1 },
                     },
                     EGOs: {
                         "La Sangre de Sancho": { rarity: "Z", uptied: "0", level:1 },
-                        "Lifetime Stew": { rarity: "T", uptied: "0", level:1 },
+                        "Lifetime Stew": { rarity: "T", uptied: "0", level: 1 },
+                        "Wishing Cairn": { rarity: "T", uptied: "0", level: 1 },
                         "Fluid Sac": { rarity: "H", uptied: "0", level:1 },
                         "Telepole": { rarity: "H", uptied: "0", level:1 },
                     },
@@ -76,6 +79,7 @@ export default {
                 },
                 MeurIDs: {
                     IDs: {
+                        "Blade Lineage Mentor Meursault": { rarity: "Rarity000", uptied: "0", level:1 },
                         "R Corp. 4th Pack Rhino Meursault": { rarity: "Rarity000", uptied: "0", level:1 },
                         "N Corp. GroBHammer Meursault": { rarity: "Rarity000", uptied: "0", level:1 },
                         "W Corp. L2 Cleanup Agent Meursault": { rarity: "Rarity000", uptied: "0", level:1 },
@@ -208,7 +212,8 @@ export default {
                         "G Corp. Manager Corporal Gregor": { rarity: "Rarity000", uptied: "0", level:1 },
                         "Twinhook Pirates First Mate Gregor": { rarity: "Rarity000", uptied: "0", level:1 },
                         "Zwei Assoc. South Section 4 Gregor": { rarity: "Rarity000", uptied: "0", level:1 },
-                        "Rosespanner Workshop Fixer Gregor": { rarity: "Rarity00", uptied: "0", level:1 },
+                        "Rosespanner Workshop Fixer Gregor": { rarity: "Rarity00", uptied: "0", level: 1 },
+                        "Kurokumo Clan Captain Gregor": { rarity: "Rarity00", uptied: "0", level:1 },
                         "Liu Assoc. South Section 6 Gregor": { rarity: "Rarity00", uptied: "0", level:1 },
                         "R.B. Sous-chef Gregor": { rarity: "Rarity00", uptied: "0", level:1 },
                         "LCB Sinner Gregor": { rarity: "Rarity0", uptied: "0", level:1 },
