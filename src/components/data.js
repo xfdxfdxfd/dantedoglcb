@@ -65,7 +65,8 @@ export default {
                         "R.B. Chef de Cuisine Ryoshu": { rarity: "Rarity000", uptied: "0", level:1 },
                         "Kurokumo Clan Wakashu Ryoshu": { rarity: "Rarity000", uptied: "0", level:1 },
                         "Seven Assoc. South Section 6 Ryoshu": { rarity: "Rarity00", uptied: "0", level:1 },
-                        "LCCB Assistant Manager Ryoshu": { rarity: "Rarity00", uptied: "0", level:1 },
+                        "LCCB Assistant Manager Ryoshu": { rarity: "Rarity00", uptied: "0", level: 1 },
+                        "Liu Association South Section 4 Ryoshu": { rarity: "Rarity00", uptied: "0", level:1 },
                         "LCB Sinner Ryoshu": { rarity: "Rarity0", uptied: "0", level:1 },
                     },
                     EGOs: {
@@ -156,7 +157,8 @@ export default {
                     IDs: {
                         "Kurokumo Clan Wakashu Rodion": { rarity: "Rarity000", uptied: "0", level:1 },
                         "Rosespanner Workshop Rep Rodion": { rarity: "Rarity000", uptied: "0", level:1 },
-                        "Dieci Assoc. South Section 4 Rodion": { rarity: "Rarity000", uptied: "0", level:1 },
+                        "Dieci Assoc. South Section 4 Rodion": { rarity: "Rarity000", uptied: "0", level: 1 },
+                        "Liu Association South Section 4 Director Rodion": { rarity: "Rarity000", uptied: "0", level:1 },
                         "LCCB Assistant Manager Rodion": { rarity: "Rarity00", uptied: "0", level:1 },
                         "Zwei Assoc. South Section 5 Rodion": { rarity: "Rarity00", uptied: "0", level:1 },
                         "N Corp. Mittelhammer Rodion": { rarity: "Rarity00", uptied: "0", level:1 },
