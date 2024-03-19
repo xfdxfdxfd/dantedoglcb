@@ -118,6 +118,7 @@ export default {
                 },
                 HeathIDs: {
                     IDs: {
+                        "Öufi Association South Section 3 Heathcliff": { rarity: "Rarity000", uptied: "0", level:1 },
                         "R Corp. 4th Pack Rabbit Heathcliff": { rarity: "Rarity000", uptied: "0", level:1 },
                         "The Pequod Harpooneer Heathcliff": { rarity: "Rarity000", uptied: "0", level:1 },
                         "Lobotomy E.G.O::Sunshower Heathcliff": { rarity: "Rarity000", uptied: "0", level:1 },
@@ -224,7 +225,8 @@ export default {
                         "Suddenly,One Day": { rarity: "Z", uptied: "0", level:1 },
                         "Legerdemain": { rarity: "ZnotOriginal", uptied: "0", level:1 },
                         "AEDD": { rarity: "T", uptied: "0", level:1 },
-                        "Lantern": { rarity: "H", uptied: "0", level:1 },
+                        "Lantern": { rarity: "H", uptied: "0", level: 1 },
+                        "Garden of Thorns": { rarity: "W", uptied: "0", level:1 },
                     },
                 },
             },
