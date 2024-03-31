@@ -26,6 +26,7 @@
     "dataNullAlert":"Please set the status of your IDs and EGOs first",
     "Exp":"Identity Xp",
 
+    "Changelog31-03-2024":"Add the new S4 IDs",
     "Changelog19-11-2023":"Finish the basic functions of the website (Home, Changelog, UptieCalculator, StatusSetting)",
     "Changelog21-11-2023":"Add the 2 new IDs without changing the stored data in users' browser",
     "Changelog22-11-2023":"Add the S3 battle pass EGOs(excluding Ishmael's WAW Blind Obsession). Show the IDs' rarity and EGOs' risk level next to the name.",
@@ -59,6 +60,7 @@
     "W Corp. L2 Cleanup Agent Faust":"W Corp. L2 Cleanup Agent Faust",
     "Zwei Assoc. South Section 4 Faust":"Zwei Assoc. South Section 4 Faust",
     "LCB Sinner Faust":"LCB Sinner Faust",
+    "Wuthering Heights Butler Faust":"Wuthering Heights Butler Faust",
 
     "Cinq Assoc. South Section 5 Director Don Quixote":"Cinq Assoc. South Section 5 Director Don Quixote",
     "W Corp. L3 Cleanup Agent Don Quixote":"W Corp. L3 Cleanup Agent Don Quixote",
@@ -85,6 +87,7 @@
     "Liu Assoc. South Section 6 Meursault":"Liu Assoc. South Section 6 Meursault",
     "Rosespanner Workshop Fixer Meursault":"Rosespanner Workshop Fixer Meursault",
     "LCB Sinner Meursault":"LCB Sinner Meursault",
+    "Dead Rabbits Boss Meursault":"Dead Rabbits Boss Meursault",
 
     "Ting Tang Gang Gangleader Hong Lu":"Ting Tang Gang Gangleader Hong Lu",
     "K Corp. Class 3 Excision Staff Hong Lu":"K Corp. Class 3 Excision Staff Hong Lu",
@@ -138,6 +141,7 @@
     "Cinq Association South Section 4 Outis":"Cinq Association South Section 4 Outis",
     "LCB Sinner Outis":"LCB Sinner Outis",
     "Lobotomy E.G.O::Magic Bullet Outis":"Lobotomy E.G.O::Magic Bullet Outis",
+    "Wuthering Heights Chief Butler Outis":"Wuthering Heights Chief Butler Outis",
 
     "G Corp. Manager Corporal Gregor":"G Corp. Manager Corporal Gregor",
     "Kurokumo Clan Captain Gregor":"Kurokumo Clan Captain Gregor",
@@ -147,6 +151,7 @@
     "R.B. Sous-chef Gregor":"R.B. Sous-chef Gregor",
     "LCB Sinner Gregor":"LCB Sinner Gregor",
     "Twinhook Pirates First Mate Gregor":"Twinhook Pirates First Mate Gregor",
+    "Edgar Family Heir Gregor":"Edgar Family Heir Gregor",
 
     "Uptie":"Uptie",
     "Don't have":"Don't have",

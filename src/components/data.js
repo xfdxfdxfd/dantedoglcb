@@ -28,7 +28,8 @@ export default {
                         "The One Who Grips Faust": { rarity: "Rarity000", uptied: "0", level:1 },
                         "Lobotomy E.G.O::Regret Faust": { rarity: "Rarity000", uptied: "0", level:1 },
                         "Lobotomy Corp Remnant Faust": { rarity: "Rarity00", uptied: "0", level:1 },
-                        "W Corp. L2 Cleanup Agent Faust": { rarity: "Rarity00", uptied: "0", level:1 },
+                        "W Corp. L2 Cleanup Agent Faust": { rarity: "Rarity00", uptied: "0", level: 1 },
+                        "Wuthering Heights Butler Faust": { rarity: "Rarity00", uptied: "0", level:1 },
                         "Zwei Assoc. South Section 4 Faust": { rarity: "Rarity00", uptied: "0", level:1 },
                         "LCB Sinner Faust": { rarity: "Rarity0", uptied: "0", level:1 },
                     },
@@ -86,7 +87,8 @@ export default {
                         "W Corp. L2 Cleanup Agent Meursault": { rarity: "Rarity000", uptied: "0", level:1 },
                         "Liu Assoc. South Section 6 Meursault": { rarity: "Rarity00", uptied: "0", level:1 },
                         "The Middle Little Brother Meursault": { rarity: "Rarity00", uptied: "0", level:1 },
-                        "Rosespanner Workshop Fixer Meursault": { rarity: "Rarity00", uptied: "0", level:1 },
+                        "Rosespanner Workshop Fixer Meursault": { rarity: "Rarity00", uptied: "0", level: 1 },
+                        "Dead Rabbits Boss Meursault": { rarity: "Rarity00", uptied: "0", level:1 },
                         "LCB Sinner Meursault": { rarity: "Rarity0", uptied: "0", level:1 },
                     },
                     EGOs: {
@@ -194,6 +196,7 @@ export default {
                 },
                 OutisIDs: {
                     IDs: {
+                        "Wuthering Heights Chief Butler Outis": { rarity: "Rarity000", uptied: "0", level:1 },
                         "Seven Assoc. South Section 6 Director Outis": { rarity: "Rarity000", uptied: "0", level:1 },
                         "Lobotomy E.G.O::Magic Bullet Outis": { rarity: "Rarity000", uptied: "0", level:1 },
                         "Molar Office Fixer Outis": { rarity: "Rarity000", uptied: "0", level:1 },
@@ -212,6 +215,7 @@ export default {
                 },
                 GregorIDs: {
                     IDs: {
+                        "Edgar Family Heir Gregor": { rarity: "Rarity000", uptied: "0", level:1 },
                         "G Corp. Manager Corporal Gregor": { rarity: "Rarity000", uptied: "0", level:1 },
                         "Twinhook Pirates First Mate Gregor": { rarity: "Rarity000", uptied: "0", level:1 },
                         "Zwei Assoc. South Section 4 Gregor": { rarity: "Rarity000", uptied: "0", level:1 },

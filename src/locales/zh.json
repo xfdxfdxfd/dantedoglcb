@@ -26,6 +26,8 @@
     "dataNullAlert":"請先設定人格和EGO的數值",
     "Exp":"人格經驗值",
 
+    
+    "Changelog31-03-2024":"新增S4的人格",
     "Changelog19-11-2023":"完成網站的基本功能(首頁，日誌，升階計算器，更新設定)",
     "Changelog21-11-2023":"在不影響使用者原有紀錄下新增中唐和中鎖人格",
     "Changelog22-11-2023":"新增S3通行證EGO(不包括盲目瑪)，新增名字中顯示人格的稀有度和EGO的危險度",
@@ -59,6 +61,7 @@
     "W Corp. L2 Cleanup Agent Faust":"W浮",
     "Zwei Assoc. South Section 4 Faust":"二浮",
     "LCB Sinner Faust":"初始浮",
+    "Wuthering Heights Butler Faust":"執事浮",
 
     "Blade Lineage Salsu Don Quixote":"劍唐",
     "Cinq Assoc. South Section 5 Director Don Quixote":"五唐",
@@ -85,6 +88,7 @@
     "Liu Assoc. South Section 6 Meursault":"六鎖",
     "Rosespanner Workshop Fixer Meursault":"玫瑰鎖",
     "LCB Sinner Meursault":"初始鎖",
+    "Dead Rabbits Boss Meursault":"死兔鎖",
 
     "Ting Tang Gang Gangleader Hong Lu":"叮噹鴻",
     "K Corp. Class 3 Excision Staff Hong Lu":"K鴻",
@@ -138,6 +142,7 @@
     "Blade Lineage Cutthroat Outis":"劍奧",
     "LCB Sinner Outis":"初始奧",
     "Lobotomy E.G.O::Magic Bullet Outis":"魔彈奧",
+    "Wuthering Heights Chief Butler Outis":"管家奧",
 
     "G Corp. Manager Corporal Gregor":"G蟑",
     "Kurokumo Clan Captain Gregor":"黑雲蟑",
@@ -147,6 +152,7 @@
     "R.B. Sous-chef Gregor":"廚蟑",
     "LCB Sinner Gregor":"初始蟲",
     "Twinhook Pirates First Mate Gregor":"海蟑螂",
+    "Edgar Family Heir Gregor":"艾德嘉蟲",
 
     "Uptie":"突",
     "Don't have":"未擁有",
