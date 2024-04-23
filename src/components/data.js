@@ -14,7 +14,8 @@ export default {
                         "LCB Sinner YiSang": { rarity: "Rarity0", uptied: "0", level:1 },
                     },
                     EGOs: {
-                        "Crow's Eye View": { rarity: "Z", uptied: "0", level:1 },
+                        "Crow's Eye View": { rarity: "Z", uptied: "0", level: 1 },
+                        "Bygone Days": { rarity: "ZnotOriginal", uptied: "0", level:1 },
                         "4th Match Flame": { rarity: "T", uptied: "0", level:1 },
                         "Wishing Cairn": { rarity: "T", uptied: "0", level:1 },
                         "Dimension Shredder": { rarity: "H", uptied: "0", level:1 },
@@ -55,6 +56,7 @@ export default {
                     EGOs: {
                         "La Sangre de Sancho": { rarity: "Z", uptied: "0", level:1 },
                         "Lifetime Stew": { rarity: "T", uptied: "0", level: 1 },
+                        "Electric Screaming": { rarity: "T", uptied: "0", level: 1 },
                         "Wishing Cairn": { rarity: "T", uptied: "0", level: 1 },
                         "Fluid Sac": { rarity: "H", uptied: "0", level:1 },
                         "Telepole": { rarity: "H", uptied: "0", level:1 },
@@ -62,6 +64,7 @@ export default {
                 },
                 RyoshuIDs: {
                     IDs: {
+                        "Edgar Family Chief Butler Ryoshu": { rarity: "Rarity000", uptied: "0", level:1 },
                         "W Corp. L3 Cleanup Agent Ryoshu": { rarity: "Rarity000", uptied: "0", level:1 },
                         "R.B. Chef de Cuisine Ryoshu": { rarity: "Rarity000", uptied: "0", level:1 },
                         "Kurokumo Clan Wakashu Ryoshu": { rarity: "Rarity000", uptied: "0", level:1 },
@@ -93,7 +96,8 @@ export default {
                     },
                     EGOs: {
                         "Chains of Others": { rarity: "Z", uptied: "0", level:1 },
-                        "Screwloose Wallop": { rarity: "T", uptied: "0", level:1 },
+                        "Screwloose Wallop": { rarity: "T", uptied: "0", level: 1 },
+                        "Electric Screaming": { rarity: "T", uptied: "0", level: 1 },
                         "Regret": { rarity: "T", uptied: "0", level:1 },
                         "Capote": { rarity: "H", uptied: "0", level:1 },
                         "Pursuance": { rarity: "H", uptied: "0", level:1 },
@@ -134,7 +138,8 @@ export default {
                         "Holiday": { rarity: "ZnotOriginal", uptied: "0", level:1 },
                         "AEDD": { rarity: "T", uptied: "0", level:1 },
                         "Ya Sunyata Tad Rupam": { rarity: "H", uptied: "0", level:1 },
-                        "Telepole": { rarity: "H", uptied: "0", level:1 },
+                        "Telepole": { rarity: "H", uptied: "0", level: 1 },
+                        "Binds": { rarity: "W", uptied: "0", level:1 },
                     },
                 },
                 IshIDs: {
@@ -143,7 +148,8 @@ export default {
                         "Molar Boatworks Fixer Ishmael": { rarity: "Rarity000", uptied: "0", level:1 },
                         "R Corp. 4th Pack Reindeer Ishmael": { rarity: "Rarity000", uptied: "0", level:1 },
                         "Liu Assoc. South Section 4 Ishmael": { rarity: "Rarity000", uptied: "0", level:1 },
-                        "Lobotomy E.G.O::Sloshing Ishmael": { rarity: "Rarity00", uptied: "0", level:1 },
+                        "Lobotomy E.G.O::Sloshing Ishmael": { rarity: "Rarity00", uptied: "0", level: 1 },
+                        "Edgar Family Butler Ishmael": { rarity: "Rarity00", uptied: "0", level:1 },
                         "Shi Assoc. South Section 5 Ishmael": { rarity: "Rarity00", uptied: "0", level:1 },
                         "LCCB Assistant Manager Ishmael": { rarity: "Rarity00", uptied: "0", level:1 },
                         "LCB Sinner Ishmael": { rarity: "Rarity0", uptied: "0", level:1 },
@@ -210,7 +216,8 @@ export default {
                         "Sunshower": { rarity: "T", uptied: "0", level:1 },
                         "Ya Sunyata Tad Rupam": { rarity: "T", uptied: "0", level:1 },
                         "Ebony Stem": { rarity: "H", uptied: "0", level:1 },
-                        "Holiday": { rarity: "H", uptied: "0", level:1 },
+                        "Holiday": { rarity: "H", uptied: "0", level: 1 },
+                        "Binds": { rarity: "W", uptied: "0", level:1 },
                     },
                 },
                 GregorIDs: {
@@ -228,7 +235,8 @@ export default {
                     EGOs: {
                         "Suddenly,One Day": { rarity: "Z", uptied: "0", level:1 },
                         "Legerdemain": { rarity: "ZnotOriginal", uptied: "0", level:1 },
-                        "AEDD": { rarity: "T", uptied: "0", level:1 },
+                        "AEDD": { rarity: "T", uptied: "0", level: 1 },
+                        "Bygone Days": { rarity: "T", uptied: "0", level:1 },
                         "Lantern": { rarity: "H", uptied: "0", level: 1 },
                         "Garden of Thorns": { rarity: "W", uptied: "0", level:1 },
                     },

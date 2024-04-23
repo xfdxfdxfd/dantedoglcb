@@ -26,7 +26,7 @@
     "dataNullAlert":"請先設定人格和EGO的數值",
     "Exp":"人格經驗值",
 
-    
+    "Changelog23-04-2024":"新增S4的通行證和新人格(所以為什麼餅在周二出)",    
     "Changelog31-03-2024":"新增S4的人格",
     "Changelog19-11-2023":"完成網站的基本功能(首頁，日誌，升階計算器，更新設定)",
     "Changelog21-11-2023":"在不影響使用者原有紀錄下新增中唐和中鎖人格",
@@ -79,6 +79,7 @@
     "Liu Association South Section 4 Ryoshu":"六良",
     "LCB Sinner Ryoshu":"初始良",
     "LCCB Assistant Manager Ryoshu":"槍良",
+    "Edgar Family Chief Butler Ryoshu":"艾德嘉良",
 
     "Blade Lineage Mentor Meursault":"劍鎖",
     "R Corp. 4th Pack Rhino Meursault":"R鎖",
@@ -116,6 +117,7 @@
     "Shi Assoc. South Section 5 Ishmael":"四瑪",
     "LCCB Assistant Manager Ishmael":"LCCB瑪",
     "LCB Sinner Ishmael":"初始瑪",
+    "Edgar Family Butler Ishmael":"艾德嘉瑪",
     
     "Kurokumo Clan Wakashu Rodion":"黑雲羅",
     "Rosespanner Workshop Rep Rodion":"玫瑰羅",
@@ -234,5 +236,8 @@
     "9:2":"9:2",
     "Effervescent Corrosion":"蚌殼",
     "Holiday":"魯道夫",
-    "Garden of Thorns":"荊棘花園"
+    "Garden of Thorns":"荊棘花園",
+    "Bygone Days":"肖像",
+    "Electric Screaming":"電羊",
+    "Binds":"拘束"
 }

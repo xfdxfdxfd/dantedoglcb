@@ -26,6 +26,7 @@
     "dataNullAlert":"Please set the status of your IDs and EGOs first",
     "Exp":"Identity Xp",
 
+    "Changelog23-04-2024":"Add the S4 battlepass ego and the new IDs",
     "Changelog31-03-2024":"Add the new S4 IDs",
     "Changelog19-11-2023":"Finish the basic functions of the website (Home, Changelog, UptieCalculator, StatusSetting)",
     "Changelog21-11-2023":"Add the 2 new IDs without changing the stored data in users' browser",
@@ -78,6 +79,7 @@
     "Liu Association South Section 4 Ryoshu":"Liu Association South Section 4 Ryoshu",
     "LCB Sinner Ryoshu":"LCB Sinner Ryoshu",
     "LCCB Assistant Manager Ryoshu":"LCCB Assistant Manager Ryoshu",
+    "Edgar Family Chief Butler Ryoshu":"Edgar Family Chief Butler Ryoshu",
 
     "R Corp. 4th Pack Rhino Meursault":"R Corp. 4th Pack Rhino Meursault",
     "Blade Lineage Mentor Meursault":"Blade Lineage Mentor Meursault",
@@ -115,6 +117,7 @@
     "Shi Assoc. South Section 5 Ishmael":"Shi Assoc. South Section 5 Ishmael",
     "LCCB Assistant Manager Ishmael":"LCCB Assistant Manager Ishmael",
     "LCB Sinner Ishmael":"LCB Sinner Ishmael",
+    "Edgar Family Butler Ishmael":"Edgar Family Butler Ishmael",
     
     "Kurokumo Clan Wakashu Rodion":"Kurokumo Clan Wakashu Rodion",
     "Rosespanner Workshop Rep Rodion":"Rosespanner Workshop Rep Rodion",
@@ -234,6 +237,9 @@
     "9:2":"9:2",
     "Effervescent Corrosion":"Effervescent Corrosion",
     "Holiday":"Holiday",
-    "Garden of Thorns":"Garden of Thorns"
+    "Garden of Thorns":"Garden of Thorns",
+    "Bygone Days":"Bygone Days",
+    "Electric Screaming":"Electric Screaming",
+    "Binds":"Binds"
 
 }
