@@ -14,6 +14,8 @@
                                 @click="calculateExp('All35'), calculateExpCase_Ticket()">{{ $t(`All35`) }}</button>
                             <button class="button-6" role="button"
                                 @click="calculateExp('All40'), calculateExpCase_Ticket()">{{ $t(`All40`) }}</button>
+                            <button class="button-6" role="button"
+                                @click="calculateExp('All45'), calculateExpCase_Ticket()">{{ $t(`All45`) }}</button>
                             <!-- <button @click="calEXPTesting()"></button> -->
                         </div>
                     </div>
@@ -42,8 +44,9 @@
                         </div>
                         &nbsp;
                         <div>
-                            <img class="ticketimg" alt="IAmount" src="../../src/assets/Identity_Training_Ticket_I.webp">:{{
-                                TicketI }}
+                            <img class="ticketimg" alt="IAmount"
+                                src="../../src/assets/Identity_Training_Ticket_I.webp">:{{
+                    TicketI }}
                         </div>
                         &nbsp;
                     </div>
@@ -71,15 +74,26 @@ export default {
     methods: {
         calEXPTesting() {
             //accum exp up to 40: 91700 accum exp up to 35: 61123
-            var listOfSum = [];
-            var listOfSum2 = [];
-            for (let i = 0; i < this.expdata.expAccumulatedUpTo40.length; i++) {
-                listOfSum.push(this.expdata.expAccumulatedUpTo40[i]);
+            // var listOfSum = [];
+            // var listOfSum2 = [];
+            // for (let i = 0; i < this.expdata.expAccumulatedUpTo40.length; i++) {
+            //     listOfSum.push(this.expdata.expAccumulatedUpTo40[i]);
+            // }
+            // for (let i = 0; i < this.expdata.expAccumulatedUpTo35.length; i++) {
+            //     listOfSum2.push(this.expdata.expAccumulatedUpTo35[i]);
+            // }
+            let sum = 0;
+            for (let i = 0; i < this.expdata.expForEachLevel.length; i++) {
+                sum += this.expdata.expForEachLevel[i];
             }
-            for (let i = 0; i < this.expdata.expAccumulatedUpTo35.length; i++) {
-                listOfSum2.push(this.expdata.expAccumulatedUpTo35[i]);
+            console.log(sum);
+            let listOfSum = [sum];
+            for (let j = 0; j < this.expdata.expForEachLevel.length; j++) {
+                sum = sum - this.expdata.expForEachLevel[j]
+                listOfSum.push(sum);
             }
-            // console.log(listOfSum, listOfSum2);
+            console.log(listOfSum);
+
         },
 
         calculateExpCase(restore_data, mode) {
@@ -92,6 +106,10 @@ export default {
 
                 } else if (mode == 'All40') {
                     for (const [key2, value2] of Object.entries(value1.IDs)) { expSum += parseInt(this.expdata.expAccumulatedUpTo40[parseInt(value2.level) - 1]); }
+                    totalExpSum += expSum;
+
+                } else if (mode == 'All45') {
+                    for (const [key2, value2] of Object.entries(value1.IDs)) { expSum += parseInt(this.expdata.expAccumulatedUpTo45[parseInt(value2.level) - 1]); }
                     totalExpSum += expSum;
                 }
             }
