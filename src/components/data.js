@@ -4,6 +4,7 @@ export default {
             All_IDs: {
                 YiSangIDs: {
                     IDs: {
+                        "The Ring Pointillist Student Yi Sang": { rarity: "Rarity000", uptied: "0", level:1 },
                         "Effloresced E.G.O::Spicebush YiSang": { rarity: "Rarity000", uptied: "0", level:1 },
                         "Blade Lineage Salsu YiSang": { rarity: "Rarity000", uptied: "0", level:1 },
                         "W Corp. L3 Cleanup Agent YiSang": { rarity: "Rarity000", uptied: "0", level:1 },
@@ -209,7 +210,8 @@ export default {
                         "Seven Assoc. South Section 6 Director Outis": { rarity: "Rarity000", uptied: "0", level:1 },
                         "Lobotomy E.G.O::Magic Bullet Outis": { rarity: "Rarity000", uptied: "0", level:1 },
                         "Molar Office Fixer Outis": { rarity: "Rarity000", uptied: "0", level:1 },
-                        "G Corp. Head Manager Outis": { rarity: "Rarity00", uptied: "0", level:1 },
+                        "G Corp. Head Manager Outis": { rarity: "Rarity00", uptied: "0", level: 1 },
+                        "The Ring Pointillist Student Outis": { rarity: "Rarity00", uptied: "0", level:1 },
                         "Blade Lineage Cutthroat Outis": { rarity: "Rarity00", uptied: "0", level:1 },
                         "Cinq Association South Section 4 Outis": { rarity: "Rarity00", uptied: "0", level:1 },
                         "LCB Sinner Outis": { rarity: "Rarity0", uptied: "0", level:1 },

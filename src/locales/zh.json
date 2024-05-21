@@ -27,6 +27,7 @@
     "dataNullAlert":"請先設定人格和EGO的數值",
     "Exp":"人格經驗值",
 
+    "Changelog22-05-2024":"新增環指人格",
     "Changelog03-05-2024":"新增炒冷飯之夜人格和升等計算器全45等的選項",  
     "Changelog23-04-2024":"新增S4的通行證和新人格(所以為什麼餅在周二出)",    
     "Changelog31-03-2024":"新增S4的人格",
@@ -54,6 +55,7 @@
     "Seven Assoc. South Section 6 YiSang":"七箱",
     "Molar Office Fixer YiSang":"臼箱",
     "LCB Sinner YiSang":"初始箱",
+    "The Ring Pointillist Student Yi Sang":"環箱",
     
     "Seven Assoc. South Section 4 Faust":"七浮",
     "Blade Lineage Salsu Faust":"劍浮",
@@ -148,6 +150,7 @@
     "LCB Sinner Outis":"初始奧",
     "Lobotomy E.G.O::Magic Bullet Outis":"魔彈奧",
     "Wuthering Heights Chief Butler Outis":"管家奧",
+    "The Ring Pointillist Student Outis":"環奧",
 
     "G Corp. Manager Corporal Gregor":"G蟑",
     "Kurokumo Clan Captain Gregor":"黑雲蟑",
