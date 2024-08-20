@@ -34,11 +34,11 @@
 
 - Calculate the amount of threads and shards you need after setting the status in the "Update Settings"
 
-## Future plan
-
-### Level calculator
+- ### Level calculator
 
 - Calculate the amount of exp you need for upgrading the ids
+
+## Future plan
 
 ### Mirror Dungeon calculator
 
