@@ -34,7 +34,7 @@
 
 - Calculate the amount of threads and shards you need after setting the status in the "Update Settings"
 
-- ### Level calculator
+### Level calculator
 
 - Calculate the amount of exp you need for upgrading the ids
 
