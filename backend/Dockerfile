@@ -9,6 +9,8 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
+    tesseract-ocr-eng \
+    tesseract-ocr-osd \
     libgl1 \
     libglib2.0-0 \
     libsm6 \
@@ -22,6 +24,7 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 COPY . .
 
 RUN chmod +x /app/entrypoint.sh
+RUN tesseract --version
 
 EXPOSE 8000
 

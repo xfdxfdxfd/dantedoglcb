@@ -13,7 +13,7 @@ This backend provides screenshot upload and roster recognition for the Vue front
 ## Requirements
 
 - Python 3.11+
-- Tesseract OCR installed on the machine
+- Tesseract OCR installed on the machine only if you run Django outside Docker
 
 If Tesseract is not on `PATH`, set `TESSERACT_CMD` before starting Django.
 
@@ -30,6 +30,8 @@ python manage.py runserver
 
 ## Docker
 
+The Docker image hosts Tesseract OCR inside the backend container. You do not need Tesseract installed on your host machine when using Docker.
+
 From the repository root:
 
 ```powershell
@@ -37,6 +39,12 @@ docker compose up --build backend
 ```
 
 The container exposes the API on `http://127.0.0.1:8000`.
+
+Inside the container, OCR runs through `/usr/bin/tesseract` and the image includes:
+
+- `tesseract-ocr`
+- `tesseract-ocr-eng`
+- `tesseract-ocr-osd`
 
 If you want to override Django settings, copy `backend/.env.example` values into your shell environment before starting compose.
 
