@@ -1,58 +1,41 @@
 <template>
-    <div class="content">
-        <div>
-            <div class="box box1">
-                <h1 class="subtitle">{{ $t(`ExpCalculator`) }}</h1>
-                &nbsp;
-                <h2 class="separator"></h2>
-                &nbsp;
-                <h3 class="box1h3text" style="color:#c2bfbf;margin:10px">{{ $t(`ExpCalculatorToolPage`) }}</h3>
-                <div style="text-align: right;">
-                    <div style="display:inline-flex;flex-flow:row wrap;justify-content: flex-end">
-                        <div style="padding-right:10px">
-                            <button class="button-6" role="button"
-                                @click="calculateExp('All35'), calculateExpCase_Ticket()">{{ $t(`All35`) }}</button>
-                            <button class="button-6" role="button"
-                                @click="calculateExp('All40'), calculateExpCase_Ticket()">{{ $t(`All40`) }}</button>
-                            <button class="button-6" role="button"
-                                @click="calculateExp('All45'), calculateExpCase_Ticket()">{{ $t(`All45`) }}</button>
-                            <!-- <button @click="calEXPTesting()"></button> -->
+    <div class="page-shell">
+        <section class="mx-auto max-w-7xl px-4 py-8 md:px-6 lg:px-8">
+            <div class="content-card overflow-hidden px-6 py-8 md:px-8">
+                <div class="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
+                    <div class="max-w-3xl">
+                        <p class="field-label text-gold">EXP Planner</p>
+                        <h1 class="section-title mt-3">{{ $t(`ExpCalculator`) }}</h1>
+                        <p class="section-copy mt-4">{{ $t(`ExpCalculatorToolPage`) }}</p>
+                    </div>
+
+                    <div class="grid gap-3 sm:grid-cols-3">
+                        <button type="button" class="action-button" @click="calculateExp('All35'); calculateExpCase_Ticket();">{{ $t(`All35`) }}</button>
+                        <button type="button" class="action-button action-button--accent" @click="calculateExp('All40'); calculateExpCase_Ticket();">{{ $t(`All40`) }}</button>
+                        <button type="button" class="action-button action-button--accent" @click="calculateExp('All45'); calculateExpCase_Ticket();">{{ $t(`All45`) }}</button>
+                    </div>
+                </div>
+
+                <div class="mt-8 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+                    <div class="rounded-[2rem] border border-white/10 bg-black/20 p-6">
+                        <p class="field-label">{{ $t(`You need`) }}</p>
+                        <p class="mt-4 text-4xl font-bold text-white">{{ calExpResult }}</p>
+                        <p class="mt-2 text-sm text-stone-400">{{ $t(`Exp`) }}</p>
+                    </div>
+
+                    <div class="rounded-[2rem] border border-white/10 bg-black/20 p-6">
+                        <p class="field-label">{{ $t(`Which is about`) }}</p>
+                        <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                            <div v-for="ticket in ticketCards" :key="ticket.label" class="rounded-2xl border border-white/10 bg-white/5 p-4">
+                                <img class="h-12 w-auto" :alt="ticket.label" :src="ticket.image">
+                                <p class="mt-3 text-sm text-stone-400">{{ ticket.label }}</p>
+                                <p class="mt-1 text-2xl font-bold text-white">{{ ticket.value }}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <h2 class="separator"></h2>
-                &nbsp;
-                <h3 class="box1h3text" style="text-align:left;">{{ $t(`You need`) }}: {{ calExpResult }} {{ $t(`Exp`) }}
-                </h3>
-                &nbsp;
-                <h3 class="box1h3text" style="text-align:left;">{{ $t(`Which is about`) }}:</h3>
-                <h2 class="box1h2text">
-                    <div class="resultimg">
-                        <div>
-                            <img class="ticketimg" alt="IVAmount"
-                                src="../../src/assets/Identity_Training_Ticket_IV.webp">:{{ TicketIV }}
-                        </div>
-                        &nbsp;
-                        <div>
-                            <img class="ticketimg" alt="IIIAmount"
-                                src="../../src/assets/Identity_Training_Ticket_III.webp">:{{ TicketIII }}
-                        </div>
-                        &nbsp;
-                        <div>
-                            <img class="ticketimg" alt="IIAmount"
-                                src="../../src/assets/Identity_Training_Ticket_II.webp">:{{ TicketII }}
-                        </div>
-                        &nbsp;
-                        <div>
-                            <img class="ticketimg" alt="IAmount"
-                                src="../../src/assets/Identity_Training_Ticket_I.webp">:{{
-                    TicketI }}
-                        </div>
-                        &nbsp;
-                    </div>
-                </h2>
             </div>
-        </div>
+        </section>
     </div>
 </template>
 
@@ -70,6 +53,16 @@ export default {
             TicketII: 0,
             TicketI: 0,
         }
+    },
+    computed: {
+        ticketCards() {
+            return [
+                { label: 'Ticket IV', value: this.TicketIV, image: require('../../src/assets/Identity_Training_Ticket_IV.webp') },
+                { label: 'Ticket III', value: this.TicketIII, image: require('../../src/assets/Identity_Training_Ticket_III.webp') },
+                { label: 'Ticket II', value: this.TicketII, image: require('../../src/assets/Identity_Training_Ticket_II.webp') },
+                { label: 'Ticket I', value: this.TicketI, image: require('../../src/assets/Identity_Training_Ticket_I.webp') },
+            ];
+        },
     },
     methods: {
         calEXPTesting() {
@@ -96,20 +89,24 @@ export default {
 
         },
 
+        getRemainingExp(expTable, level) {
+            const clampedIndex = Math.min(Math.max(parseInt(level, 10) || 1, 1), expTable.length) - 1;
+            return parseInt(expTable[clampedIndex] || 0);
+        },
         calculateExpCase(restore_data, mode) {
             var totalExpSum = 0;
             for (const [key1, value1] of Object.entries(restore_data)) {
                 var expSum = 0;
                 if (mode == 'All35') {
-                    for (const [key2, value2] of Object.entries(value1.IDs)) { expSum += parseInt(this.expdata.expAccumulatedUpTo35[parseInt(value2.level) - 1]); }
+                    for (const [key2, value2] of Object.entries(value1.IDs)) { expSum += this.getRemainingExp(this.expdata.expAccumulatedUpTo35, value2.level); }
                     totalExpSum += expSum;
 
                 } else if (mode == 'All40') {
-                    for (const [key2, value2] of Object.entries(value1.IDs)) { expSum += parseInt(this.expdata.expAccumulatedUpTo40[parseInt(value2.level) - 1]); }
+                    for (const [key2, value2] of Object.entries(value1.IDs)) { expSum += this.getRemainingExp(this.expdata.expAccumulatedUpTo40, value2.level); }
                     totalExpSum += expSum;
 
                 } else if (mode == 'All45') {
-                    for (const [key2, value2] of Object.entries(value1.IDs)) { expSum += parseInt(this.expdata.expAccumulatedUpTo45[parseInt(value2.level) - 1]); }
+                    for (const [key2, value2] of Object.entries(value1.IDs)) { expSum += this.getRemainingExp(this.expdata.expAccumulatedUpTo45, value2.level); }
                     totalExpSum += expSum;
                 }
             }
@@ -137,7 +134,3 @@ export default {
     }
 }
 </script>
-
-<style>
-@import '../components/format.css';
-</style>

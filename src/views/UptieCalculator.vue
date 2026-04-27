@@ -1,109 +1,46 @@
 <template>
-    <div class="content">
-        <div>
-            <div class="box box1">
-                <h1 class="subtitle">{{ $t(`UptieCalculator`) }}</h1>
-                &nbsp;
-                <h2 class="separator"></h2>
-                &nbsp;
-                <h3 class="box1h3text" style="color:#c2bfbf;margin:10px">{{ $t(`uptieCalculatorToolPage`) }}</h3>
-                <div style="text-align: right;">
-                    <div style="display:inline-flex;flex-flow:row wrap;justify-content: flex-end">
-                        <div style="padding-right:10px">
-                            <button class="button-6" role="button" style="background-color:rgb(255, 220, 161)"
-                                @click="calculate('uptie3')">{{ $t(`All Uptie 3`)
-                                }}</button>
-                            <button class="button-6" role="button" style="background-color:rgb(255, 220, 161)"
-                                @click="calculate('uptie4')">{{ $t(`All Uptie 4`)
-                                }}</button>
-                            <!-- <button class="button-6" role="button" @click="calculate('uptie5')">{{ $t(`All Uptie 5`)}}</button> -->
+    <div class="page-shell">
+        <section class="mx-auto max-w-7xl px-4 py-8 md:px-6 lg:px-8">
+            <div class="content-card overflow-hidden px-6 py-8 md:px-8">
+                <div class="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
+                    <div class="max-w-3xl">
+                        <p class="field-label text-gold">Thread Planner</p>
+                        <h1 class="section-title mt-3">{{ $t(`UptieCalculator`) }}</h1>
+                        <p class="section-copy mt-4">{{ $t(`uptieCalculatorToolPage`) }}</p>
+                    </div>
+
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <button type="button" class="action-button action-button--accent" @click="calculate('uptie3')">{{ $t(`All Uptie 3`) }}</button>
+                        <button type="button" class="action-button action-button--accent" @click="calculate('uptie4')">{{ $t(`All Uptie 4`) }}</button>
+                        <button type="button" class="action-button" @click="calculate('uptie3only')">{{ $t(`All Uptie 3-2`) }}</button>
+                        <button type="button" class="action-button" @click="calculate('uptie4only')">{{ $t(`All Uptie 4-2`) }}</button>
+                    </div>
+                </div>
+
+                <div class="mt-8 panel-divider"></div>
+
+                <div class="mt-8 rounded-[2rem] border border-white/10 bg-black/20 p-6">
+                    <p class="field-label">{{ $t(`You need`) }}</p>
+                    <div class="mt-4 flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+                        <img class="h-10 w-10" alt="ThreadAmount" src="../../src/assets/icon_twine.webp">
+                        <div>
+                            <p class="text-sm text-stone-400">Threads</p>
+                            <p class="text-3xl font-bold text-white">{{ CalResult.ThreadAmount }}</p>
                         </div>
-                        <div style="padding-right:10px">
-                            <button class="button-6" role="button" @click="calculate('uptie3only')">{{
-                                $t(`All Uptie 3-2`)
-                            }}</button>
-                            <button class="button-6" role="button" @click="calculate('uptie4only')">{{ $t(`All Uptie 4-2`)
-                            }}</button>
-                            <!-- <button class="button-6" role="button" @click="calculate('uptie5only')">{{ $t(`All Uptie 5-2`)}}</button> -->
+                    </div>
+
+                    <div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                        <div v-for="shard in shardCards" :key="shard.key" class="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+                            <img class="h-10 w-10" :alt="shard.key" :src="shard.image">
+                            <div>
+                                <p class="text-sm text-stone-400">{{ $t(shard.label) }}</p>
+                                <p class="text-2xl font-bold text-white">{{ CalResult[shard.key] }}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <h2 class="separator"></h2>
-                &nbsp;
-                <h3 class="box1h3text" style="text-align:left;">{{ $t(`You need`) }}:</h3>
-
-                <!--result below-->
-                <h2 class="box1h2text">
-                    <div style="text-align: left;padding-left:5vw">
-                        <img class="shardimg" alt="ThreadAmount" src="../../src/assets/icon_twine.webp">:{{
-                            CalResult.ThreadAmount
-                        }}&nbsp;
-                    </div>
-                    &nbsp;
-                    <div class="resultimg">
-                        <div>
-                            <img class="shardimg" alt="YiSangShard" src="../../src/assets/icon_piece-501YiSang.webp">:{{
-                                CalResult.YiSangIDs
-                            }}
-                        </div>
-                        <div>
-                            <img class="shardimg" alt="FaustShard" src="../../src/assets/icon_piece-502Faust.webp">:{{
-                                CalResult.FaustIDs
-                            }}
-                        </div>
-                        <div>
-                            <img class="shardimg" alt="DonShard" src="../../src/assets/icon_piece-503DonQuixote.webp">:{{
-                                CalResult.DonIDs
-                            }}
-                        </div>
-                        <div>
-                            <img class="shardimg" alt="RyoshuShard" src="../../src/assets/icon_piece-504Ryoshu.webp">:{{
-                                CalResult.RyoshuIDs
-                            }}
-                        </div>
-                        <div>
-                            <img class="shardimg" alt="MeurShard" src="../../src/assets/icon_piece-505Meursault.webp">:{{
-                                CalResult.MeurIDs
-                            }}
-                        </div>
-                        <div>
-                            <img class="shardimg" alt="HongLuShard" src="../../src/assets/icon_piece-506HongLu.webp">:{{
-                                CalResult.HongLuIDs
-                            }}
-                        </div>
-                        <div>
-                            <img class="shardimg" alt="HeathShard" src="../../src/assets/icon_piece-507Heathcliff.webp">:{{
-                                CalResult.HeathIDs
-                            }}
-                        </div>
-                        <div>
-                            <img class="shardimg" alt="IshShard" src="../../src/assets/icon_piece-508Ishmael.webp">:{{
-                                CalResult.IshIDs
-                            }}
-                        </div>
-                        <div>
-                            <img class="shardimg" alt="RodionShard" src="../../src/assets/icon_piece-509Rodion.webp">:{{
-                                CalResult.RodionIDs
-                            }}
-                        </div>
-                        <div>
-                            <img class="shardimg" alt="SinclairShard"
-                                src="../../src/assets/icon_piece-510EmilSinclair.webp">:{{ CalResult.SinclairIDs }}
-                        </div>
-                        <div>
-                            <img class="shardimg" alt="OutisShard" src="../../src/assets/icon_piece-511Outis.webp">:{{
-                                CalResult.OutisIDs
-                            }}
-                        </div>
-                        <div>
-                            <img class="shardimg" alt="GregorShard" src="../../src/assets/icon_piece-512Gregor.webp">:{{
-                                CalResult.GregorIDs
-                            }}
-                        </div>
-                    </div>
-                </h2>
             </div>
-        </div>
+        </section>
     </div>
 </template>
 
@@ -129,11 +66,22 @@ export default {
                 OutisIDs: 0,
                 GregorIDs: 0,
             },
-
+            shardCards: [
+                { key: 'YiSangIDs', label: 'YiSang', image: require('../../src/assets/icon_piece-501YiSang.webp') },
+                { key: 'FaustIDs', label: 'Faust', image: require('../../src/assets/icon_piece-502Faust.webp') },
+                { key: 'DonIDs', label: 'Don Quixote', image: require('../../src/assets/icon_piece-503DonQuixote.webp') },
+                { key: 'RyoshuIDs', label: 'Ryoshu', image: require('../../src/assets/icon_piece-504Ryoshu.webp') },
+                { key: 'MeurIDs', label: 'Meursault', image: require('../../src/assets/icon_piece-505Meursault.webp') },
+                { key: 'HongLuIDs', label: 'Hong Lu', image: require('../../src/assets/icon_piece-506HongLu.webp') },
+                { key: 'HeathIDs', label: 'Heathcliff', image: require('../../src/assets/icon_piece-507Heathcliff.webp') },
+                { key: 'IshIDs', label: 'Ishmael', image: require('../../src/assets/icon_piece-508Ishmael.webp') },
+                { key: 'RodionIDs', label: 'Rodion', image: require('../../src/assets/icon_piece-509Rodion.webp') },
+                { key: 'SinclairIDs', label: 'Sinclair', image: require('../../src/assets/icon_piece-510EmilSinclair.webp') },
+                { key: 'OutisIDs', label: 'Outis', image: require('../../src/assets/icon_piece-511Outis.webp') },
+                { key: 'GregorIDs', label: 'Gregor', image: require('../../src/assets/icon_piece-512Gregor.webp') },
+            ],
             uptiethreadamount: uptiethreadamount.data().uptiethreadamount,
         }
-    },
-    computed: {
     },
     methods: {
         calculateUptieCase(restore_data, mode) {
@@ -202,13 +150,5 @@ export default {
             restore_data ? this.calculateUptieCase(restore_data, mode) : alert(this.$t('dataNullAlert'));
         },
     },
-    mounted() {
-    },
-    watch: {
-    }
 }
 </script>
-
-<style>
-@import '../components/format.css';
-</style>

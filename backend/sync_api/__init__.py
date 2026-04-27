@@ -1,0 +1,1 @@
+# Screenshot sync API package.

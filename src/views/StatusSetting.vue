@@ -1,85 +1,190 @@
 <template>
-    <div class="content">
-        <div>
-            <div class="box box1">
-                <h1 class="subtitle">{{ $t(`StatusSetting`) }}</h1>
-                &nbsp;
-                <h2 class="separator"></h2>
-                &nbsp;
-                <h3 class="box1h3text" style="color:#c2bfbf;margin:10px">{{ $t(`statusSettingToolPage`) }}</h3>
-                <div style="text-align: right;padding-right:10px">
-                    <input type="file" id="fileInput" style="visibility:hidden;width: 10px" @change="loadFileUpload()">
-                    <button class="button-6" role="button" @click="openFileUpload()">{{ $t(`Import Setting`) }}</button>
-                    <button class="button-6" role="button" @click="download()">{{ $t(`Export Setting`) }}</button>
-                    <button class="button-6" role="button" style="background-color:rgb(211, 55, 16);color:#fff"
-                        @click="resetprogress()">{{ $t(`Reset`) }}</button>
-                </div>
-                <div v-for="(ID_id, ID_index) in All_IDs" :key="ID_index">
-                    <h2 class="separator"></h2>
-                    <h2 class="box1h2text">{{ $t(ID_to_name(ID_index)) }}</h2>
-                    <h3 class="box1h3text" style="text-align: left;">{{ $t(`Identities`) }}</h3>
-                    <div class="optionBlock">
-                        <div class="optionText" v-for="(id, index) in ID_id.IDs" :key="index">
-                            {{ id.rarity.replace('Rarity', '') }}&nbsp;{{ $t(index) }}
-                            &nbsp;
-                            <div>
-                                <div class="labelForUptie">{{ $t(`uptie`) }}</div>
-                                <div class="labelForLevel">{{ $t(`level`) }}</div>
-                            </div>
-                            <div>
-                                <select :id='ID_index + index' :v-model="ID_id.IDs"
-                                    @change="id.uptied = getitemselected(ID_index + index), updateIDdata()">
-                                    <option value=0>{{ $t(`Don't have`) }}</option>
-                                    <option value=1>{{ $t(`Uptie`) }}1</option>
-                                    <option value=2>{{ $t(`Uptie`) }}2</option>
-                                    <option value=3>{{ $t(`Uptie`) }}3</option>
-                                    <option value=4>{{ $t(`Uptie`) }}4</option>
-                                </select>
-                                <input
-                                    @change="getitemselected(ID_index + index + 'level'), id.level = limitInputValue(ID_index + index + 'level'), updateIDdata()"
-                                    type="number" placeholder=1 :id='ID_index + index + "level"' style="width:10vw">
-                            </div>
-                            &nbsp;
+    <div class="page-shell">
+        <section class="mx-auto max-w-7xl px-4 py-8 md:px-6 lg:px-8">
+            <div class="content-card overflow-hidden">
+                <div class="border-b border-white/10 px-6 py-8 md:px-8">
+                    <div class="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
+                        <div class="max-w-3xl">
+                            <p class="field-label text-gold">{{ $t(`BulkSyncLabel`) }}</p>
+                            <h1 class="section-title mt-3">{{ $t(`StatusSetting`) }}</h1>
+                            <p class="section-copy mt-4">{{ $t(`statusSettingToolPage`) }}</p>
+                            <p class="mt-4 text-sm text-stone-400">{{ $t(`BulkSyncHint`) }}</p>
+                        </div>
+
+                        <div class="grid gap-3 sm:grid-cols-2 xl:min-w-[32rem] xl:grid-cols-2">
+                            <button type="button" class="action-button" @click="openFileUpload()">{{ $t(`Import Setting`) }}</button>
+                            <button type="button" class="action-button" @click="download()">{{ $t(`Export Setting`) }}</button>
+                            <button type="button" class="action-button action-button--accent" :disabled="syncState.loading" @click="openScreenshotUpload()">
+                                {{ syncState.loading ? $t(`SyncingScreenshots`) : $t(`SyncScreenshots`) }}
+                            </button>
+                            <button type="button" class="action-button action-button--danger" @click="resetProgress()">{{ $t(`Reset`) }}</button>
                         </div>
                     </div>
-                    <h3 class="box1h3text" style="text-align: left;">EGO</h3>
-                    <div class="optionBlock">
-                        <div class="optionText" v-for="(id, index) in ID_id.EGOs" :key="index">
-                            {{ id.rarity.replace('notOriginal', '') }}&nbsp;{{ $t(index) }}
-                            &nbsp;
-                            <div>
-                                <div class="labelForUptie">{{ $t(`uptie`) }}</div>
-                            </div>
-                            <div>
-                                <select :id='ID_index + index' :v-model="ID_id.EGOs"
-                                    @change="id.uptied = getitemselected(ID_index + index), updateIDdata()">
-                                    <option value=0>{{ $t(`Don't have`) }}</option>
-                                    <option value=1>{{ $t(`Uptie`) }}1</option>
-                                    <option value=2>{{ $t(`Uptie`) }}2</option>
-                                    <option value=3>{{ $t(`Uptie`) }}3</option>
-                                    <option value=4>{{ $t(`Uptie`) }}4</option>
-                                </select>
-                            </div>
-                            &nbsp;
+
+                    <input ref="settingsInput" type="file" class="hidden" accept=".txt,.json" @change="handleSettingsUpload">
+                    <input ref="screenshotsInput" type="file" class="hidden" accept="image/*" multiple @change="handleScreenshotUpload">
+
+                    <div class="mt-6 grid gap-4 lg:grid-cols-3">
+                        <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
+                            <p class="field-label">{{ $t(`ProcessedScreenshots`) }}</p>
+                            <p class="mt-3 text-3xl font-bold text-white">{{ syncState.processedScreenshots }}</p>
+                        </div>
+                        <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
+                            <p class="field-label">{{ $t(`RecognizedEntries`) }}</p>
+                            <p class="mt-3 text-3xl font-bold text-white">{{ syncState.recognizedEntries }}</p>
+                        </div>
+                        <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
+                            <p class="field-label">{{ $t(`LastSyncStatus`) }}</p>
+                            <p class="mt-3 text-sm text-stone-300">{{ syncSummary }}</p>
                         </div>
                     </div>
+
+                    <p v-if="syncState.error" class="mt-4 rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+                        {{ syncState.error }}
+                    </p>
                 </div>
-                <!-- <button @click="getcurrentiddata()">Submit</button> -->
+
+                <div class="divide-y divide-white/10">
+                    <section v-for="(group, sinnerKey) in All_IDs" :key="sinnerKey" class="px-6 py-8 md:px-8">
+                        <div class="flex flex-col gap-8">
+                            <div>
+                                <h2 class="text-2xl font-bold text-white md:text-3xl">{{ $t(getSinnerName(sinnerKey)) }}</h2>
+                            </div>
+
+                            <div>
+                                <div class="mb-4 flex items-center justify-between gap-4">
+                                    <h3 class="text-lg font-semibold uppercase tracking-[0.18em] text-gold">{{ $t(`Identities`) }}</h3>
+                                    <div class="panel-divider flex-1"></div>
+                                </div>
+
+                                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                    <article
+                                        v-for="(identity, identityName) in group.IDs"
+                                        :key="identityName"
+                                        class="rounded-3xl border border-white/10 bg-black/20 p-5"
+                                    >
+                                        <p class="text-xs font-semibold uppercase tracking-[0.22em] text-stone-400">{{ identity.rarity.replace('Rarity', '') }}</p>
+                                        <h4 class="mt-3 text-lg font-semibold leading-6 text-white">{{ $t(identityName) }}</h4>
+
+                                        <div class="mt-5 grid gap-3 sm:grid-cols-2">
+                                            <label class="block">
+                                                <span class="field-label">{{ $t(`uptie`) }}</span>
+                                                <select v-model="identity.uptied" class="field-select mt-2" @change="persistProgress()">
+                                                    <option value="0">{{ $t(`Don't have`) }}</option>
+                                                    <option value="1">{{ $t(`Uptie`) }} 1</option>
+                                                    <option value="2">{{ $t(`Uptie`) }} 2</option>
+                                                    <option value="3">{{ $t(`Uptie`) }} 3</option>
+                                                    <option value="4">{{ $t(`Uptie`) }} 4</option>
+                                                </select>
+                                            </label>
+
+                                            <label class="block">
+                                                <span class="field-label">{{ $t(`level`) }}</span>
+                                                <input
+                                                    v-model.number="identity.level"
+                                                    type="number"
+                                                    min="1"
+                                                    max="50"
+                                                    class="field-select mt-2"
+                                                    @change="updateLevel(identity)"
+                                                >
+                                            </label>
+                                        </div>
+                                    </article>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="mb-4 flex items-center justify-between gap-4">
+                                    <h3 class="text-lg font-semibold uppercase tracking-[0.18em] text-gold">EGO</h3>
+                                    <div class="panel-divider flex-1"></div>
+                                </div>
+
+                                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                    <article
+                                        v-for="(ego, egoName) in group.EGOs"
+                                        :key="egoName"
+                                        class="rounded-3xl border border-white/10 bg-black/20 p-5"
+                                    >
+                                        <p class="text-xs font-semibold uppercase tracking-[0.22em] text-stone-400">{{ ego.rarity.replace('notOriginal', '') }}</p>
+                                        <h4 class="mt-3 text-lg font-semibold leading-6 text-white">{{ $t(egoName) }}</h4>
+
+                                        <label class="mt-5 block">
+                                            <span class="field-label">{{ $t(`uptie`) }}</span>
+                                            <select v-model="ego.uptied" class="field-select mt-2" @change="persistProgress()">
+                                                <option value="0">{{ $t(`Don't have`) }}</option>
+                                                <option value="1">{{ $t(`Uptie`) }} 1</option>
+                                                <option value="2">{{ $t(`Uptie`) }} 2</option>
+                                                <option value="3">{{ $t(`Uptie`) }} 3</option>
+                                                <option value="4">{{ $t(`Uptie`) }} 4</option>
+                                            </select>
+                                        </label>
+                                    </article>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
             </div>
-        </div>
+        </section>
     </div>
 </template>
 
 <script>
 import statusdata from '../components/data.js';
+import {
+    PROGRESS_STORAGE_KEY,
+    cloneProgress,
+    hydrateProgress,
+    mergeRecognizedUpdates,
+    sanitizeLevel,
+    syncProgressWithScreenshots,
+} from '../utils/progressSync';
+
 export default {
     name: 'StatusSetting',
     props: ['StatusData'],
     data() {
-        return statusdata.data();
+        const defaultProgress = statusdata.data().All_IDs;
+
+        return {
+            All_IDs: cloneProgress(defaultProgress),
+            syncState: {
+                loading: false,
+                processedScreenshots: 0,
+                recognizedEntries: 0,
+                matchedNames: [],
+                error: '',
+                updatedAt: '',
+            },
+        };
+    },
+    computed: {
+        syncSummary() {
+            if (this.syncState.loading) {
+                return this.$t('SyncingScreenshots');
+            }
+
+            if (this.syncState.error) {
+                return this.$t('SyncFailed');
+            }
+
+            if (!this.syncState.updatedAt) {
+                return this.$t('SyncAwaiting');
+            }
+
+            const matchedText = this.syncState.matchedNames.length
+                ? this.syncState.matchedNames.slice(0, 3).map((name) => this.$t(name)).join(', ')
+                : this.$t('NoMatchesFound');
+
+            return `${this.syncState.updatedAt} · ${matchedText}`;
+        },
     },
     methods: {
-        ID_to_name(itemID) {
+        createDefaultProgress() {
+            return cloneProgress(statusdata.data().All_IDs);
+        },
+        getSinnerName(itemID) {
             var CorrName;
             switch (itemID) {
                 case "YiSangIDs":
@@ -121,18 +226,16 @@ export default {
             }
             return CorrName;
         },
-        //for testing
-        testinglog(item) {
-            //console.log(item);
+        persistProgress() {
+            localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(this.All_IDs));
         },
-        //update the data to local storage
-        updateIDdata() {
-            localStorage.setItem('IDdata', JSON.stringify(this.All_IDs));
+        applyProgress(progress) {
+            this.All_IDs = hydrateProgress(this.createDefaultProgress(), progress);
+            this.persistProgress();
         },
-        //for getting the option value
-        getitemselected(item) {
-            var e = document.getElementById(item);
-            return e.value;
+        updateLevel(identity) {
+            identity.level = sanitizeLevel(identity.level);
+            this.persistProgress();
         },
         download() {
             var type = "text/plain";
@@ -154,132 +257,86 @@ export default {
             window.URL.revokeObjectURL(a.href);
             document.body.removeChild(a);
         },
-        openFileUpload() { //click the hidden file input button
-            document.getElementById("fileInput").click();
+        openFileUpload() {
+            this.$refs.settingsInput.click();
         },
-        loadFileUpload() {
-            var fileInput = document.getElementById('fileInput');
-            var file = fileInput.files[0];
-            var textType = /text.*/;
+        openScreenshotUpload() {
+            this.$refs.screenshotsInput.click();
+        },
+        async handleSettingsUpload(event) {
+            const [file] = event.target.files || [];
 
-            if (file.type.match(textType)) {
-                var reader = new FileReader();
+            if (!file) {
+                return;
+            }
 
-                reader.onload = function (e) {
-                    var content = reader.result;
-                    //Here the content has been read successfuly
-                    localStorage.setItem('IDdata', content);
-                    // console.log(content);
-                }
-                reader.readAsText(file);
-                location.reload();
+            const content = await file.text();
+            const parsed = JSON.parse(content);
+
+            this.applyProgress(parsed);
+            event.target.value = '';
+        },
+        async handleScreenshotUpload(event) {
+            const files = Array.from(event.target.files || []);
+
+            if (!files.length) {
+                return;
+            }
+
+            this.syncState = {
+                ...this.syncState,
+                loading: true,
+                error: '',
+            };
+
+            try {
+                const response = await syncProgressWithScreenshots(files, this.All_IDs);
+                const mergedProgress = response.merged_progress
+                    ? hydrateProgress(this.createDefaultProgress(), response.merged_progress)
+                    : mergeRecognizedUpdates(this.All_IDs, response.updates || []);
+
+                this.applyProgress(mergedProgress);
+                this.syncState = {
+                    loading: false,
+                    processedScreenshots: response.processed_screenshots || files.length,
+                    recognizedEntries: (response.updates || []).length,
+                    matchedNames: (response.updates || []).map((item) => item.entryKey),
+                    error: '',
+                    updatedAt: new Date().toLocaleString(),
+                };
+            } catch (error) {
+                this.syncState = {
+                    ...this.syncState,
+                    loading: false,
+                    error: error.message || this.$t('SyncFailed'),
+                };
+            } finally {
+                event.target.value = '';
             }
         },
-        //restore the progress, used in the mounted()
-        restoreprogress() {
-            var restoredata = JSON.parse(localStorage.getItem('IDdata'));
-            if (restoredata) {
-
-                //for checking if there is newly added data(aka game updated new stuff)
-                for (const [key1, value1] of Object.entries(this.All_IDs)) {
-                    //key = YiSangIDs...  value1 = IDs, EGOs
-                    if (!restoredata[key1]) {
-                        // console.log(key1);
-                    }
-                    for (const [key2, value2] of Object.entries(this.All_IDs[key1].IDs)) {
-                        //key2 = Effloresced E.G.O::Spicebush YiSang...  value2 = rarity, uptied
-
-                        //if something not in the restoredata, add it
-                        if (!restoredata[key1].IDs[key2]) {
-                            // console.log(key1 + " IDs " + key2);
-                            restoredata[key1].IDs[key2] = this.All_IDs[key1].IDs[key2];
-                            localStorage.setItem('IDdata', JSON.stringify(restoredata));
-                        }
-                        //if the rarity is different, update it
-                        if (restoredata[key1].IDs[key2].rarity != this.All_IDs[key1].IDs[key2].rarity) {
-                            // console.log(key1 + " IDs " + key2);
-                            restoredata[key1].IDs[key2].rarity = this.All_IDs[key1].IDs[key2].rarity;
-                            localStorage.setItem('IDdata', JSON.stringify(restoredata));
-                        }
-                        //if no level, add it
-                        if (restoredata[key1].IDs[key2].level == undefined) {
-                            // console.log(key1 + " IDs " + key2);
-                            restoredata[key1].IDs[key2].level = this.All_IDs[key1].IDs[key2].level;
-                            localStorage.setItem('IDdata', JSON.stringify(restoredata));
-                        }
-                    }
-                    for (const [key3, value2] of Object.entries(this.All_IDs[key1].EGOs)) {
-                        //if something not in the restoredata, add it
-                        if (!restoredata[key1].EGOs[key3]) {
-                            // console.log(key1 + " EGOs " + key3);
-                            restoredata[key1].EGOs[key3] = this.All_IDs[key1].EGOs[key3];
-                            localStorage.setItem('IDdata', JSON.stringify(restoredata));
-                        }
-                        //if the rarity is different, update it
-                        if (restoredata[key1].EGOs[key3].rarity != this.All_IDs[key1].EGOs[key3].rarity) {
-                            // console.log(key1 + " EGOs " + key3);
-                            restoredata[key1].EGOs[key3].rarity = this.All_IDs[key1].EGOs[key3].rarity;
-                            localStorage.setItem('IDdata', JSON.stringify(restoredata));
-                        }
-                        //if no level, add it
-                        if (restoredata[key1].EGOs[key3].level == undefined) {
-                            // console.log(key1 + " EGOs " + key3);
-                            restoredata[key1].EGOs[key3].level = this.All_IDs[key1].EGOs[key3].level;
-                            localStorage.setItem('IDdata', JSON.stringify(restoredata));
-                        }
-                    }
-                }
-                for (const [key, value] of Object.entries(this.All_IDs)) {
-                    for (const [key2, value2] of Object.entries(value.IDs)) {
-                        value2.uptied = restoredata[key].IDs[key2].uptied;
-                        value2.level = restoredata[key].IDs[key2].level;
-                        document.getElementById(key + key2).value = value2.uptied;
-                        restoredata[key].IDs[key2].level != 1 ? document.getElementById(key + key2 + "level").value = value2.level : '';
-                    }
-                    for (const [key3, value3] of Object.entries(value.EGOs)) {
-                        value3.uptied = restoredata[key].EGOs[key3].uptied;
-                        value3.level = restoredata[key].EGOs[key3].level;
-                        document.getElementById(key + key3).value = value3.uptied;
-                    }
-                }
-            } else {
-                localStorage.setItem('IDdata', JSON.stringify(this.All_IDs));
-            }
+        restoreProgress() {
+            const storedProgress = JSON.parse(localStorage.getItem(PROGRESS_STORAGE_KEY));
+            this.All_IDs = hydrateProgress(this.createDefaultProgress(), storedProgress || {});
+            this.persistProgress();
         },
-        //remove the localstorage data + reset everything
-        resetprogress() {
-            localStorage.removeItem('IDdata');
-            location.reload();
+        resetProgress() {
+            localStorage.removeItem(PROGRESS_STORAGE_KEY);
+            this.All_IDs = this.createDefaultProgress();
+            this.syncState = {
+                loading: false,
+                processedScreenshots: 0,
+                recognizedEntries: 0,
+                matchedNames: [],
+                error: '',
+                updatedAt: '',
+            };
+            this.persistProgress();
         },
-        //limit the input value in level text box
-        limitInputValue(item) {
-            document.getElementById(item).value > 40 ? document.getElementById(item).value = 40 : '';
-            document.getElementById(item).value < 1 ? document.getElementById(item).value = 1 : document.getElementById(item).value = parseInt(document.getElementById(item).value);
-            return this.getitemselected(item);
-        },
-    },
-    created() {
-        // console.log(this.$data);
     },
     mounted() {
-        //call restoreprogress funct when DOMContentLoaded
-        document.addEventListener('DOMContentLoaded', this.restoreprogress);
-
-        //reload the page for addeventlistener rlly show result
-        if (localStorage.getItem('reloaded')) { //just reloaded
-            localStorage.removeItem('reloaded');
-        } else {
-            // Set a flag so that we know not to reload the page twice.
-            localStorage.setItem('reloaded', '1');
-            location.reload();
-        }
+        this.restoreProgress();
     },
 }
 </script>
 
-<style>
-@import '../components/format.css';
-</style>
-  
 
-  
