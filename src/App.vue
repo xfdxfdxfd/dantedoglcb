@@ -1,64 +1,98 @@
 <template>
   <div class="min-h-screen bg-ink text-mist">
-    <header class="app-header-bg sticky top-0 z-50 border-b border-white/10 bg-cover bg-center shadow-2xl backdrop-blur-sm">
-      <div v-if="loading" class="h-1 overflow-hidden rounded-full bg-black/40">
+    <div class="fixed inset-x-0 top-0 z-[70]">
+      <div v-if="loading" class="h-1 overflow-hidden bg-black/40">
         <div class="animate-[loading_1.2s_linear_infinite] h-full w-2/5 bg-ember"></div>
       </div>
       <div v-else class="h-1 bg-black/40"></div>
+    </div>
 
-      <div class="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 md:px-6 lg:px-8">
-        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <router-link :to="{ name: 'Home' }" class="inline-flex items-center">
-            <img class="h-14 w-auto md:h-16" alt="LC Dog Dante" src="./assets/DanteLogoBanner.webp">
-          </router-link>
+    <button
+      type="button"
+      class="fixed left-4 top-4 z-[80] inline-flex h-11 w-11 items-center justify-center border border-gold/40 bg-black/65 text-gold shadow-glow backdrop-blur transition hover:border-gold hover:bg-black/80 lg:hidden"
+      :aria-expanded="sidebarOpen.toString()"
+      :aria-label="$t(sidebarOpen ? 'CloseMenu' : 'OpenMenu')"
+      @click="toggleSidebar"
+    >
+      <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path v-if="!sidebarOpen" d="M4 7h16M4 12h16M4 17h16" />
+        <path v-else d="M6 6l12 12M18 6L6 18" />
+      </svg>
+      <span class="sr-only">{{ $t(sidebarOpen ? 'CloseMenu' : 'OpenMenu') }}</span>
+    </button>
 
-          <div class="flex gap-2 self-start md:self-auto">
+    <div
+      v-if="sidebarOpen"
+      class="fixed inset-0 z-[55] bg-black/70 backdrop-blur-sm lg:hidden"
+      @click="closeSidebar"
+    ></div>
+
+    <aside
+      class="app-header-bg fixed inset-y-0 left-0 z-[60] w-72 border-r border-gold/20 bg-cover bg-center shadow-2xl transition-transform duration-300 ease-out lg:translate-x-0"
+      :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+    >
+      <div class="h-full overflow-y-auto px-4 py-6 md:px-6">
+        <div class="content-card min-h-full bg-black/35 px-4 py-5 md:px-5">
+          <div class="flex items-center gap-4">
+            <span class="deco-diamond hidden md:inline-flex" aria-hidden="true">
+              <span class="h-2.5 w-2.5 bg-gold"></span>
+            </span>
+            <router-link :to="{ name: 'Home' }" class="inline-flex items-center" @click="handleNavSelection">
+              <img class="h-14 w-auto md:h-16" alt="LC Dog Dante" src="./assets/DanteLogoBanner.webp">
+            </router-link>
+          </div>
+
+          <div class="mt-6 grid gap-2">
             <button
+              v-for="locale in localeOptions"
+              :key="locale.code"
               type="button"
-              class="rounded-full border px-4 py-2 text-sm font-semibold transition"
-              :class="localeButtonClass('en')"
-              @click="setLocale('en')"
+              class="nav-pill w-full text-left"
+              :class="localeButtonClass(locale.code)"
+              @click="setLocale(locale.code)"
             >
-              English
-            </button>
-            <button
-              type="button"
-              class="rounded-full border px-4 py-2 text-sm font-semibold transition"
-              :class="localeButtonClass('zh')"
-              @click="setLocale('zh')"
-            >
-              中文
+              {{ $t(locale.label) }}
             </button>
           </div>
+
+          <div class="deco-divider mt-6 text-[0.65rem] font-accent uppercase tracking-[0.34em]">{{ $t('Navigation') }}</div>
+
+          <nav class="mt-5 flex flex-col gap-2 border-t border-gold/10 pt-4">
+            <router-link
+              v-for="item in navItems"
+              :key="item.name"
+              :to="{ name: item.name }"
+              class="nav-pill"
+              :class="navLinkClass(item.path)"
+              @click="handleNavSelection"
+            >
+              {{ $t(item.label) }}
+            </router-link>
+          </nav>
         </div>
-
-        <nav class="flex flex-wrap gap-2 pb-2">
-          <router-link
-            v-for="item in navItems"
-            :key="item.name"
-            :to="{ name: item.name }"
-            class="rounded-full border px-4 py-2 text-sm font-semibold tracking-wide transition"
-            :class="navLinkClass(item.path)"
-          >
-            {{ $t(item.label) }}
-          </router-link>
-        </nav>
       </div>
-    </header>
+    </aside>
 
-    <main>
-      <router-view />
-    </main>
+    <div class="min-h-screen lg:pl-72">
+      <main class="pt-16 lg:pt-0">
+        <router-view />
+      </main>
+    </div>
   </div>
 </template>
 
 <script>
-
 export default {
   name: 'App',
   data() {
     return {
       loading: true,
+      sidebarOpen: false,
+      localeOptions: [
+        { code: 'en', label: 'LanguageEnglish' },
+        { code: 'zh-TW', label: 'LanguageTraditionalChinese' },
+        { code: 'zh-CN', label: 'LanguageSimplifiedChinese' },
+      ],
       navItems: [
         { name: 'Home', path: '/', label: 'Home' },
         { name: 'Changelog', path: '/LCB/Changelog', label: 'Changelog' },
@@ -69,33 +103,51 @@ export default {
     }
   },
   methods: {
+    normalizeLocale(lang) {
+      return lang === 'zh' ? 'zh-TW' : lang;
+    },
     updatelocate(lang) {
-      localStorage.setItem('locate', lang);
+      localStorage.setItem('locate', this.normalizeLocale(lang));
     },
     setLocale(lang) {
-      this.$i18n.locale = lang;
-      this.updatelocate(lang);
+      const locale = this.normalizeLocale(lang);
+      this.$i18n.locale = locale;
+      this.updatelocate(locale);
+      this.closeSidebar();
+    },
+    toggleSidebar() {
+      this.sidebarOpen = !this.sidebarOpen;
+    },
+    closeSidebar() {
+      this.sidebarOpen = false;
+    },
+    handleNavSelection() {
+      this.closeSidebar();
     },
     navLinkClass(path) {
       return this.$route.path === path
-        ? 'border-ember bg-ember text-white shadow-lg shadow-ember/30'
-        : 'border-white/15 bg-black/20 text-stone-100 hover:border-gold/60 hover:bg-white/10';
+        ? 'border-gold bg-gold text-stone-950 shadow-glow'
+        : 'border-gold/30 bg-black/20 text-mist hover:border-gold hover:bg-black/35';
     },
     localeButtonClass(locale) {
-      return this.$i18n.locale === locale
+      return this.normalizeLocale(this.$i18n.locale) === locale
         ? 'border-gold bg-gold text-stone-950'
-        : 'border-white/20 bg-black/25 text-white hover:border-gold/60 hover:bg-white/10';
+        : 'border-gold/25 bg-black/20 text-mist hover:border-gold hover:bg-black/35';
+    },
+  },
+  watch: {
+    $route() {
+      this.closeSidebar();
     },
   },
   created() {
     setTimeout(() => this.loading = false, 1000)
   },
   mounted() {
-
-    //no reset the language after reload
-    var language = localStorage.getItem('locate');
+    const language = this.normalizeLocale(localStorage.getItem('locate'));
     if (language) {
-      this.$i18n.locale = localStorage.getItem('locate');
+      this.$i18n.locale = language;
+      this.updatelocate(language);
     } else {
       localStorage.setItem('locate', 'en');
       this.$i18n.locale = localStorage.getItem('locate');

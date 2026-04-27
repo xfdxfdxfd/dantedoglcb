@@ -1,4 +1,6 @@
-const API_BASE_URL = process.env.VUE_APP_API_BASE_URL || 'http://127.0.0.1:8000';
+const runtimeEnv = typeof import.meta !== 'undefined' ? import.meta.env || {} : {};
+const legacyEnv = typeof process !== 'undefined' ? process.env || {} : {};
+const API_BASE_URL = runtimeEnv.VITE_API_BASE_URL || runtimeEnv.VUE_APP_API_BASE_URL || legacyEnv.VUE_APP_API_BASE_URL || 'http://127.0.0.1:8000';
 
 export const PROGRESS_STORAGE_KEY = 'IDdata';
 

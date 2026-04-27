@@ -1,40 +1,46 @@
 <template>
     <div class="page-shell">
-        <section class="mx-auto max-w-7xl px-4 py-8 md:px-6 lg:px-8">
+        <section class="page-grid">
             <div class="content-card overflow-hidden px-6 py-8 md:px-8">
-                <div class="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
-                    <div class="max-w-3xl">
-                        <p class="field-label text-gold">Thread Planner</p>
+                <div class="hero-grid items-start">
+                    <div class="hero-card">
+                        <p class="section-kicker">{{ $t(`UptieThreadPlanner`) }}</p>
+                        <div class="deco-divider mt-4 lg:mx-0 lg:justify-start">{{ $t(`UptieGrandTotals`) }}</div>
                         <h1 class="section-title mt-3">{{ $t(`UptieCalculator`) }}</h1>
                         <p class="section-copy mt-4">{{ $t(`uptieCalculatorToolPage`) }}</p>
                     </div>
 
-                    <div class="grid gap-3 sm:grid-cols-2">
-                        <button type="button" class="action-button action-button--accent" @click="calculate('uptie3')">{{ $t(`All Uptie 3`) }}</button>
-                        <button type="button" class="action-button action-button--accent" @click="calculate('uptie4')">{{ $t(`All Uptie 4`) }}</button>
-                        <button type="button" class="action-button" @click="calculate('uptie3only')">{{ $t(`All Uptie 3-2`) }}</button>
-                        <button type="button" class="action-button" @click="calculate('uptie4only')">{{ $t(`All Uptie 4-2`) }}</button>
+                    <div class="hero-card">
+                        <p class="section-kicker">{{ $t(`UptieModes`) }}</p>
+                        <div class="deco-divider mt-4">{{ $t(`UptieSelection`) }}</div>
+                        <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                            <button type="button" class="action-button action-button--accent" @click="calculate('uptie3')">{{ $t(`All Uptie 3`) }}</button>
+                            <button type="button" class="action-button action-button--accent" @click="calculate('uptie4')">{{ $t(`All Uptie 4`) }}</button>
+                            <button type="button" class="action-button" @click="calculate('uptie3only')">{{ $t(`All Uptie 3-2`) }}</button>
+                            <button type="button" class="action-button" @click="calculate('uptie4only')">{{ $t(`All Uptie 4-2`) }}</button>
+                        </div>
                     </div>
                 </div>
 
                 <div class="mt-8 panel-divider"></div>
 
-                <div class="mt-8 rounded-[2rem] border border-white/10 bg-black/20 p-6">
-                    <p class="field-label">{{ $t(`You need`) }}</p>
-                    <div class="mt-4 flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <img class="h-10 w-10" alt="ThreadAmount" src="../../src/assets/icon_twine.webp">
+                <div class="mt-8 subtle-panel p-6">
+                    <p class="section-kicker">{{ $t(`You need`) }}</p>
+                    <div class="deco-divider mt-4 justify-start">{{ $t(`UptieThreadLedger`) }}</div>
+                    <div class="mt-4 muted-panel flex items-center gap-4 p-4">
+                        <span class="deco-diamond shrink-0" aria-hidden="true"><img class="h-6 w-6" :alt="$t('Threads')" src="../../src/assets/icon_twine.webp"></span>
                         <div>
-                            <p class="text-sm text-stone-400">Threads</p>
-                            <p class="text-3xl font-bold text-white">{{ CalResult.ThreadAmount }}</p>
+                            <p class="text-sm text-stone-400">{{ $t(`Threads`) }}</p>
+                            <p class="deco-stat-value text-3xl">{{ CalResult.ThreadAmount }}</p>
                         </div>
                     </div>
 
                     <div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                        <div v-for="shard in shardCards" :key="shard.key" class="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-                            <img class="h-10 w-10" :alt="shard.key" :src="shard.image">
+                        <div v-for="shard in shardCards" :key="shard.key" class="muted-panel flex items-center gap-4 p-4">
+                            <span class="deco-diamond shrink-0" aria-hidden="true"><img class="h-6 w-6" :alt="shard.key" :src="shard.image"></span>
                             <div>
                                 <p class="text-sm text-stone-400">{{ $t(shard.label) }}</p>
-                                <p class="text-2xl font-bold text-white">{{ CalResult[shard.key] }}</p>
+                                <p class="font-accent text-2xl uppercase tracking-[0.14em] text-white">{{ CalResult[shard.key] }}</p>
                             </div>
                         </div>
                     </div>

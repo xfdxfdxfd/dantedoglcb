@@ -1,23 +1,28 @@
 <template>
     <div class="page-shell">
-        <section class="mx-auto max-w-7xl px-4 py-8 md:px-6 lg:px-8">
+        <section class="page-grid">
             <div class="content-card overflow-hidden">
                 <div class="border-b border-white/10 px-6 py-8 md:px-8">
-                    <div class="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
-                        <div class="max-w-3xl">
-                            <p class="field-label text-gold">{{ $t(`BulkSyncLabel`) }}</p>
+                    <div class="hero-grid items-start">
+                        <div class="hero-card">
+                            <p class="section-kicker">{{ $t(`BulkSyncLabel`) }}</p>
+                            <div class="deco-divider mt-4 lg:mx-0 lg:justify-start">{{ $t(`StatusRecognitionSuite`) }}</div>
                             <h1 class="section-title mt-3">{{ $t(`StatusSetting`) }}</h1>
                             <p class="section-copy mt-4">{{ $t(`statusSettingToolPage`) }}</p>
                             <p class="mt-4 text-sm text-stone-400">{{ $t(`BulkSyncHint`) }}</p>
                         </div>
 
-                        <div class="grid gap-3 sm:grid-cols-2 xl:min-w-[32rem] xl:grid-cols-2">
-                            <button type="button" class="action-button" @click="openFileUpload()">{{ $t(`Import Setting`) }}</button>
-                            <button type="button" class="action-button" @click="download()">{{ $t(`Export Setting`) }}</button>
-                            <button type="button" class="action-button action-button--accent" :disabled="syncState.loading" @click="openScreenshotUpload()">
-                                {{ syncState.loading ? $t(`SyncingScreenshots`) : $t(`SyncScreenshots`) }}
-                            </button>
-                            <button type="button" class="action-button action-button--danger" @click="resetProgress()">{{ $t(`Reset`) }}</button>
+                        <div class="hero-card">
+                            <p class="section-kicker">{{ $t(`StatusActions`) }}</p>
+                            <div class="deco-divider mt-4">{{ $t(`StatusControlPanel`) }}</div>
+                            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                                <button type="button" class="action-button" @click="openFileUpload()">{{ $t(`Import Setting`) }}</button>
+                                <button type="button" class="action-button" @click="download()">{{ $t(`Export Setting`) }}</button>
+                                <button type="button" class="action-button action-button--accent" :disabled="syncState.loading" @click="openScreenshotUpload()">
+                                    {{ syncState.loading ? $t(`SyncingScreenshots`) : $t(`SyncScreenshots`) }}
+                                </button>
+                                <button type="button" class="action-button action-button--danger" @click="resetProgress()">{{ $t(`Reset`) }}</button>
+                            </div>
                         </div>
                     </div>
 
@@ -25,15 +30,15 @@
                     <input ref="screenshotsInput" type="file" class="hidden" accept="image/*" multiple @change="handleScreenshotUpload">
 
                     <div class="mt-6 grid gap-4 lg:grid-cols-3">
-                        <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
+                        <div class="metric-card">
                             <p class="field-label">{{ $t(`ProcessedScreenshots`) }}</p>
-                            <p class="mt-3 text-3xl font-bold text-white">{{ syncState.processedScreenshots }}</p>
+                            <p class="deco-stat-value mt-3">{{ syncState.processedScreenshots }}</p>
                         </div>
-                        <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
+                        <div class="metric-card">
                             <p class="field-label">{{ $t(`RecognizedEntries`) }}</p>
-                            <p class="mt-3 text-3xl font-bold text-white">{{ syncState.recognizedEntries }}</p>
+                            <p class="deco-stat-value mt-3">{{ syncState.recognizedEntries }}</p>
                         </div>
-                        <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
+                        <div class="metric-card">
                             <p class="field-label">{{ $t(`LastSyncStatus`) }}</p>
                             <p class="mt-3 text-sm text-stone-300">{{ syncSummary }}</p>
                         </div>
@@ -48,7 +53,9 @@
                     <section v-for="(group, sinnerKey) in All_IDs" :key="sinnerKey" class="px-6 py-8 md:px-8">
                         <div class="flex flex-col gap-8">
                             <div>
-                                <h2 class="text-2xl font-bold text-white md:text-3xl">{{ $t(getSinnerName(sinnerKey)) }}</h2>
+                                <p class="section-kicker">{{ $t(`StatusRosterSegment`) }}</p>
+                                <div class="deco-divider mt-4 justify-start">{{ $t(`StatusCollection`) }}</div>
+                                <h2 class="mt-2 text-2xl font-bold tracking-[0.08em] text-white md:text-3xl">{{ $t(getSinnerName(sinnerKey)) }}</h2>
                             </div>
 
                             <div>
@@ -57,11 +64,11 @@
                                     <div class="panel-divider flex-1"></div>
                                 </div>
 
-                                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                <div class="deco-list-grid">
                                     <article
                                         v-for="(identity, identityName) in group.IDs"
                                         :key="identityName"
-                                        class="rounded-3xl border border-white/10 bg-black/20 p-5"
+                                        class="muted-panel p-5"
                                     >
                                         <p class="text-xs font-semibold uppercase tracking-[0.22em] text-stone-400">{{ identity.rarity.replace('Rarity', '') }}</p>
                                         <h4 class="mt-3 text-lg font-semibold leading-6 text-white">{{ $t(identityName) }}</h4>
@@ -96,15 +103,15 @@
 
                             <div>
                                 <div class="mb-4 flex items-center justify-between gap-4">
-                                    <h3 class="text-lg font-semibold uppercase tracking-[0.18em] text-gold">EGO</h3>
+                                    <h3 class="text-lg font-semibold uppercase tracking-[0.18em] text-gold">{{ $t(`EGO`) }}</h3>
                                     <div class="panel-divider flex-1"></div>
                                 </div>
 
-                                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                <div class="deco-list-grid">
                                     <article
                                         v-for="(ego, egoName) in group.EGOs"
                                         :key="egoName"
-                                        class="rounded-3xl border border-white/10 bg-black/20 p-5"
+                                        class="muted-panel p-5"
                                     >
                                         <p class="text-xs font-semibold uppercase tracking-[0.22em] text-stone-400">{{ ego.rarity.replace('notOriginal', '') }}</p>
                                         <h4 class="mt-3 text-lg font-semibold leading-6 text-white">{{ $t(egoName) }}</h4>
