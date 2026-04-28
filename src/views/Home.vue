@@ -56,7 +56,7 @@
                     <p class="section-kicker">{{ $t(`HomeConnect`) }}</p>
                     <div class="deco-divider mt-4 justify-start">{{ $t(`HomeSalon`) }}</div>
                     <h2 class="mt-4 font-accent text-2xl uppercase tracking-[0.18em] text-white">{{ $t(`ContactTitle`) }}</h2>
-                    <p class="mt-3 max-w-3xl text-sm leading-7 text-stone-300">{{ $t(`ContactParagraph`) }}</p>
+                    <p class="mt-3 text-sm leading-7 text-stone-300">{{ $t(`ContactParagraph`) }}</p>
 
                     <div class="mt-6 flex flex-wrap gap-4">
                         <a href="https://discord.gg/UdFrGmKfqE" class="deco-image-frame transition hover:border-gold hover:shadow-glow">

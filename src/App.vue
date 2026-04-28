@@ -38,7 +38,7 @@
               <span class="h-2.5 w-2.5 bg-gold"></span>
             </span>
             <router-link :to="{ name: 'Home' }" class="inline-flex items-center" @click="handleNavSelection">
-              <img class="h-14 w-auto md:h-16" alt="LC Dog Dante" src="./assets/DanteLogoBanner.webp">
+              <img class="h-14 w-auto" alt="LC Dog Dante" src="./assets/DanteLogoBanner.webp">
             </router-link>
           </div>
 
@@ -55,7 +55,7 @@
             </button>
           </div>
 
-          <div class="deco-divider mt-6 text-[0.65rem] font-accent uppercase tracking-[0.34em]">{{ $t('Navigation') }}</div>
+          <div class="deco-divider mt-6 whitespace-nowrap text-[0.78rem] font-accent uppercase tracking-[0.2em]">{{ $t('Navigation') }}</div>
 
           <nav class="mt-5 flex flex-col gap-2 border-t border-gold/10 pt-4">
             <router-link

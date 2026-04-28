@@ -140,15 +140,16 @@
   }
 
   .deco-diamond {
-    @apply inline-flex h-10 w-10 rotate-45 items-center justify-center border border-gold/45 bg-black/25 shadow-glow;
+    @apply inline-flex h-10 w-10 shrink-0 rotate-45 items-center justify-center border border-gold/45 bg-black/25 shadow-glow;
+    aspect-ratio: 1 / 1;
   }
 
   .deco-diamond > * {
-    @apply -rotate-45;
+    @apply inline-flex h-full w-full -rotate-45 items-center justify-center text-center leading-none;
   }
 
   .deco-number {
-    @apply font-accent text-xl tracking-[0.28em] text-gold;
+    @apply font-accent text-lg leading-none tracking-[0.12em] text-gold;
   }
 
   .deco-image-frame {
@@ -197,7 +198,7 @@
   }
 
   .section-kicker {
-    @apply font-accent text-xs uppercase tracking-[0.42em] text-gold/90;
+    @apply font-accent text-2xl uppercase tracking-[0.42em] text-gold/90;
   }
 
   .page-grid {

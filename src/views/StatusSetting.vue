@@ -47,6 +47,163 @@
                     <p v-if="syncState.error" class="mt-4 rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-100">
                         {{ syncState.error }}
                     </p>
+
+                    <div v-if="reviewState.images.length" class="mt-8 border-t border-white/10 pt-8">
+                        <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                            <div>
+                                <p class="section-kicker">{{ $t(`RecognitionReview`) }}</p>
+                                <div class="deco-divider mt-4 justify-start">{{ $t(`RecognitionWorkspace`) }}</div>
+                                <p class="mt-4 max-w-3xl text-sm leading-7 text-stone-300">{{ $t(`RecognitionReviewHint`) }}</p>
+                            </div>
+
+                            <div class="grid gap-3 sm:grid-cols-3 xl:min-w-[40rem]">
+                                <button type="button" class="action-button" :class="reviewState.manualFrameMode ? 'action-button--accent' : ''" @click="toggleManualFrameMode()">
+                                    {{ $t(reviewState.manualFrameMode ? `StopManualFrame` : `StartManualFrame`) }}
+                                </button>
+                                <button type="button" class="action-button action-button--accent" @click="applyReviewResults()">
+                                    {{ $t(`ApplyReviewResults`) }}
+                                </button>
+                                <button type="button" class="action-button action-button--danger" @click="discardReviewResults()">
+                                    {{ $t(`DiscardReviewResults`) }}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 space-y-6">
+                            <article v-for="image in reviewState.images" :key="image.name" class="subtle-panel p-5 md:p-6">
+                                <div class="flex flex-col gap-6 xl:grid xl:grid-cols-[minmax(0,1.15fr)_minmax(20rem,0.85fr)] xl:items-start">
+                                    <div>
+                                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                            <div>
+                                                <p class="field-label">{{ $t(`SourceImage`) }}</p>
+                                                <h3 class="mt-2 text-lg font-semibold text-white">{{ image.name }}</h3>
+                                            </div>
+                                            <p class="text-sm text-stone-400">{{ getReviewCardsForImage(image.name).length }} {{ $t(`RecognizedCards`) }}</p>
+                                        </div>
+
+                                        <div
+                                            class="relative mt-4 overflow-hidden rounded-[1.5rem] border border-gold/20 bg-black/30"
+                                            :class="reviewState.manualFrameMode ? 'cursor-crosshair' : ''"
+                                            @pointerdown="beginManualFrame($event, image)"
+                                            @pointermove="updateManualFrame($event, image)"
+                                            @pointerup="finishManualFrame($event, image)"
+                                            @pointercancel="cancelManualFrame()"
+                                            @pointerleave="finishManualFrame($event, image)"
+                                        >
+                                            <img
+                                                :src="image.url"
+                                                :alt="`${$t('SourceImage')}: ${image.name}`"
+                                                class="block h-auto w-full"
+                                                @load="handleReviewImageLoad($event, image)"
+                                            >
+
+                                            <div class="pointer-events-none absolute inset-0">
+                                                <button
+                                                    v-for="card in getReviewCardsForImage(image.name)"
+                                                    :key="card.id"
+                                                    type="button"
+                                                    class="pointer-events-auto absolute border-2 shadow-[0_0_18px_rgba(240,197,111,0.16)] transition focus:outline-none"
+                                                    :class="[
+                                                        card.manual ? 'border-sky-300 bg-sky-400/10' : card.selectedEntryKey ? 'border-gold bg-gold/10' : 'border-red-300 bg-red-400/10',
+                                                        isReviewCardSelected(card.id) ? 'ring-2 ring-white/90 ring-offset-2 ring-offset-stone-950' : '',
+                                                    ]"
+                                                    :style="getReviewBoundsStyle(card.bounds, image)"
+                                                    :aria-label="`${$t('MatchedEntry')}: ${card.ocrName || $t('NoDetectedName')}`"
+                                                    @click.stop="selectReviewCard(card.id, { scroll: true })"
+                                                >
+                                                    <span class="absolute left-0 top-0 -translate-y-full rounded-t-md px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-stone-950" :class="card.manual ? 'bg-sky-300' : card.selectedEntryKey ? 'bg-gold' : 'bg-red-300'">
+                                                        {{ getReviewCardBadge(card) }}
+                                                    </span>
+                                                </button>
+
+                                                <div
+                                                    v-if="reviewState.draft && reviewState.draft.sourceImage === image.name"
+                                                    class="absolute border-2 border-dashed border-sky-300 bg-sky-400/10"
+                                                    :style="getReviewBoundsStyle(getDraftBounds(), image)"
+                                                ></div>
+                                            </div>
+                                        </div>
+
+                                        <p class="mt-3 text-xs leading-6 text-stone-400">{{ $t(reviewState.manualFrameMode ? `ManualFrameHintActive` : `ManualFrameHintIdle`) }}</p>
+                                    </div>
+
+                                    <div class="max-h-[42rem] space-y-3 overflow-y-auto pr-1">
+                                        <article
+                                            v-for="card in getReviewCardsForImage(image.name)"
+                                            :key="`${image.name}-${card.id}`"
+                                            :ref="(element) => setReviewCardRef(card.id, element)"
+                                            class="muted-panel p-4 transition"
+                                            :class="isReviewCardSelected(card.id) ? 'ring-2 ring-gold/80 ring-offset-2 ring-offset-stone-950' : ''"
+                                            @click="selectReviewCard(card.id)"
+                                        >
+                                            <div class="flex items-start justify-between gap-4">
+                                                <div>
+                                                    <p class="field-label">{{ $t(`DetectedName`) }}</p>
+                                                    <p class="mt-2 text-sm text-stone-200">{{ card.ocrName || $t(`NoDetectedName`) }}</p>
+                                                </div>
+                                                <span class="rounded-full px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em]" :class="card.manual ? 'bg-sky-400/15 text-sky-200' : 'bg-gold/15 text-gold'">
+                                                    {{ getReviewCardBadge(card) }}
+                                                </span>
+                                            </div>
+
+                                            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                                                <div>
+                                                    <p class="field-label">{{ $t(`DetectedConfidence`) }}</p>
+                                                    <p class="mt-2 text-sm text-stone-300">{{ formatConfidence(card.confidence) }}</p>
+                                                </div>
+                                                <div>
+                                                    <p class="field-label">{{ $t(`MatchedEntry`) }}</p>
+                                                    <select v-model="card.selectedEntryKey" class="field-select mt-2" @change="handleReviewEntryChange(card)">
+                                                        <option value="">{{ $t(`NoEntrySelected`) }}</option>
+                                                        <optgroup v-for="group in rosterEntryGroups" :key="group.sinnerKey" :label="$t(group.label)">
+                                                            <option v-for="entry in group.entries" :key="entry.key" :value="entry.key">
+                                                                {{ $t(entry.entryKey) }} · {{ $t(entry.categoryLabel) }}
+                                                            </option>
+                                                        </optgroup>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                                                <label class="block">
+                                                    <span class="field-label">{{ $t(`uptie`) }}</span>
+                                                    <select v-model="card.uptie" class="field-select mt-2" @change="updateReviewUptie(card)">
+                                                        <option value="0">0</option>
+                                                        <option value="1">1</option>
+                                                        <option value="2">2</option>
+                                                        <option value="3">3</option>
+                                                        <option value="4">4</option>
+                                                    </select>
+                                                </label>
+
+                                                <label v-if="reviewCardHasLevel(card)" class="block">
+                                                    <span class="field-label">{{ $t(`level`) }}</span>
+                                                    <input
+                                                        v-model.number="card.level"
+                                                        type="number"
+                                                        min="1"
+                                                        max="50"
+                                                        class="field-select mt-2"
+                                                        @change="updateReviewLevel(card)"
+                                                    >
+                                                </label>
+                                            </div>
+
+                                            <div class="mt-4 flex justify-end">
+                                                <button type="button" class="action-button action-button--danger min-h-0 px-3 py-2 text-xs" @click="removeReviewCard(card.id)">
+                                                    {{ $t(`RemoveReviewCard`) }}
+                                                </button>
+                                            </div>
+                                        </article>
+
+                                        <p v-if="!getReviewCardsForImage(image.name).length" class="rounded-2xl border border-white/10 bg-black/20 px-4 py-4 text-sm text-stone-300">
+                                            {{ $t(`NoReviewCardsForImage`) }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </article>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="divide-y divide-white/10">
@@ -138,6 +295,7 @@
 </template>
 
 <script>
+import { nextTick } from 'vue';
 import statusdata from '../components/data.js';
 import {
     PROGRESS_STORAGE_KEY,
@@ -145,8 +303,77 @@ import {
     hydrateProgress,
     mergeRecognizedUpdates,
     sanitizeLevel,
+    sanitizeUptie,
     syncProgressWithScreenshots,
 } from '../utils/progressSync';
+
+const REVIEW_DB_NAME = 'dante-review-cache';
+const REVIEW_STORE_NAME = 'pending-review';
+const REVIEW_CACHE_KEY = 'status-setting';
+
+function openReviewDatabase() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(REVIEW_DB_NAME, 1);
+
+        request.onupgradeneeded = () => {
+            const database = request.result;
+
+            if (!database.objectStoreNames.contains(REVIEW_STORE_NAME)) {
+                database.createObjectStore(REVIEW_STORE_NAME);
+            }
+        };
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error('Failed to open review cache'));
+    });
+}
+
+async function readPendingReviewCache() {
+    const database = await openReviewDatabase();
+
+    return new Promise((resolve, reject) => {
+        const transaction = database.transaction(REVIEW_STORE_NAME, 'readonly');
+        const store = transaction.objectStore(REVIEW_STORE_NAME);
+        const request = store.get(REVIEW_CACHE_KEY);
+
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error || new Error('Failed to read review cache'));
+        transaction.oncomplete = () => database.close();
+        transaction.onerror = () => reject(transaction.error || new Error('Failed to read review cache'));
+    });
+}
+
+async function writePendingReviewCache(payload) {
+    const database = await openReviewDatabase();
+
+    return new Promise((resolve, reject) => {
+        const transaction = database.transaction(REVIEW_STORE_NAME, 'readwrite');
+        const store = transaction.objectStore(REVIEW_STORE_NAME);
+
+        store.put(payload, REVIEW_CACHE_KEY);
+        transaction.oncomplete = () => {
+            database.close();
+            resolve();
+        };
+        transaction.onerror = () => reject(transaction.error || new Error('Failed to write review cache'));
+    });
+}
+
+async function clearPendingReviewCache() {
+    const database = await openReviewDatabase();
+
+    return new Promise((resolve, reject) => {
+        const transaction = database.transaction(REVIEW_STORE_NAME, 'readwrite');
+        const store = transaction.objectStore(REVIEW_STORE_NAME);
+
+        store.delete(REVIEW_CACHE_KEY);
+        transaction.oncomplete = () => {
+            database.close();
+            resolve();
+        };
+        transaction.onerror = () => reject(transaction.error || new Error('Failed to clear review cache'));
+    });
+}
 
 export default {
     name: 'StatusSetting',
@@ -163,7 +390,18 @@ export default {
                 matchedNames: [],
                 error: '',
                 updatedAt: '',
+                reviewPending: false,
             },
+            reviewState: {
+                images: [],
+                cards: [],
+                manualFrameMode: false,
+                draft: null,
+                nextCardId: 1,
+                selectedCardId: null,
+            },
+            reviewCardRefs: {},
+            reviewPersistenceReady: false,
         };
     },
     computed: {
@@ -180,11 +418,37 @@ export default {
                 return this.$t('SyncAwaiting');
             }
 
+            if (this.syncState.reviewPending) {
+                return `${this.syncState.updatedAt} · ${this.$t('ReviewPending')}`;
+            }
+
             const matchedText = this.syncState.matchedNames.length
                 ? this.syncState.matchedNames.slice(0, 3).map((name) => this.$t(name)).join(', ')
                 : this.$t('NoMatchesFound');
 
             return `${this.syncState.updatedAt} · ${matchedText}`;
+        },
+        rosterEntryGroups() {
+            return Object.entries(this.createDefaultProgress()).map(([sinnerKey, sinnerGroup]) => ({
+                sinnerKey,
+                label: this.getSinnerName(sinnerKey),
+                entries: [
+                    ...Object.keys(sinnerGroup.IDs).map((entryKey) => ({
+                        key: this.serializeEntryKey({ sinnerKey, category: 'IDs', entryKey }),
+                        sinnerKey,
+                        category: 'IDs',
+                        entryKey,
+                        categoryLabel: 'Identities',
+                    })),
+                    ...Object.keys(sinnerGroup.EGOs).map((entryKey) => ({
+                        key: this.serializeEntryKey({ sinnerKey, category: 'EGOs', entryKey }),
+                        sinnerKey,
+                        category: 'EGOs',
+                        entryKey,
+                        categoryLabel: 'EGO',
+                    })),
+                ],
+            }));
         },
     },
     methods: {
@@ -233,6 +497,27 @@ export default {
             }
             return CorrName;
         },
+        serializeEntryKey({ sinnerKey, category, entryKey }) {
+            return `${sinnerKey}::${category}::${entryKey}`;
+        },
+        parseEntryKey(value) {
+            if (!value) {
+                return null;
+            }
+
+            const [sinnerKey, category, ...entryParts] = value.split('::');
+
+            if (!sinnerKey || !category || !entryParts.length) {
+                return null;
+            }
+
+            return {
+                sinnerKey,
+                category,
+                entryKey: entryParts.join('::'),
+                hasLevel: category === 'IDs',
+            };
+        },
         persistProgress() {
             localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(this.All_IDs));
         },
@@ -270,6 +555,381 @@ export default {
         openScreenshotUpload() {
             this.$refs.screenshotsInput.click();
         },
+        clearReviewImages() {
+            this.reviewState.images.forEach((image) => {
+                if (image.url) {
+                    URL.revokeObjectURL(image.url);
+                }
+            });
+        },
+        resetReviewState() {
+            this.clearReviewImages();
+            this.reviewCardRefs = {};
+            this.reviewState = {
+                images: [],
+                cards: [],
+                manualFrameMode: false,
+                draft: null,
+                nextCardId: 1,
+                selectedCardId: null,
+            };
+        },
+        buildReviewImages(files) {
+            return files.map((file) => ({
+                name: file.name,
+                url: URL.createObjectURL(file),
+                naturalWidth: 0,
+                naturalHeight: 0,
+                file,
+            }));
+        },
+        createReviewCard(rawCard = {}) {
+            const matchedEntry = rawCard.matched_entry || rawCard.matchedEntry || null;
+
+            return {
+                id: this.reviewState.nextCardId++,
+                sourceImage: rawCard.source_image || rawCard.sourceImage || '',
+                bounds: rawCard.bounds || { x: 0, y: 0, width: 0, height: 0 },
+                ocrName: rawCard.ocr_name || rawCard.ocrName || '',
+                confidence: Number(rawCard.confidence || 0),
+                selectedEntryKey: matchedEntry ? this.serializeEntryKey(matchedEntry) : '',
+                uptie: sanitizeUptie(rawCard.uptie ?? rawCard.uptied ?? 0),
+                level: sanitizeLevel(rawCard.level ?? 1),
+                manual: Boolean(rawCard.manual),
+            };
+        },
+        getReviewCardsForImage(sourceImage) {
+            return this.reviewState.cards.filter((card) => card.sourceImage === sourceImage);
+        },
+        isReviewCardSelected(cardId) {
+            return this.reviewState.selectedCardId === cardId;
+        },
+        handleReviewImageLoad(event, image) {
+            image.naturalWidth = event.target.naturalWidth;
+            image.naturalHeight = event.target.naturalHeight;
+        },
+        getReviewBoundsStyle(bounds, image) {
+            if (!image.naturalWidth || !image.naturalHeight) {
+                return { display: 'none' };
+            }
+
+            return {
+                left: `${(bounds.x / image.naturalWidth) * 100}%`,
+                top: `${(bounds.y / image.naturalHeight) * 100}%`,
+                width: `${(bounds.width / image.naturalWidth) * 100}%`,
+                height: `${(bounds.height / image.naturalHeight) * 100}%`,
+            };
+        },
+        getReviewCardBadge(card) {
+            if (card.manual) {
+                return this.$t('ManualCard');
+            }
+
+            if (!card.selectedEntryKey) {
+                return this.$t('UnmatchedCard');
+            }
+
+            return this.$t('AutoDetectedCard');
+        },
+        reviewCardHasLevel(card) {
+            return this.parseEntryKey(card.selectedEntryKey)?.hasLevel || false;
+        },
+        formatConfidence(value) {
+            return `${Math.round(Number(value || 0) * 100)}%`;
+        },
+        setReviewCardRef(cardId, element) {
+            if (element) {
+                this.reviewCardRefs[cardId] = element;
+                return;
+            }
+
+            delete this.reviewCardRefs[cardId];
+        },
+        async selectReviewCard(cardId, options = {}) {
+            const { scroll = false } = options;
+            this.reviewState.selectedCardId = cardId;
+
+            if (!scroll) {
+                this.persistPendingReview();
+                return;
+            }
+
+            await nextTick();
+            const element = this.reviewCardRefs[cardId];
+
+            if (element?.scrollIntoView) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            this.persistPendingReview();
+        },
+        handleReviewEntryChange(card) {
+            const entry = this.parseEntryKey(card.selectedEntryKey);
+
+            if (!entry) {
+                card.level = sanitizeLevel(card.level ?? 1);
+                this.persistPendingReview();
+                return;
+            }
+
+            if (!entry.hasLevel) {
+                card.level = 1;
+            } else {
+                card.level = sanitizeLevel(card.level);
+            }
+
+            this.persistPendingReview();
+        },
+        updateReviewUptie(card) {
+            card.uptie = sanitizeUptie(card.uptie);
+            this.persistPendingReview();
+        },
+        updateReviewLevel(card) {
+            card.level = sanitizeLevel(card.level);
+            this.persistPendingReview();
+        },
+        removeReviewCard(cardId) {
+            this.reviewState.cards = this.reviewState.cards.filter((card) => card.id !== cardId);
+
+            if (this.reviewState.selectedCardId === cardId) {
+                this.reviewState.selectedCardId = this.reviewState.cards[0]?.id || null;
+            }
+
+            this.persistPendingReview();
+        },
+        toggleManualFrameMode() {
+            this.reviewState.manualFrameMode = !this.reviewState.manualFrameMode;
+            this.reviewState.draft = null;
+            this.persistPendingReview();
+        },
+        getPointerBounds(event, image) {
+            const rect = event.currentTarget.getBoundingClientRect();
+            const offsetX = Math.min(Math.max(event.clientX - rect.left, 0), rect.width);
+            const offsetY = Math.min(Math.max(event.clientY - rect.top, 0), rect.height);
+
+            return {
+                x: (offsetX / rect.width) * image.naturalWidth,
+                y: (offsetY / rect.height) * image.naturalHeight,
+            };
+        },
+        beginManualFrame(event, image) {
+            if (!this.reviewState.manualFrameMode || !image.naturalWidth || !image.naturalHeight) {
+                return;
+            }
+
+            const point = this.getPointerBounds(event, image);
+            this.reviewState.draft = {
+                sourceImage: image.name,
+                startX: point.x,
+                startY: point.y,
+                currentX: point.x,
+                currentY: point.y,
+            };
+
+            if (event.currentTarget.setPointerCapture) {
+                event.currentTarget.setPointerCapture(event.pointerId);
+            }
+        },
+        updateManualFrame(event, image) {
+            if (!this.reviewState.draft || this.reviewState.draft.sourceImage !== image.name) {
+                return;
+            }
+
+            const point = this.getPointerBounds(event, image);
+            this.reviewState.draft.currentX = point.x;
+            this.reviewState.draft.currentY = point.y;
+        },
+        getDraftBounds() {
+            const draft = this.reviewState.draft;
+
+            if (!draft) {
+                return { x: 0, y: 0, width: 0, height: 0 };
+            }
+
+            return {
+                x: Math.min(draft.startX, draft.currentX),
+                y: Math.min(draft.startY, draft.currentY),
+                width: Math.abs(draft.currentX - draft.startX),
+                height: Math.abs(draft.currentY - draft.startY),
+            };
+        },
+        finishManualFrame(event, image) {
+            if (!this.reviewState.draft || this.reviewState.draft.sourceImage !== image.name) {
+                return;
+            }
+
+            if (event?.type === 'pointerleave' && event.buttons === 1) {
+                return;
+            }
+
+            this.updateManualFrame(event, image);
+            const bounds = this.getDraftBounds();
+
+            if (bounds.width >= 20 && bounds.height >= 20) {
+                this.reviewState.cards.push(
+                    this.createReviewCard({
+                        source_image: image.name,
+                        bounds,
+                        ocr_name: '',
+                        level: 1,
+                        uptie: 1,
+                        confidence: 1,
+                        manual: true,
+                    })
+                );
+
+                const createdCard = this.reviewState.cards[this.reviewState.cards.length - 1];
+                this.selectReviewCard(createdCard.id, { scroll: true });
+            } else {
+                this.persistPendingReview();
+            }
+
+            this.reviewState.draft = null;
+        },
+        cancelManualFrame() {
+            this.reviewState.draft = null;
+        },
+        serializePendingReview() {
+            if (!this.reviewState.images.length) {
+                return null;
+            }
+
+            return {
+                syncState: {
+                    processedScreenshots: this.syncState.processedScreenshots,
+                    recognizedEntries: this.syncState.recognizedEntries,
+                    matchedNames: this.syncState.matchedNames,
+                    error: this.syncState.error,
+                    updatedAt: this.syncState.updatedAt,
+                    reviewPending: this.syncState.reviewPending,
+                },
+                reviewState: {
+                    cards: this.reviewState.cards.map((card) => ({
+                        id: card.id,
+                        sourceImage: card.sourceImage,
+                        bounds: card.bounds,
+                        ocrName: card.ocrName,
+                        confidence: card.confidence,
+                        selectedEntryKey: card.selectedEntryKey,
+                        uptie: card.uptie,
+                        level: card.level,
+                        manual: card.manual,
+                    })),
+                    manualFrameMode: this.reviewState.manualFrameMode,
+                    nextCardId: this.reviewState.nextCardId,
+                    selectedCardId: this.reviewState.selectedCardId,
+                },
+                images: this.reviewState.images
+                    .filter((image) => image.file instanceof Blob)
+                    .map((image) => ({
+                        name: image.name,
+                        file: image.file,
+                    })),
+            };
+        },
+        async persistPendingReview() {
+            if (!this.reviewPersistenceReady) {
+                return;
+            }
+
+            const snapshot = this.serializePendingReview();
+
+            try {
+                if (!snapshot || !this.syncState.reviewPending) {
+                    await clearPendingReviewCache();
+                    return;
+                }
+
+                await writePendingReviewCache(snapshot);
+            } catch (error) {
+                console.error('Failed to persist review state', error);
+            }
+        },
+        async restorePendingReview() {
+            try {
+                const cached = await readPendingReviewCache();
+
+                if (!cached?.images?.length || !cached?.reviewState) {
+                    return;
+                }
+
+                this.resetReviewState();
+                this.reviewState.images = this.buildReviewImages(cached.images.map((image) => image.file));
+                this.reviewState.images.forEach((image, index) => {
+                    image.name = cached.images[index]?.name || image.name;
+                });
+                this.reviewState.cards = (cached.reviewState.cards || []).map((card) => this.createReviewCard(card));
+                this.reviewState.manualFrameMode = Boolean(cached.reviewState.manualFrameMode);
+                this.reviewState.nextCardId = Math.max(
+                    Number(cached.reviewState.nextCardId || 1),
+                    this.reviewState.cards.reduce((maxId, card) => Math.max(maxId, Number(card.id || 0)), 0) + 1
+                );
+                this.reviewState.selectedCardId = cached.reviewState.selectedCardId || this.reviewState.cards[0]?.id || null;
+                this.syncState = {
+                    ...this.syncState,
+                    loading: false,
+                    processedScreenshots: cached.syncState?.processedScreenshots || 0,
+                    recognizedEntries: cached.syncState?.recognizedEntries || this.reviewState.cards.length,
+                    matchedNames: cached.syncState?.matchedNames || [],
+                    error: cached.syncState?.error || '',
+                    updatedAt: cached.syncState?.updatedAt || '',
+                    reviewPending: Boolean(cached.syncState?.reviewPending),
+                };
+            } catch (error) {
+                console.error('Failed to restore review state', error);
+            }
+        },
+        buildReviewUpdates() {
+            const deduped = new Map();
+
+            this.reviewState.cards.forEach((card) => {
+                const entry = this.parseEntryKey(card.selectedEntryKey);
+
+                if (!entry) {
+                    return;
+                }
+
+                const key = this.serializeEntryKey(entry);
+                const candidate = {
+                    sinnerKey: entry.sinnerKey,
+                    category: entry.category,
+                    entryKey: entry.entryKey,
+                    uptied: sanitizeUptie(card.uptie),
+                    level: entry.hasLevel ? sanitizeLevel(card.level) : null,
+                    confidence: Number(card.confidence || 0),
+                    manual: card.manual,
+                };
+
+                const existing = deduped.get(key);
+                if (!existing || candidate.manual || candidate.confidence >= existing.confidence) {
+                    deduped.set(key, candidate);
+                }
+            });
+
+            return Array.from(deduped.values());
+        },
+        applyReviewResults() {
+            const updates = this.buildReviewUpdates();
+            const mergedProgress = mergeRecognizedUpdates(this.All_IDs, updates);
+
+            this.applyProgress(mergedProgress);
+            this.syncState = {
+                ...this.syncState,
+                recognizedEntries: updates.length,
+                matchedNames: updates.map((item) => item.entryKey),
+                updatedAt: new Date().toLocaleString(),
+                reviewPending: false,
+            };
+            this.persistPendingReview();
+        },
+        discardReviewResults() {
+            this.resetReviewState();
+            this.syncState = {
+                ...this.syncState,
+                reviewPending: false,
+            };
+            this.persistPendingReview();
+        },
         async handleSettingsUpload(event) {
             const [file] = event.target.files || [];
 
@@ -297,25 +957,27 @@ export default {
             };
 
             try {
+                this.resetReviewState();
                 const response = await syncProgressWithScreenshots(files, this.All_IDs);
-                const mergedProgress = response.merged_progress
-                    ? hydrateProgress(this.createDefaultProgress(), response.merged_progress)
-                    : mergeRecognizedUpdates(this.All_IDs, response.updates || []);
-
-                this.applyProgress(mergedProgress);
+                this.reviewState.images = this.buildReviewImages(files);
+                this.reviewState.cards = (response.cards || []).map((card) => this.createReviewCard(card));
+                this.reviewState.selectedCardId = this.reviewState.cards[0]?.id || null;
                 this.syncState = {
                     loading: false,
                     processedScreenshots: response.processed_screenshots || files.length,
-                    recognizedEntries: (response.updates || []).length,
+                    recognizedEntries: (response.cards || []).length,
                     matchedNames: (response.updates || []).map((item) => item.entryKey),
                     error: '',
                     updatedAt: new Date().toLocaleString(),
+                    reviewPending: true,
                 };
+                this.persistPendingReview();
             } catch (error) {
                 this.syncState = {
                     ...this.syncState,
                     loading: false,
                     error: error.message || this.$t('SyncFailed'),
+                    reviewPending: false,
                 };
             } finally {
                 event.target.value = '';
@@ -336,14 +998,29 @@ export default {
                 matchedNames: [],
                 error: '',
                 updatedAt: '',
+                reviewPending: false,
             };
+            this.resetReviewState();
             this.persistProgress();
+            this.persistPendingReview();
         },
     },
-    mounted() {
+    async mounted() {
         this.restoreProgress();
+        this.reviewPersistenceReady = true;
+        await this.restorePendingReview();
+    },
+    async beforeUnmount() {
+        await this.persistPendingReview();
+        this.clearReviewImages();
     },
 }
 </script>
+
+<style>
+.cursor-crosshair {
+    cursor: crosshair;
+}
+</style>
 
 
