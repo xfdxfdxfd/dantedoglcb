@@ -25,6 +25,11 @@
     "uptie":"階級",
     "level":"等級",
     "dataNullAlert":"請先設定人格和EGO的數值",
+    "ExpSetupRequiredTitle":"需要先完成更新設定",
+    "ExpSetupRequiredBody":"請先到更新設定儲存你的人格與 EGO 狀態，再回到這裡計算升等券需求。",
+    "UptieSetupRequiredTitle":"需要先完成更新設定",
+    "UptieSetupRequiredBody":"請先到更新設定儲存你的人格與 EGO 狀態，再回到這裡計算線程與碎片需求。",
+    "GoToStatusSetting":"前往更新設定",
     "Exp":"人格經驗值",
 
     "Changelog22-05-2024":"新增環指人格",

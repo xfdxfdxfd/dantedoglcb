@@ -25,6 +25,11 @@
     "uptie":"Uptie",
     "level":"Level",
     "dataNullAlert":"Please set the status of your IDs and EGOs first",
+    "ExpSetupRequiredTitle":"Update settings required",
+    "ExpSetupRequiredBody":"Save your roster in Update Settings first, then come back here to calculate EXP tickets.",
+    "UptieSetupRequiredTitle":"Update settings required",
+    "UptieSetupRequiredBody":"Save your roster in Update Settings first, then come back here to calculate threads and shard costs.",
+    "GoToStatusSetting":"Go To Update Settings",
     "Exp":"Identity Xp",
 
     "Changelog22-05-2024":"Add The Ring Pointillist IDs",

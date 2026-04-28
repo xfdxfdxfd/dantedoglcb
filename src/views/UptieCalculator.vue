@@ -14,10 +14,16 @@
                         <p class="section-kicker">{{ $t(`UptieModes`) }}</p>
                         <div class="deco-divider mt-4">{{ $t(`UptieSelection`) }}</div>
                         <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                            <button type="button" class="action-button action-button--accent" @click="calculate('uptie3')">{{ $t(`All Uptie 3`) }}</button>
-                            <button type="button" class="action-button action-button--accent" @click="calculate('uptie4')">{{ $t(`All Uptie 4`) }}</button>
-                            <button type="button" class="action-button" @click="calculate('uptie3only')">{{ $t(`All Uptie 3-2`) }}</button>
-                            <button type="button" class="action-button" @click="calculate('uptie4only')">{{ $t(`All Uptie 4-2`) }}</button>
+                            <button type="button" class="action-button action-button--accent" :disabled="!hasSavedProgress" :class="!hasSavedProgress ? 'cursor-not-allowed opacity-45' : ''" @click="calculate('uptie3')">{{ $t(`All Uptie 3`) }}</button>
+                            <button type="button" class="action-button action-button--accent" :disabled="!hasSavedProgress" :class="!hasSavedProgress ? 'cursor-not-allowed opacity-45' : ''" @click="calculate('uptie4')">{{ $t(`All Uptie 4`) }}</button>
+                            <button type="button" class="action-button" :disabled="!hasSavedProgress" :class="!hasSavedProgress ? 'cursor-not-allowed opacity-45' : ''" @click="calculate('uptie3only')">{{ $t(`All Uptie 3-2`) }}</button>
+                            <button type="button" class="action-button" :disabled="!hasSavedProgress" :class="!hasSavedProgress ? 'cursor-not-allowed opacity-45' : ''" @click="calculate('uptie4only')">{{ $t(`All Uptie 4-2`) }}</button>
+                        </div>
+
+                        <div v-if="!hasSavedProgress" class="mt-4 rounded-[1.5rem] border border-gold/25 bg-black/25 p-4 text-sm text-stone-300">
+                            <p class="font-accent uppercase tracking-[0.14em] text-gold">{{ $t(`UptieSetupRequiredTitle`) }}</p>
+                            <p class="mt-2 leading-7 text-stone-300">{{ $t(`UptieSetupRequiredBody`) }}</p>
+                            <button type="button" class="action-button mt-4 min-h-0 px-4 py-3" @click="goToStatusSetting()">{{ $t(`GoToStatusSetting`) }}</button>
                         </div>
                     </div>
                 </div>
@@ -52,6 +58,19 @@
 
 <script>
 import uptiethreadamount from '../components/uptiedata.js';
+import { PROGRESS_STORAGE_KEY } from '../utils/progressSync';
+import yiSangShardImage from '../assets/icon_piece-501YiSang.webp';
+import faustShardImage from '../assets/icon_piece-502Faust.webp';
+import donShardImage from '../assets/icon_piece-503DonQuixote.webp';
+import ryoshuShardImage from '../assets/icon_piece-504Ryoshu.webp';
+import meurShardImage from '../assets/icon_piece-505Meursault.webp';
+import hongLuShardImage from '../assets/icon_piece-506HongLu.webp';
+import heathShardImage from '../assets/icon_piece-507Heathcliff.webp';
+import ishShardImage from '../assets/icon_piece-508Ishmael.webp';
+import rodionShardImage from '../assets/icon_piece-509Rodion.webp';
+import sinclairShardImage from '../assets/icon_piece-510EmilSinclair.webp';
+import outisShardImage from '../assets/icon_piece-511Outis.webp';
+import gregorShardImage from '../assets/icon_piece-512Gregor.webp';
 
 export default {
     name: 'UptieCalculator',
@@ -72,24 +91,32 @@ export default {
                 OutisIDs: 0,
                 GregorIDs: 0,
             },
+            hasSavedProgress: false,
             shardCards: [
-                { key: 'YiSangIDs', label: 'YiSang', image: require('../../src/assets/icon_piece-501YiSang.webp') },
-                { key: 'FaustIDs', label: 'Faust', image: require('../../src/assets/icon_piece-502Faust.webp') },
-                { key: 'DonIDs', label: 'Don Quixote', image: require('../../src/assets/icon_piece-503DonQuixote.webp') },
-                { key: 'RyoshuIDs', label: 'Ryoshu', image: require('../../src/assets/icon_piece-504Ryoshu.webp') },
-                { key: 'MeurIDs', label: 'Meursault', image: require('../../src/assets/icon_piece-505Meursault.webp') },
-                { key: 'HongLuIDs', label: 'Hong Lu', image: require('../../src/assets/icon_piece-506HongLu.webp') },
-                { key: 'HeathIDs', label: 'Heathcliff', image: require('../../src/assets/icon_piece-507Heathcliff.webp') },
-                { key: 'IshIDs', label: 'Ishmael', image: require('../../src/assets/icon_piece-508Ishmael.webp') },
-                { key: 'RodionIDs', label: 'Rodion', image: require('../../src/assets/icon_piece-509Rodion.webp') },
-                { key: 'SinclairIDs', label: 'Sinclair', image: require('../../src/assets/icon_piece-510EmilSinclair.webp') },
-                { key: 'OutisIDs', label: 'Outis', image: require('../../src/assets/icon_piece-511Outis.webp') },
-                { key: 'GregorIDs', label: 'Gregor', image: require('../../src/assets/icon_piece-512Gregor.webp') },
+                { key: 'YiSangIDs', label: 'YiSang', image: yiSangShardImage },
+                { key: 'FaustIDs', label: 'Faust', image: faustShardImage },
+                { key: 'DonIDs', label: 'Don Quixote', image: donShardImage },
+                { key: 'RyoshuIDs', label: 'Ryoshu', image: ryoshuShardImage },
+                { key: 'MeurIDs', label: 'Meursault', image: meurShardImage },
+                { key: 'HongLuIDs', label: 'Hong Lu', image: hongLuShardImage },
+                { key: 'HeathIDs', label: 'Heathcliff', image: heathShardImage },
+                { key: 'IshIDs', label: 'Ishmael', image: ishShardImage },
+                { key: 'RodionIDs', label: 'Rodion', image: rodionShardImage },
+                { key: 'SinclairIDs', label: 'Sinclair', image: sinclairShardImage },
+                { key: 'OutisIDs', label: 'Outis', image: outisShardImage },
+                { key: 'GregorIDs', label: 'Gregor', image: gregorShardImage },
             ],
             uptiethreadamount: uptiethreadamount.data().uptiethreadamount,
         }
     },
     methods: {
+        syncSavedProgressState() {
+            const stored = localStorage.getItem(PROGRESS_STORAGE_KEY);
+            this.hasSavedProgress = Boolean(stored);
+        },
+        goToStatusSetting() {
+            this.$router.push({ name: 'StatusSetting' });
+        },
         calculateUptieCase(restore_data, mode) {
             this.CalResult.ThreadAmount = 0
             for (const [key1, value1] of Object.entries(restore_data)) {
@@ -151,10 +178,19 @@ export default {
         calculate(mode) {
             //store the mode in case will use it later
             localStorage.setItem('calmode', mode);
-            var restore_data = JSON.parse(localStorage.getItem('IDdata'));
+            this.syncSavedProgressState();
+            var restore_data = JSON.parse(localStorage.getItem(PROGRESS_STORAGE_KEY));
             //set the value according to the mode
-            restore_data ? this.calculateUptieCase(restore_data, mode) : alert(this.$t('dataNullAlert'));
+            if (!restore_data) {
+                alert(this.$t('dataNullAlert'));
+                return;
+            }
+
+            this.calculateUptieCase(restore_data, mode);
         },
+    },
+    mounted() {
+        this.syncSavedProgressState();
     },
 }
 </script>

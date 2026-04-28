@@ -14,9 +14,15 @@
                         <p class="section-kicker">{{ $t(`ExpTargetLevel`) }}</p>
                         <div class="deco-divider mt-4">{{ $t(`ExpCeiling`) }}</div>
                         <div class="mt-4 grid gap-3 sm:grid-cols-3">
-                            <button type="button" class="action-button" @click="calculateExp('All35'); calculateExpCase_Ticket();">{{ $t(`All35`) }}</button>
-                            <button type="button" class="action-button action-button--accent" @click="calculateExp('All40'); calculateExpCase_Ticket();">{{ $t(`All40`) }}</button>
-                            <button type="button" class="action-button action-button--accent" @click="calculateExp('All45'); calculateExpCase_Ticket();">{{ $t(`All45`) }}</button>
+                            <button type="button" class="action-button" :disabled="!hasSavedProgress" :class="!hasSavedProgress ? 'cursor-not-allowed opacity-45' : ''" @click="calculateExp('All35'); calculateExpCase_Ticket();">{{ $t(`All35`) }}</button>
+                            <button type="button" class="action-button action-button--accent" :disabled="!hasSavedProgress" :class="!hasSavedProgress ? 'cursor-not-allowed opacity-45' : ''" @click="calculateExp('All40'); calculateExpCase_Ticket();">{{ $t(`All40`) }}</button>
+                            <button type="button" class="action-button action-button--accent" :disabled="!hasSavedProgress" :class="!hasSavedProgress ? 'cursor-not-allowed opacity-45' : ''" @click="calculateExp('All45'); calculateExpCase_Ticket();">{{ $t(`All45`) }}</button>
+                        </div>
+
+                        <div v-if="!hasSavedProgress" class="mt-4 rounded-[1.5rem] border border-gold/25 bg-black/25 p-4 text-sm text-stone-300">
+                            <p class="font-accent uppercase tracking-[0.14em] text-gold">{{ $t(`ExpSetupRequiredTitle`) }}</p>
+                            <p class="mt-2 leading-7 text-stone-300">{{ $t(`ExpSetupRequiredBody`) }}</p>
+                            <button type="button" class="action-button mt-4 min-h-0 px-4 py-3" @click="goToStatusSetting()">{{ $t(`GoToStatusSetting`) }}</button>
                         </div>
                     </div>
                 </div>
@@ -35,7 +41,7 @@
                         <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                             <div v-for="ticket in ticketCards" :key="ticket.key" class="muted-panel p-4">
                                 <div class="deco-image-frame inline-block">
-                                    <img class="h-12 w-auto grayscale" :alt="ticket.label" :src="ticket.image">
+                                    <img class="block h-12 max-w-full object-contain grayscale" :alt="ticket.label" :src="ticket.image">
                                 </div>
                                 <p class="mt-3 text-sm text-stone-400">{{ ticket.label }}</p>
                                 <p class="mt-1 font-accent text-2xl uppercase tracking-[0.14em] text-white">{{ ticket.value }}</p>
@@ -50,6 +56,11 @@
 
 <script>
 import expdata from '../components/expdata.js'
+import { PROGRESS_STORAGE_KEY } from '../utils/progressSync';
+import ticketIImage from '../assets/Identity_Training_Ticket_I.webp';
+import ticketIIImage from '../assets/Identity_Training_Ticket_II.webp';
+import ticketIIIImage from '../assets/Identity_Training_Ticket_III.webp';
+import ticketIVImage from '../assets/Identity_Training_Ticket_IV.webp';
 
 export default {
     name: 'ExpCalculator',
@@ -61,19 +72,27 @@ export default {
             TicketIII: 0,
             TicketII: 0,
             TicketI: 0,
+            hasSavedProgress: false,
         }
     },
     computed: {
         ticketCards() {
             return [
-                { key: 'TicketIV', label: this.$t('TicketIV'), value: this.TicketIV, image: require('../../src/assets/Identity_Training_Ticket_IV.webp') },
-                { key: 'TicketIII', label: this.$t('TicketIII'), value: this.TicketIII, image: require('../../src/assets/Identity_Training_Ticket_III.webp') },
-                { key: 'TicketII', label: this.$t('TicketII'), value: this.TicketII, image: require('../../src/assets/Identity_Training_Ticket_II.webp') },
-                { key: 'TicketI', label: this.$t('TicketI'), value: this.TicketI, image: require('../../src/assets/Identity_Training_Ticket_I.webp') },
+                { key: 'TicketIV', label: this.$t('TicketIV'), value: this.TicketIV, image: ticketIVImage },
+                { key: 'TicketIII', label: this.$t('TicketIII'), value: this.TicketIII, image: ticketIIIImage },
+                { key: 'TicketII', label: this.$t('TicketII'), value: this.TicketII, image: ticketIIImage },
+                { key: 'TicketI', label: this.$t('TicketI'), value: this.TicketI, image: ticketIImage },
             ];
         },
     },
     methods: {
+        syncSavedProgressState() {
+            const stored = localStorage.getItem(PROGRESS_STORAGE_KEY);
+            this.hasSavedProgress = Boolean(stored);
+        },
+        goToStatusSetting() {
+            this.$router.push({ name: 'StatusSetting' });
+        },
         calEXPTesting() {
             //accum exp up to 40: 91700 accum exp up to 35: 61123
             // var listOfSum = [];
@@ -126,9 +145,15 @@ export default {
         calculateExp(mode) {
             //store the mode in case will use it later
             localStorage.setItem('expcalmode', mode);
-            var restore_data = JSON.parse(localStorage.getItem('IDdata'));
+            this.syncSavedProgressState();
+            var restore_data = JSON.parse(localStorage.getItem(PROGRESS_STORAGE_KEY));
             //set the value according to the mode
-            restore_data ? this.calculateExpCase(restore_data, mode) : alert(this.$t('dataNullAlert'));
+            if (!restore_data) {
+                alert(this.$t('dataNullAlert'));
+                return;
+            }
+
+            this.calculateExpCase(restore_data, mode);
         },
         calculateExpCase_Ticket() {
             this.TicketIV = parseInt(parseInt(this.calExpResult) / 3000);
@@ -140,6 +165,9 @@ export default {
             // console.log(this.TicketIV, this.TicketIII, this.TicketII, this.TicketI);
 
         }
+    },
+    mounted() {
+        this.syncSavedProgressState();
     }
 }
 </script>
