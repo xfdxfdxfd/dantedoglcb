@@ -210,8 +210,7 @@
                     <section v-for="(group, sinnerKey) in All_IDs" :key="sinnerKey" class="px-6 py-8 md:px-8">
                         <div class="flex flex-col gap-8">
                             <div>
-                                <p class="section-kicker">{{ $t(`StatusRosterSegment`) }}</p>
-                                <div class="deco-divider mt-4 justify-start">{{ $t(`StatusCollection`) }}</div>
+
                                 <h2 class="mt-2 text-2xl font-bold tracking-[0.08em] text-white md:text-3xl">{{ $t(getSinnerName(sinnerKey)) }}</h2>
                             </div>
 
@@ -233,8 +232,8 @@
                                         <div class="mt-5 grid gap-3 sm:grid-cols-2">
                                             <label class="block">
                                                 <span class="field-label">{{ $t(`uptie`) }}</span>
-                                                <select v-model="identity.uptied" class="field-select mt-2" @change="persistProgress()">
-                                                    <option value="0">{{ $t(`Don't have`) }}</option>
+                                                <select v-model="identity.uptied" class="field-select mt-2" @change="updateIdentityUptie(identity, identityName)">
+                                                    <option v-if="!isLcbSinnerIdentity(identityName)" value="0">{{ $t(`Don't have`) }}</option>
                                                     <option value="1">{{ $t(`Uptie`) }} 1</option>
                                                     <option value="2">{{ $t(`Uptie`) }} 2</option>
                                                     <option value="3">{{ $t(`Uptie`) }} 3</option>
@@ -275,8 +274,8 @@
 
                                         <label class="mt-5 block">
                                             <span class="field-label">{{ $t(`uptie`) }}</span>
-                                            <select v-model="ego.uptied" class="field-select mt-2" @change="persistProgress()">
-                                                <option value="0">{{ $t(`Don't have`) }}</option>
+                                            <select v-model="ego.uptied" class="field-select mt-2" @change="updateEgoUptie(ego)">
+                                                <option v-if="!isOriginalZTierEgo(ego)" value="0">{{ $t(`Don't have`) }}</option>
                                                 <option value="1">{{ $t(`Uptie`) }} 1</option>
                                                 <option value="2">{{ $t(`Uptie`) }} 2</option>
                                                 <option value="3">{{ $t(`Uptie`) }} 3</option>
@@ -379,7 +378,7 @@ export default {
     name: 'StatusSetting',
     props: ['StatusData'],
     data() {
-        const defaultProgress = statusdata.data().All_IDs;
+        const defaultProgress = hydrateProgress(statusdata.data().All_IDs, {});
 
         return {
             All_IDs: cloneProgress(defaultProgress),
@@ -453,7 +452,7 @@ export default {
     },
     methods: {
         createDefaultProgress() {
-            return cloneProgress(statusdata.data().All_IDs);
+            return hydrateProgress(statusdata.data().All_IDs, {});
         },
         getSinnerName(itemID) {
             var CorrName;
@@ -527,6 +526,22 @@ export default {
         },
         updateLevel(identity) {
             identity.level = sanitizeLevel(identity.level);
+            this.persistProgress();
+        },
+        isLcbSinnerIdentity(identityName) {
+            return typeof identityName === 'string' && identityName.startsWith('LCB Sinner');
+        },
+        isOriginalZTierEgo(ego) {
+            return ego?.rarity === 'Z';
+        },
+        updateIdentityUptie(identity, identityName) {
+            const minimumUptie = this.isLcbSinnerIdentity(identityName) ? 1 : 0;
+            identity.uptied = String(Math.max(minimumUptie, Number.parseInt(identity.uptied, 10) || 0));
+            this.persistProgress();
+        },
+        updateEgoUptie(ego) {
+            const minimumUptie = this.isOriginalZTierEgo(ego) ? 1 : 0;
+            ego.uptied = String(Math.max(minimumUptie, Number.parseInt(ego.uptied, 10) || 0));
             this.persistProgress();
         },
         download() {
