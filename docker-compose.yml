@@ -1,4 +1,26 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: dantedoglcb-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dantedoglcb}
+      POSTGRES_USER: ${POSTGRES_USER:-dantedoglcb}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dantedoglcb}
+    volumes:
+      - dantedoglcb-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-dantedoglcb} -d
+            ${POSTGRES_DB:-dantedoglcb}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
   backend:
     build:
       context: ./backend
@@ -10,7 +32,30 @@ services:
       DJANGO_DEBUG: ${DJANGO_DEBUG:-true}
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-dev-only-secret-key}
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-dantedoglcb}
+      POSTGRES_USER: ${POSTGRES_USER:-dantedoglcb}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dantedoglcb}
       TESSERACT_CMD: /usr/bin/tesseract
+      TESSDATA_PREFIX: /usr/share/tesseract-ocr/5/tessdata
     volumes:
       - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "${TESSERACT_CMD:-/usr/bin/tesseract} --version >/dev/null 2>&1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
     restart: unless-stopped
+
+volumes:
+  dantedoglcb-postgres-data:
+    external: true

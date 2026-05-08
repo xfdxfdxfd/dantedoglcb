@@ -28,38 +28,19 @@ export function sanitizeUptie(value) {
   return String(Math.min(Math.max(parsed, 0), 4));
 }
 
-function requiresOwnedMinimumUptie(category, entryKey, rarity) {
-  if (category === 'IDs' && typeof entryKey === 'string' && entryKey.startsWith('LCB Sinner')) {
-    return true;
-  }
-
-  return category === 'EGOs' && rarity === 'Z';
-}
-
-function normalizeEntryUptie(category, entryKey, value, rarity) {
-  const sanitized = sanitizeUptie(value);
-
-  if (requiresOwnedMinimumUptie(category, entryKey, rarity) && sanitized === '0') {
-    return '1';
-  }
-
-  return sanitized;
-}
-
 export function hydrateProgress(defaultProgress, storedProgress = {}) {
   const merged = cloneProgress(defaultProgress);
 
   Object.entries(merged).forEach(([sinnerKey, sinnerGroup]) => {
     ['IDs', 'EGOs'].forEach((category) => {
       Object.entries(sinnerGroup[category]).forEach(([entryKey, entry]) => {
-        entry.uptied = normalizeEntryUptie(category, entryKey, entry.uptied, entry.rarity);
         const storedEntry = storedProgress?.[sinnerKey]?.[category]?.[entryKey];
 
         if (!storedEntry) {
           return;
         }
 
-        entry.uptied = normalizeEntryUptie(category, entryKey, storedEntry.uptied, entry.rarity);
+        entry.uptied = sanitizeUptie(storedEntry.uptied);
 
         if (category === 'IDs') {
           entry.level = sanitizeLevel(storedEntry.level);
@@ -102,7 +83,7 @@ export function mergeRecognizedUpdates(progress, updates = []) {
       return;
     }
 
-    target.uptied = normalizeEntryUptie(update.category, update.entryKey, update.uptied, target.rarity);
+    target.uptied = sanitizeUptie(update.uptied);
 
     if (update.category === 'IDs' && typeof update.level !== 'undefined' && update.level !== null) {
       target.level = sanitizeLevel(update.level);

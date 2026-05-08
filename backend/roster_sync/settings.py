@@ -50,10 +50,20 @@ TEMPLATES = [
 WSGI_APPLICATION = 'roster_sync.wsgi.application'
 ASGI_APPLICATION = 'roster_sync.asgi.application'
 
+DATABASE_HOST = os.environ.get('POSTGRES_HOST', 'postgres')
+DATABASE_PORT = os.environ.get('POSTGRES_PORT', '5432')
+DATABASE_NAME = os.environ.get('POSTGRES_DB', 'dantedoglcb')
+DATABASE_USER = os.environ.get('POSTGRES_USER', 'dantedoglcb')
+DATABASE_PASSWORD = os.environ.get('POSTGRES_PASSWORD', 'dantedoglcb')
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': DATABASE_NAME,
+        'USER': DATABASE_USER,
+        'PASSWORD': DATABASE_PASSWORD,
+        'HOST': DATABASE_HOST,
+        'PORT': DATABASE_PORT,
     }
 }
 

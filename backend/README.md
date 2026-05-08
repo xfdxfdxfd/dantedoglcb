@@ -14,6 +14,7 @@ This backend provides screenshot upload and roster recognition for the Vue front
 
 - Python 3.11+
 - Tesseract OCR installed on the machine only if you run Django outside Docker
+- PostgreSQL reachable from Django if you run the backend outside Docker
 
 If Tesseract is not on `PATH`, set `TESSERACT_CMD` before starting Django.
 
@@ -24,6 +25,11 @@ cd backend
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+set POSTGRES_HOST=127.0.0.1
+set POSTGRES_PORT=5432
+set POSTGRES_DB=dantedoglcb
+set POSTGRES_USER=dantedoglcb
+set POSTGRES_PASSWORD=change-me
 python manage.py migrate
 python manage.py runserver
 ```
@@ -32,10 +38,22 @@ python manage.py runserver
 
 The Docker image hosts Tesseract OCR inside the backend container. You do not need Tesseract installed on your host machine when using Docker.
 
+`docker compose` builds the backend image with Tesseract already installed and starts the container with `TESSERACT_CMD=/usr/bin/tesseract` and `TESSDATA_PREFIX=/usr/share/tesseract-ocr/5/tessdata`.
+
+The backend uses PostgreSQL in Docker. The compose file also starts a `postgres` service and mounts its data directory from an external Docker volume named `dantedoglcb-postgres-data`.
+
 From the repository root:
 
 ```powershell
+docker volume create dantedoglcb-postgres-data
 docker compose up --build backend
+```
+
+If you change the OCR packages or Dockerfile, rebuild with:
+
+```powershell
+docker compose build --no-cache backend
+docker compose up backend
 ```
 
 The container exposes the API on `http://127.0.0.1:8000`.
