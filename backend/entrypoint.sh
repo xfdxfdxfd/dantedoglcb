@@ -1,17 +1,14 @@
 #!/bin/sh
 set -eu
 
-: "${TESSERACT_CMD:=/usr/bin/tesseract}"
-: "${TESSDATA_PREFIX:=/usr/share/tesseract-ocr/5/tessdata}"
-export TESSERACT_CMD
-export TESSDATA_PREFIX
+: "${QWEN_VL_MODEL:=Qwen/Qwen3-VL-2B-Instruct}"
+: "${QWEN_VL_WARM_ON_START:=0}"
+export QWEN_VL_MODEL
+export QWEN_VL_WARM_ON_START
 
-if [ ! -x "$TESSERACT_CMD" ]; then
-	echo "Tesseract executable not found at $TESSERACT_CMD" >&2
-	exit 1
+if [ "$QWEN_VL_WARM_ON_START" = "1" ]; then
+	python -c "from sync_api.services import warm_qwen_model; warm_qwen_model()"
 fi
-
-"$TESSERACT_CMD" --version >/dev/null 2>&1
 
 python manage.py migrate --noinput
 exec python manage.py runserver 0.0.0.0:8000

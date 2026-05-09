@@ -25,7 +25,11 @@ def recognize_screenshots(request):
     except json.JSONDecodeError:
         return JsonResponse({'detail': 'Invalid JSON payload.'}, status=400)
 
-    recognition = recognize_screenshots_payload(images, roster_manifest)
+    try:
+        recognition = recognize_screenshots_payload(images, roster_manifest)
+    except RuntimeError as exc:
+        return JsonResponse({'detail': str(exc)}, status=503)
+
     merged_progress = merge_updates_into_progress(current_progress, recognition['updates'])
 
     return JsonResponse(

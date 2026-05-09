@@ -295,7 +295,7 @@
 
 <script>
 import { nextTick } from 'vue';
-import statusdata from '../components/data.js';
+import createDefaultRosterProgress from '../components/data.js';
 import {
     PROGRESS_STORAGE_KEY,
     cloneProgress,
@@ -378,7 +378,7 @@ export default {
     name: 'StatusSetting',
     props: ['StatusData'],
     data() {
-        const defaultProgress = hydrateProgress(statusdata.data().All_IDs, {});
+        const defaultProgress = hydrateProgress(createDefaultRosterProgress(), {});
 
         return {
             All_IDs: cloneProgress(defaultProgress),
@@ -452,7 +452,7 @@ export default {
     },
     methods: {
         createDefaultProgress() {
-            return hydrateProgress(statusdata.data().All_IDs, {});
+            return hydrateProgress(createDefaultRosterProgress(), {});
         },
         getSinnerName(itemID) {
             var CorrName;
@@ -813,7 +813,7 @@ export default {
                 syncState: {
                     processedScreenshots: this.syncState.processedScreenshots,
                     recognizedEntries: this.syncState.recognizedEntries,
-                    matchedNames: this.syncState.matchedNames,
+                    matchedNames: Array.from(this.syncState.matchedNames || []),
                     error: this.syncState.error,
                     updatedAt: this.syncState.updatedAt,
                     reviewPending: this.syncState.reviewPending,
@@ -822,7 +822,12 @@ export default {
                     cards: this.reviewState.cards.map((card) => ({
                         id: card.id,
                         sourceImage: card.sourceImage,
-                        bounds: card.bounds,
+                        bounds: {
+                            x: Number(card.bounds?.x || 0),
+                            y: Number(card.bounds?.y || 0),
+                            width: Number(card.bounds?.width || 0),
+                            height: Number(card.bounds?.height || 0),
+                        },
                         ocrName: card.ocrName,
                         confidence: card.confidence,
                         selectedEntryKey: card.selectedEntryKey,
@@ -837,7 +842,7 @@ export default {
                 images: this.reviewState.images
                     .filter((image) => image.file instanceof Blob)
                     .map((image) => ({
-                        name: image.name,
+                        name: String(image.name || ''),
                         file: image.file,
                     })),
             };

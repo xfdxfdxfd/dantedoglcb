@@ -12,6 +12,19 @@ Crop the full outer card rectangle so the border shape is preserved.
 Remove or avoid most of the interior art/text.
 Keep the decorative edges, corners, glow, and border pattern.
 Use several samples per uptie if the frame style varies by rarity or lighting.
+Name each template with a rarity suffix so the matcher can restrict comparisons after OCR identifies the entry:
+
+`_0` = `Rarity0`
+`_00` = `Rarity00`
+`_000` = `Rarity000`
+
+Examples:
+
+`Uptie_2_Frame_0.png`
+`Uptie_3_Frame_00.png`
+`Uptie_4_Frame_000.png`
+
+The folder still defines the uptie level (`uptie1` through `uptie4`); the filename suffix defines which rarity pattern that sample belongs to.
 If you want the safest manual approach, make templates that look like:
 
 the whole card outline is present

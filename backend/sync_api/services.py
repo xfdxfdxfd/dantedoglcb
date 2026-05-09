@@ -1,29 +1,65 @@
+import ast
 import difflib
+import io
+import json
 import os
 import re
-import shlex
 from functools import lru_cache
 from pathlib import Path
 
 import cv2
 import numpy as np
-import pytesseract
+import torch
+from PIL import Image
+from transformers import AutoModelForImageTextToText, AutoProcessor
 
 
 FRAME_TEMPLATES_DIR = Path(__file__).resolve().parent / 'frame_templates'
-DEFAULT_TESSERACT_WINDOWS_PATH = Path(r'C:\Program Files\Tesseract-OCR\tesseract.exe')
 NAME_SANITIZER = re.compile(r'[^a-z0-9]+')
 LEVEL_REGEX = re.compile(r'(?:lv|l|v)?\s*[:.]?\s*(\d{1,2})', re.IGNORECASE)
 IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.webp', '.bmp'}
 FRAME_REGION_MATCH_THRESHOLD = 0.55
 FRAME_CROP_MATCH_THRESHOLD = 0.45
 FRAME_UPTIE_MATCH_THRESHOLD = 0.68
-
-
-if os.environ.get('TESSERACT_CMD'):
-    pytesseract.pytesseract.tesseract_cmd = os.environ['TESSERACT_CMD']
-elif os.name == 'nt' and DEFAULT_TESSERACT_WINDOWS_PATH.exists():
-    pytesseract.pytesseract.tesseract_cmd = str(DEFAULT_TESSERACT_WINDOWS_PATH)
+DEFAULT_QWEN_VL_MODEL = 'Qwen/Qwen3-VL-2B-Instruct'
+QWEN_CARD_OCR_PROMPT = (
+    'Read the game character card image and return strict JSON only. '
+    'Use this exact schema: '
+    '{"name":"", "level":"", "text":""}. '
+    'Rules: '
+    '1) `name` is the visible character or identity name only, without level text. '
+    '2) `level` is the visible numeric level only, no prefix like Lv. '
+    '3) `text` is a compact OCR transcription of the visible card text relevant to name and level. '
+    '4) If a field is unreadable, use an empty string. '
+    '5) Output JSON only and do not use markdown fences.'
+)
+RARITY_TEMPLATE_REGEX = re.compile(r'_(0{1,3})$', re.IGNORECASE)
+LEVEL_OCR_REGIONS = (
+    (0.44, 0.56, 1.0, 0.9),
+    (0.4, 0.52, 1.0, 0.88),
+    (0.48, 0.58, 1.0, 0.94),
+)
+NAME_OCR_REGIONS = (
+    (0.12, 0.6, 0.9, 0.86),
+    (0.08, 0.56, 0.94, 0.9),
+    (0.06, 0.48, 0.95, 0.86),
+    (0.18, 0.64, 0.92, 0.94),
+)
+KNOWN_OCR_LABELS = (
+    'LCB Sinner',
+    'Heishou Pack Wu Branch Adept',
+    'Heishou Pack Mao Branch Adept',
+    'Heishou Pack Wei Branch',
+    'Heishou Pack Mao Branch',
+    'The Ring Fauvist Student',
+    'The Lord of Hongyuan',
+    'Heishou Pack You Branch Adept',
+    'Family Hierarch Candidate',
+    'The Ring Fauvist Docent',
+    'Heishou Pack You Branch',
+    'The Ring Pointillist Student',
+    'Heishou Pack Si Branch',
+)
 
 
 def sanitize_name(text):
@@ -42,6 +78,14 @@ def sanitize_uptie(value):
         return str(max(0, min(int(value), 4)))
     except (TypeError, ValueError):
         return '0'
+
+
+def normalize_rarity(value):
+    if not value:
+        return None
+
+    normalized = str(value).strip()
+    return normalized or None
 
 
 def merge_updates_into_progress(progress, updates):
@@ -72,6 +116,7 @@ def recognize_screenshots_payload(images, roster_manifest):
         {
             **entry,
             'normalized_name': sanitize_name(entry.get('name', '')),
+            'name_tokens': tokenize_name(entry.get('name', '')),
         }
         for entry in roster_manifest
     ]
@@ -129,17 +174,17 @@ def recognize_single_screenshot(image_bytes, source_name, manifest):
     for bounds in regions:
         x, y, width, height = bounds
         card = image[y:y + height, x:x + width]
-        raw_name = extract_name(card)
-        matched_entry, name_confidence = match_manifest_entry(raw_name, manifest)
+        raw_name, detected_label, matched_entry, name_confidence = match_card_name(card, manifest)
         level = extract_level(card)
-        uptie, uptie_confidence = infer_uptie(card)
+        uptie, uptie_confidence = infer_uptie(card, matched_entry)
         combined_confidence = round((name_confidence * 0.8) + (uptie_confidence * 0.2), 4)
 
         results.append(
             {
                 'source_image': source_name,
                 'bounds': {'x': int(x), 'y': int(y), 'width': int(width), 'height': int(height)},
-                'ocr_name': raw_name,
+                'ocr_name': detected_label or raw_name,
+                'raw_ocr_name': raw_name,
                 'level': level,
                 'uptie': uptie,
                 'confidence': combined_confidence,
@@ -168,7 +213,12 @@ def decode_image(image_bytes):
 
 def extract_card_regions(image):
     frame_regions = extract_frame_validated_regions(image)
+
+    if len(frame_regions) >= 6:
+        return frame_regions
+
     template_regions = extract_card_regions_from_templates(image)
+    template_regions = expand_template_anchor_regions(template_regions, image)
 
     if len(frame_regions) >= max(4, len(template_regions)):
         return frame_regions
@@ -185,7 +235,7 @@ def extract_card_regions(image):
 def extract_frame_validated_regions(image):
     candidates = extract_contour_card_candidates(image)
     if not candidates:
-        candidates = fallback_grid_regions(image)
+        return []
 
     scored_candidates = []
     for x, y, width, height in candidates:
@@ -213,16 +263,9 @@ def extract_contour_card_candidates(image):
     scale = 1600 / max(height, width) if max(height, width) > 1600 else 1.0
     working = cv2.resize(image, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA) if scale != 1.0 else image.copy()
 
-    gray = cv2.cvtColor(working, cv2.COLOR_BGR2GRAY)
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    edges = cv2.Canny(blurred, 80, 180)
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
-    closed = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel, iterations=2)
-
-    contours, _ = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     candidates = []
 
-    for contour in contours:
+    for contour in extract_candidate_contours(working):
         x, y, card_width, card_height = cv2.boundingRect(contour)
         area = card_width * card_height
         ratio = card_width / float(card_height)
@@ -255,6 +298,29 @@ def extract_contour_card_candidates(image):
     ]
 
     return sorted(restored, key=lambda item: (item[1], item[0]))
+
+
+def extract_candidate_contours(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    edges = cv2.Canny(blurred, 80, 180)
+    edge_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+    edge_closed = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, edge_kernel, iterations=2)
+
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    gold_mask = cv2.inRange(hsv, (10, 80, 140), (45, 255, 255))
+    red_mask = cv2.inRange(hsv, (0, 90, 110), (10, 255, 255)) + cv2.inRange(hsv, (170, 90, 110), (180, 255, 255))
+    color_mask = cv2.bitwise_or(gold_mask, red_mask)
+    color_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7))
+    color_closed = cv2.morphologyEx(color_mask, cv2.MORPH_CLOSE, color_kernel, iterations=2)
+    color_closed = cv2.dilate(color_closed, color_kernel, iterations=1)
+
+    contours = []
+    for binary in (edge_closed, color_closed):
+        found, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours.extend(found)
+
+    return contours
 
 
 def extract_card_regions_from_templates(image):
@@ -349,6 +415,137 @@ def filter_to_dominant_card_size(candidates):
     return best_group
 
 
+def expand_template_anchor_regions(regions, image):
+    filtered_regions = filter_template_anchor_regions(regions, image.shape[:2])
+    if len(filtered_regions) < 3:
+        return filtered_regions
+
+    rows = group_regions_by_rows(filtered_regions)
+    expanded = [(*region, 1.0) for region in filtered_regions]
+    image_height, image_width = image.shape[:2]
+    global_x_positions = sorted({region[0] for region in filtered_regions})
+
+    for row in rows:
+        if not row:
+            continue
+
+        median_width = int(np.median([region[2] for region in row]))
+        median_height = int(np.median([region[3] for region in row]))
+        median_y = int(np.median([region[1] for region in row]))
+        step = estimate_region_step(row, median_width)
+        existing_x = sorted(region[0] for region in row)
+
+        predicted_x_positions = set(existing_x)
+        predicted_x_positions.update(fill_missing_row_positions(existing_x, step))
+        predicted_x_positions.update(global_x_positions)
+        current_x = existing_x[0]
+        while current_x - step >= int(image_width * 0.14):
+            current_x -= step
+            predicted_x_positions.add(int(round(current_x)))
+
+        current_x = existing_x[-1]
+        while current_x + step + median_width <= int(image_width * 0.86):
+            current_x += step
+            predicted_x_positions.add(int(round(current_x)))
+
+        for x in sorted(predicted_x_positions):
+            candidate_box = (int(x), median_y, median_width, median_height)
+            if any(intersection_over_union(candidate_box, existing[:4]) > 0.4 for existing in expanded):
+                continue
+
+            x1 = max(0, candidate_box[0])
+            y1 = max(0, candidate_box[1])
+            x2 = min(image_width, candidate_box[0] + candidate_box[2])
+            y2 = min(image_height, candidate_box[1] + candidate_box[3])
+
+            if x2 <= x1 or y2 <= y1:
+                continue
+
+            card = image[y1:y2, x1:x2]
+            _uptie, confidence = score_frame_templates(card)
+            if confidence < max(FRAME_REGION_MATCH_THRESHOLD, 0.5):
+                continue
+
+            expanded.append((x1, y1, x2 - x1, y2 - y1, confidence))
+
+    deduped = []
+    for candidate in sorted(expanded, key=lambda item: item[4], reverse=True):
+        if any(overlapping_regions(candidate[:4], existing[:4]) for existing in deduped):
+            continue
+        deduped.append(candidate)
+
+    return sorted([candidate[:4] for candidate in deduped], key=lambda item: (item[1], item[0]))
+
+
+def filter_template_anchor_regions(regions, image_shape):
+    image_height, image_width = image_shape
+    filtered = []
+
+    for x, y, width, height in regions:
+        center_x = x + (width / 2.0)
+        center_y = y + (height / 2.0)
+
+        if center_x < image_width * 0.14 or center_x > image_width * 0.86:
+            continue
+
+        if center_y < image_height * 0.1 or center_y > image_height * 0.85:
+            continue
+
+        filtered.append((x, y, width, height))
+
+    return filtered
+
+
+def group_regions_by_rows(regions):
+    rows = []
+
+    for region in sorted(regions, key=lambda item: item[1]):
+        center_y = region[1] + (region[3] / 2.0)
+        matched_row = None
+
+        for row in rows:
+            row_center = np.median([item[1] + (item[3] / 2.0) for item in row])
+            if abs(center_y - row_center) <= np.median([item[3] for item in row]) * 0.45:
+                matched_row = row
+                break
+
+        if matched_row is None:
+            rows.append([region])
+        else:
+            matched_row.append(region)
+
+    return [sorted(row, key=lambda item: item[0]) for row in rows]
+
+
+def estimate_region_step(row, default_width):
+    steps = []
+
+    for left, right in zip(row, row[1:]):
+        delta = right[0] - left[0]
+        if default_width * 0.75 <= delta <= default_width * 1.5:
+            steps.append(delta)
+
+    if steps:
+        return int(round(float(np.median(steps))))
+
+    return int(round(default_width * 1.04))
+
+
+def fill_missing_row_positions(existing_x, step):
+    inferred_positions = set()
+
+    for left_x, right_x in zip(existing_x, existing_x[1:]):
+        gap = right_x - left_x
+        if gap <= step * 1.6:
+            continue
+
+        missing_count = max(0, int(round(gap / float(step))) - 1)
+        for index in range(1, missing_count + 1):
+            inferred_positions.add(int(round(left_x + (step * index))))
+
+    return inferred_positions
+
+
 def fallback_grid_regions(image):
     height, width = image.shape[:2]
     columns = 6 if width >= 900 else 3
@@ -371,75 +568,248 @@ def fallback_grid_regions(image):
 
 
 def extract_level(card):
-    height, width = card.shape[:2]
-    regions = [
-        card[int(height * 0.56):int(height * 0.9), int(width * 0.44):width],
-        card[int(height * 0.52):int(height * 0.88), int(width * 0.4):width],
-        card[int(height * 0.58):int(height * 0.94), int(width * 0.48):width],
-    ]
+    for text in collect_card_ocr_candidates(card, LEVEL_OCR_REGIONS, whitelist='LVlv0123456789.:'):
+        match = LEVEL_REGEX.search(text)
+        if match:
+            return sanitize_level(match.group(1))
 
-    for region in regions:
-        for text in collect_ocr_candidates(region, psm=7, whitelist='LVlv0123456789.:'):
-            match = LEVEL_REGEX.search(text)
-            if match:
-                return sanitize_level(match.group(1))
-
-            digit_match = re.search(r'(\d{1,2})', text)
-            if digit_match:
-                return sanitize_level(digit_match.group(1))
+        digit_match = re.search(r'(\d{1,2})', text)
+        if digit_match:
+            return sanitize_level(digit_match.group(1))
 
     return 1
 
 
 def extract_name(card):
-    height, width = card.shape[:2]
-    regions = [
-        card[int(height * 0.42):int(height * 0.8), int(width * 0.08):int(width * 0.92)],
-        card[int(height * 0.5):int(height * 0.87), int(width * 0.05):int(width * 0.95)],
-        card[int(height * 0.6):int(height * 0.95), int(width * 0.06):int(width * 0.94)],
-    ]
+    candidates = extract_name_candidates(card)
+    return candidates[0] if candidates else ''
+
+
+def extract_name_candidates(card):
+    ranked_candidates = []
+
+    for text in collect_card_ocr_candidates(
+        card,
+        NAME_OCR_REGIONS,
+        whitelist="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-.'/ :",
+    ):
+        score = score_identity_text(text)
+        ranked_candidates.append((score, text))
+
+    ranked_candidates.sort(key=lambda item: item[0], reverse=True)
+    deduped = []
+
+    for _score, text in ranked_candidates:
+        if text not in deduped:
+            deduped.append(text)
+
+    return deduped
+
+
+def match_card_name(card, manifest):
     best_text = ''
-    best_score = -1
+    best_label = ''
+    best_entry = None
+    best_score = 0.0
 
-    for region in regions:
-        for text in collect_ocr_candidates(
-            region,
-            psm=6,
-            whitelist="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-.'/ :",
-        ):
-            score = score_identity_text(text)
-            if score > best_score:
-                best_score = score
-                best_text = text
+    for candidate in extract_name_candidates(card):
+        matched_entry, score = match_manifest_entry(candidate, manifest)
+        detected_label = normalize_detected_label(candidate, matched_entry, score, manifest)
 
-    return best_text
+        if score > best_score:
+            best_text = candidate
+            best_label = detected_label
+            best_entry = matched_entry
+            best_score = score
+
+    if best_text:
+        return best_text, best_label, best_entry, best_score
+
+    raw_name = extract_name(card)
+    matched_entry, score = match_manifest_entry(raw_name, manifest)
+    return raw_name, normalize_detected_label(raw_name, matched_entry, score, manifest), matched_entry, score
 
 
-def collect_ocr_candidates(region, psm, whitelist=''):
-    if region.size == 0:
-        return []
-
-    grayscale = cv2.cvtColor(region, cv2.COLOR_BGR2GRAY)
-    enlarged = cv2.resize(grayscale, None, fx=3, fy=3, interpolation=cv2.INTER_CUBIC)
-    filtered = cv2.bilateralFilter(enlarged, 9, 75, 75)
-    thresholded = [filtered]
-    _, otsu = cv2.threshold(filtered, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    _, inverse_otsu = cv2.threshold(filtered, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-    adaptive = cv2.adaptiveThreshold(filtered, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 11)
-    thresholded.extend([otsu, inverse_otsu, adaptive])
-
-    config_parts = [f'--psm {psm}']
-    if whitelist:
-        config_parts.append(f'-c tessedit_char_whitelist={shlex.quote(whitelist)}')
-    config = ' '.join(config_parts)
+def collect_card_ocr_candidates(card, normalized_regions, whitelist=''):
     candidates = []
+    seen = set()
+    ocr_result = extract_card_ocr_result(card)
 
-    for variant in thresholded:
-        text = ' '.join((pytesseract.image_to_string(variant, config=config) or '').split())
-        if text and text not in candidates:
-            candidates.append(text)
+    raw_candidates = []
+    if ocr_result.get('level'):
+        raw_candidates.append(ocr_result['level'])
+        raw_candidates.append(f"Lv {ocr_result['level']}")
+
+    raw_candidates.extend(
+        [
+            ocr_result.get('name', ''),
+            strip_level_prefix(ocr_result.get('text', '')),
+            ocr_result.get('text', ''),
+            ocr_result.get('raw_output', ''),
+        ]
+    )
+
+    for text in raw_candidates:
+        candidate = filter_ocr_text(text, whitelist)
+        if candidate and candidate not in seen:
+            seen.add(candidate)
+            candidates.append(candidate)
 
     return candidates
+
+
+def filter_ocr_text(text, whitelist=''):
+    normalized = normalize_ocr_text(text)
+    if not normalized:
+        return ''
+
+    if not whitelist:
+        return normalized
+
+    allowed_characters = set(whitelist)
+    filtered = ''.join(character for character in normalized if character in allowed_characters or character.isspace())
+    return ' '.join(filtered.split())
+
+
+def extract_card_ocr_result(card):
+    image_bytes = encode_png_bytes(card)
+    return run_qwen_card_ocr(image_bytes)
+
+
+def encode_png_bytes(image):
+    success, encoded = cv2.imencode('.png', image)
+    if not success:
+        raise ValueError('Failed to encode image payload for OCR.')
+
+    return encoded.tobytes()
+
+
+@lru_cache(maxsize=96)
+def run_qwen_card_ocr(image_bytes):
+    try:
+        output_text = generate_qwen_card_ocr(image_bytes)
+    except Exception as exc:
+        raise RuntimeError(f'Qwen3-VL OCR request failed: {exc}') from exc
+
+    return parse_qwen_card_ocr_output(output_text)
+
+
+def generate_qwen_card_ocr(image_bytes):
+    model, processor = get_qwen_vl_components()
+    image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+    messages = [
+        {
+            'role': 'user',
+            'content': [
+                {'type': 'image'},
+                {'type': 'text', 'text': QWEN_CARD_OCR_PROMPT},
+            ],
+        }
+    ]
+    prompt = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    inputs = processor(text=[prompt], images=[image], return_tensors='pt')
+    device = get_qwen_vl_device(model)
+    inputs = {key: value.to(device) if hasattr(value, 'to') else value for key, value in inputs.items()}
+
+    with torch.inference_mode():
+        generated_ids = model.generate(
+            **inputs,
+            max_new_tokens=int(os.environ.get('QWEN_VL_MAX_NEW_TOKENS', '192')),
+            do_sample=False,
+        )
+
+    trimmed_ids = [output_ids[len(input_ids):] for input_ids, output_ids in zip(inputs['input_ids'], generated_ids)]
+    return processor.batch_decode(trimmed_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
+
+
+@lru_cache(maxsize=1)
+def get_qwen_vl_components():
+    model_name = os.environ.get('QWEN_VL_MODEL', DEFAULT_QWEN_VL_MODEL)
+    model_kwargs = {
+        'torch_dtype': resolve_qwen_torch_dtype(),
+        'low_cpu_mem_usage': True,
+    }
+
+    if torch.cuda.is_available():
+        model_kwargs['device_map'] = 'auto'
+
+    try:
+        processor = AutoProcessor.from_pretrained(model_name)
+        model = AutoModelForImageTextToText.from_pretrained(model_name, **model_kwargs)
+    except Exception as exc:
+        raise RuntimeError(f'Failed to load Qwen3-VL model `{model_name}`: {exc}') from exc
+
+    if not torch.cuda.is_available():
+        model = model.to('cpu')
+
+    model.eval()
+    return model, processor
+
+
+def warm_qwen_model():
+    get_qwen_vl_components()
+
+
+def get_qwen_vl_device(model):
+    return next(model.parameters()).device
+
+
+def resolve_qwen_torch_dtype():
+    configured = os.environ.get('QWEN_VL_DTYPE', 'auto').strip().lower()
+    if configured == 'float32':
+        return torch.float32
+    if configured == 'float16':
+        return torch.float16
+    if configured == 'bfloat16':
+        return torch.bfloat16
+
+    return torch.float16 if torch.cuda.is_available() else torch.float32
+
+
+def parse_qwen_card_ocr_output(output_text):
+    normalized_output = normalize_ocr_text(output_text)
+    payload = extract_json_object(output_text)
+
+    name = normalize_ocr_text(str(payload.get('name', '') or '')) if payload else ''
+    level = normalize_ocr_text(str(payload.get('level', '') or '')) if payload else ''
+    text = normalize_ocr_text(str(payload.get('text', '') or '')) if payload else ''
+
+    if not text:
+        text = normalized_output
+
+    if not name:
+        name = strip_level_prefix(text)
+
+    level_match = LEVEL_REGEX.search(level) or LEVEL_REGEX.search(text)
+    if level_match:
+        level = level_match.group(1)
+    else:
+        digit_match = re.search(r'(\d{1,2})', level) or re.search(r'(\d{1,2})', text)
+        level = digit_match.group(1) if digit_match else ''
+
+    return {
+        'name': name,
+        'level': level,
+        'text': text,
+        'raw_output': normalized_output,
+    }
+
+
+def extract_json_object(text):
+    match = re.search(r'\{.*\}', str(text), flags=re.DOTALL)
+    if not match:
+        return None
+
+    candidate = match.group(0)
+    try:
+        parsed = json.loads(candidate)
+    except json.JSONDecodeError:
+        try:
+            parsed = ast.literal_eval(candidate)
+        except (SyntaxError, ValueError):
+            return None
+
+    return parsed if isinstance(parsed, dict) else None
 
 
 def score_identity_text(text):
@@ -449,8 +819,70 @@ def score_identity_text(text):
     return (letters * 2.0) + min(digits, 3) - (punctuation_noise * 1.5)
 
 
+def normalize_ocr_text(text):
+    return ' '.join(text.replace('\n', ' ').replace('|', 'I').split())
+
+
+def tokenize_name(text):
+    return tuple(re.findall(r'[a-z0-9]+', str(text).lower()))
+
+
+def normalize_detected_label(raw_name, matched_entry, match_score, manifest):
+    lower_text = raw_name.lower()
+    if 'lcb' in lower_text and ('sinner' in lower_text or 'siener' in lower_text or 'simmer' in lower_text):
+        return 'LCB Sinner'
+
+    if matched_entry and match_score >= 0.82 and matched_entry['entryKey'].startswith('LCB Sinner'):
+        return 'LCB Sinner'
+
+    label_candidates = list(KNOWN_OCR_LABELS)
+    label_candidates.extend(entry['name'] for entry in manifest if entry.get('name'))
+
+    cleaned_text = strip_level_prefix(raw_name)
+    best_label = cleaned_text or raw_name
+    best_score = 0.0
+
+    for label in label_candidates:
+        candidate_score = fuzzy_label_score(cleaned_text or raw_name, label)
+        if candidate_score > best_score:
+            best_score = candidate_score
+            best_label = label
+
+    if best_score >= 0.72:
+        if best_label.startswith('LCB Sinner'):
+            return 'LCB Sinner'
+        return best_label
+
+    if matched_entry and match_score >= 0.72:
+        if matched_entry['entryKey'].startswith('LCB Sinner'):
+            return 'LCB Sinner'
+        return matched_entry['entryKey']
+
+    return cleaned_text or raw_name
+
+
+def strip_level_prefix(text):
+    cleaned = re.sub(r'\bL[vVyYwW][.:]?\s*\d{1,2}\b', ' ', str(text), flags=re.IGNORECASE)
+    cleaned = re.sub(r'\b\d{1,2}\b', ' ', cleaned)
+    cleaned = re.sub(r'\s+', ' ', cleaned).strip(" -.:')(")
+    return cleaned
+
+
+def fuzzy_label_score(left_text, right_text):
+    normalized_left = sanitize_name(left_text)
+    normalized_right = sanitize_name(right_text)
+    if not normalized_left or not normalized_right:
+        return 0.0
+
+    base_score = difflib.SequenceMatcher(None, normalized_left, normalized_right).ratio()
+    partial_score = partial_ratio(normalized_left, normalized_right)
+    token_score = overlap_score(tokenize_name(left_text), tokenize_name(right_text))
+    return (max(base_score, partial_score) * 0.75) + (token_score * 0.25)
+
+
 def match_manifest_entry(raw_name, manifest):
     normalized_input = sanitize_name(raw_name)
+    input_tokens = tokenize_name(raw_name)
     best_entry = None
     best_score = 0.0
 
@@ -463,8 +895,10 @@ def match_manifest_entry(raw_name, manifest):
             continue
 
         ratio = difflib.SequenceMatcher(None, normalized_input, candidate).ratio()
-        token_bonus = overlap_score(normalized_input, candidate)
-        score = (ratio * 0.75) + (token_bonus * 0.25)
+        partial = partial_ratio(normalized_input, candidate)
+        token_bonus = overlap_score(input_tokens, entry['name_tokens'])
+        containment_bonus = 1.0 if normalized_input in candidate or candidate in normalized_input else 0.0
+        score = (max(ratio, partial) * 0.65) + (token_bonus * 0.25) + (containment_bonus * 0.1)
 
         if score > best_score:
             best_score = score
@@ -477,13 +911,14 @@ def match_manifest_entry(raw_name, manifest):
         'sinnerKey': best_entry['sinnerKey'],
         'category': best_entry['category'],
         'entryKey': best_entry['entryKey'],
+        'rarity': normalize_rarity(best_entry.get('rarity')),
         'hasLevel': best_entry['hasLevel'],
     }, best_score
 
 
-def overlap_score(left_text, right_text):
-    left_chunks = set(re.findall(r'[a-z]+|\d+', left_text))
-    right_chunks = set(re.findall(r'[a-z]+|\d+', right_text))
+def overlap_score(left_tokens, right_tokens):
+    left_chunks = set(left_tokens)
+    right_chunks = set(right_tokens)
 
     if not left_chunks or not right_chunks:
         return 0.0
@@ -491,8 +926,30 @@ def overlap_score(left_text, right_text):
     return len(left_chunks & right_chunks) / len(left_chunks | right_chunks)
 
 
-def infer_uptie(card):
-    template_level, template_confidence = match_frame_templates(card)
+def partial_ratio(left_text, right_text):
+    shorter, longer = sorted((left_text, right_text), key=len)
+
+    if not shorter or not longer:
+        return 0.0
+
+    if shorter in longer:
+        return 1.0
+
+    window = len(shorter)
+    best = 0.0
+
+    for start_index in range(0, max(1, len(longer) - window + 1)):
+        chunk = longer[start_index:start_index + window]
+        best = max(best, difflib.SequenceMatcher(None, shorter, chunk).ratio())
+        if best >= 0.995:
+            break
+
+    return best
+
+
+def infer_uptie(card, matched_entry=None):
+    rarity = normalize_rarity((matched_entry or {}).get('rarity'))
+    template_level, template_confidence = match_frame_templates(card, rarity=rarity)
     if template_level is not None:
         return template_level, template_confidence
 
@@ -516,8 +973,8 @@ def infer_uptie(card):
     return 1, 0.32
 
 
-def match_frame_templates(card):
-    best_level, best_score = score_frame_templates(card)
+def match_frame_templates(card, rarity=None):
+    best_level, best_score = score_frame_templates(card, rarity=rarity)
 
     if best_level is None or best_score < FRAME_UPTIE_MATCH_THRESHOLD:
         return None, 0.0
@@ -525,21 +982,55 @@ def match_frame_templates(card):
     return best_level, best_score
 
 
-def score_frame_templates(card):
+def score_frame_templates(card, rarity=None):
     signature = extract_frame_signature(card)
     grayscale = cv2.cvtColor(signature, cv2.COLOR_BGR2GRAY)
+    hsv = cv2.cvtColor(signature, cv2.COLOR_BGR2HSV)
+    saturation = hsv[:, :, 1]
+    value = hsv[:, :, 2]
+    edges = cv2.Canny(grayscale, 50, 150)
     best_level = None
     best_score = 0.0
 
-    for template in load_frame_templates():
-        resized_template = cv2.resize(template['grayscale'], (grayscale.shape[1], grayscale.shape[0]))
-        score = cv2.matchTemplate(grayscale, resized_template, cv2.TM_CCOEFF_NORMED).max()
+    for template in load_scaled_frame_templates(grayscale.shape[0], grayscale.shape[1]):
+        if rarity and template['rarity'] and template['rarity'] != rarity:
+            continue
+
+        grayscale_score = cv2.matchTemplate(grayscale, template['grayscale'], cv2.TM_CCOEFF_NORMED).max()
+        edge_score = cv2.matchTemplate(edges, template['edges'], cv2.TM_CCORR_NORMED).max()
+        saturation_score = cv2.matchTemplate(saturation, template['saturation'], cv2.TM_CCOEFF_NORMED).max()
+        value_score = cv2.matchTemplate(value, template['value'], cv2.TM_CCOEFF_NORMED).max()
+        score = (
+            (float(grayscale_score) * 0.45)
+            + (float(edge_score) * 0.3)
+            + (float(saturation_score) * 0.15)
+            + (float(value_score) * 0.1)
+        )
 
         if score > best_score:
-            best_score = float(score)
+            best_score = score
             best_level = template['uptie_level']
 
     return best_level, best_score
+
+
+@lru_cache(maxsize=24)
+def load_scaled_frame_templates(target_height, target_width):
+    scaled_templates = []
+
+    for template in load_frame_templates():
+        scaled_templates.append(
+            {
+                'uptie_level': template['uptie_level'],
+                'rarity': template['rarity'],
+                'grayscale': cv2.resize(template['grayscale'], (target_width, target_height)),
+                'edges': cv2.resize(template['edges'], (target_width, target_height), interpolation=cv2.INTER_NEAREST),
+                'saturation': cv2.resize(template['saturation'], (target_width, target_height)),
+                'value': cv2.resize(template['value'], (target_width, target_height)),
+            }
+        )
+
+    return tuple(scaled_templates)
 
 
 @lru_cache(maxsize=1)
@@ -561,6 +1052,7 @@ def load_frame_templates():
 
             signature = extract_frame_signature(template)
             grayscale = cv2.cvtColor(signature, cv2.COLOR_BGR2GRAY)
+            hsv = cv2.cvtColor(signature, cv2.COLOR_BGR2HSV)
             edges = cv2.Canny(grayscale, 50, 150)
             mask = np.where(grayscale > 0, 255, 0).astype(np.uint8)
 
@@ -570,14 +1062,25 @@ def load_frame_templates():
             templates.append(
                 {
                     'uptie_level': uptie_level,
+                    'rarity': parse_template_rarity(template_path),
                     'grayscale': grayscale,
                     'edges': edges,
+                    'saturation': hsv[:, :, 1],
+                    'value': hsv[:, :, 2],
                     'mask': mask,
                     'shape': grayscale.shape,
                 }
             )
 
     return tuple(templates)
+
+
+def parse_template_rarity(template_path):
+    match = RARITY_TEMPLATE_REGEX.search(template_path.stem)
+    if not match:
+        return None
+
+    return f'Rarity{match.group(1)}'
 
 
 def extract_frame_signature(card):
