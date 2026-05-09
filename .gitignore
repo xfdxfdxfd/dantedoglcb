@@ -22,3 +22,7 @@ pnpm-debug.log*
 *.sln
 *.sw?
 /backend/sync_api/__pycache__
+/backend/debug_cards
+/backend/debug_cards_after_fix
+/backend/debug_icon_probe
+/backend/roster_sync/__pycache__

@@ -1,4 +1,5 @@
 import ast
+import copy
 import difflib
 import io
 import json
@@ -15,25 +16,39 @@ from transformers import AutoModelForImageTextToText, AutoProcessor
 
 
 FRAME_TEMPLATES_DIR = Path(__file__).resolve().parent / 'frame_templates'
+IDENTITY_ICON_TEMPLATES_DIR = Path(__file__).resolve().parent / 'identityIcon_templates'
 NAME_SANITIZER = re.compile(r'[^a-z0-9]+')
 LEVEL_REGEX = re.compile(r'(?:lv|l|v)?\s*[:.]?\s*(\d{1,2})', re.IGNORECASE)
 IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.webp', '.bmp'}
 FRAME_REGION_MATCH_THRESHOLD = 0.55
 FRAME_CROP_MATCH_THRESHOLD = 0.45
-FRAME_UPTIE_MATCH_THRESHOLD = 0.68
+FRAME_UPTIE_MATCH_THRESHOLD = 0.58
+FRAME_UPTIE_MATCH_THRESHOLD_WITH_RARITY = 0.42
+FRAME_UPTIE_MIN_MARGIN = 0.035
+CARD_REGION_EDGE_MARGIN_RATIO = 0.05
+ICON_MATCH_STRONG_SCORE_THRESHOLD = 0.36
+ICON_MATCH_WEAK_SCORE_THRESHOLD = 0.26
+ICON_MATCH_STRONG_MARGIN = 0.045
+ICON_MATCH_TOP_K = 3
 DEFAULT_QWEN_VL_MODEL = 'Qwen/Qwen3-VL-2B-Instruct'
 QWEN_CARD_OCR_PROMPT = (
-    'Read the game character card image and return strict JSON only. '
-    'Use this exact schema: '
-    '{"name":"", "level":"", "text":""}. '
+    'Inspect one game identity card and read only the visible name and level. '
+    'Return exactly three lines in this exact format with no markdown, no prose, and no extra keys: '
+    'NAME: <identity name>\n'
+    'LEVEL: <integer level only>\n'
+    'TEXT: <short supporting OCR text>. '
     'Rules: '
-    '1) `name` is the visible character or identity name only, without level text. '
-    '2) `level` is the visible numeric level only, no prefix like Lv. '
-    '3) `text` is a compact OCR transcription of the visible card text relevant to name and level. '
-    '4) If a field is unreadable, use an empty string. '
-    '5) Output JSON only and do not use markdown fences.'
+    '1) NAME must contain only the identity name and must not include Lv, level numbers, NEW, rarity marks, or labels. '
+    '2) LEVEL must contain digits only. '
+    '3) TEXT may contain other visible card text that supports the read. '
+    '4) If unreadable, leave the value empty after the colon. '
+    '5) Do not invent words that are not visible in the image.'
 )
 RARITY_TEMPLATE_REGEX = re.compile(r'_(0{1,3})$', re.IGNORECASE)
+QWEN_TAGGED_FIELD_REGEX = re.compile(
+    r'(name|level|text)\s*[:=-]\s*(.*?)\s*(?=(?:name|level|text)\s*[:=-]|$)',
+    re.IGNORECASE | re.DOTALL,
+)
 LEVEL_OCR_REGIONS = (
     (0.44, 0.56, 1.0, 0.9),
     (0.4, 0.52, 1.0, 0.88),
@@ -60,6 +75,42 @@ KNOWN_OCR_LABELS = (
     'The Ring Pointillist Student',
     'Heishou Pack Si Branch',
 )
+KNOWN_OCR_LABEL_RARITIES = {
+    'LCB Sinner': 'Rarity0',
+    'Heishou Pack Wu Branch Adept': 'Rarity000',
+    'Heishou Pack Mao Branch Adept': 'Rarity000',
+    'Heishou Pack Wei Branch': 'Rarity000',
+    'Heishou Pack Mao Branch': 'Rarity000',
+    'The Ring Fauvist Student': 'Rarity000',
+    'The Lord of Hongyuan': 'Rarity000',
+    'Heishou Pack You Branch Adept': 'Rarity000',
+    'Family Hierarch Candidate': 'Rarity000',
+    'The Ring Fauvist Docent': 'Rarity000',
+    'Heishou Pack You Branch': 'Rarity000',
+    'The Ring Pointillist Student': 'Rarity00',
+    'Heishou Pack Si Branch': 'Rarity000',
+}
+IDENTITY_ICON_REGIONS = (
+    (0.52, 0.0, 1.0, 0.3),
+    (0.32, 0.0, 0.86, 0.3),
+    (0.58, 0.0, 1.0, 0.24),
+    (0.4, 0.0, 0.84, 0.24),
+)
+IDENTITY_ICON_SCALE_RATIOS = (0.58, 0.68, 0.78, 0.88)
+SINNER_ICON_ALIASES = {
+    'DonQuixote': ('Don', 'DonQuixote'),
+    'Faust': ('Faust',),
+    'Gregor': ('Gregor',),
+    'Heathcliff': ('Heathcliff',),
+    'HongLu': ('HongLu',),
+    'Ishmael': ('Ishmael',),
+    'Meursault': ('Meursault',),
+    'Outis': ('Outis',),
+    'Rodion': ('Rodion',),
+    'Ryoshu': ('Ryoshu',),
+    'Sinclair': ('Sinclair',),
+    'YiSang': ('YiSang',),
+}
 
 
 def sanitize_name(text):
@@ -176,7 +227,7 @@ def recognize_single_screenshot(image_bytes, source_name, manifest):
         card = image[y:y + height, x:x + width]
         raw_name, detected_label, matched_entry, name_confidence = match_card_name(card, manifest)
         level = extract_level(card)
-        uptie, uptie_confidence = infer_uptie(card, matched_entry)
+        uptie, uptie_confidence = infer_uptie(card, matched_entry, detected_label or raw_name)
         combined_confidence = round((name_confidence * 0.8) + (uptie_confidence * 0.2), 4)
 
         results.append(
@@ -420,35 +471,48 @@ def expand_template_anchor_regions(regions, image):
     if len(filtered_regions) < 3:
         return filtered_regions
 
+    is_sparse_layout = len(filtered_regions) <= 6
     rows = group_regions_by_rows(filtered_regions)
     expanded = [(*region, 1.0) for region in filtered_regions]
     image_height, image_width = image.shape[:2]
+    target_columns = 6 if image_width >= 900 else 3
+    min_center_x = image_width * CARD_REGION_EDGE_MARGIN_RATIO
+    max_center_x = image_width * (1.0 - CARD_REGION_EDGE_MARGIN_RATIO)
     global_x_positions = sorted({region[0] for region in filtered_regions})
+    global_step = estimate_global_region_step(filtered_regions) if is_sparse_layout else None
 
     for row in rows:
         if not row:
+            continue
+        if len(row) >= target_columns:
             continue
 
         median_width = int(np.median([region[2] for region in row]))
         median_height = int(np.median([region[3] for region in row]))
         median_y = int(np.median([region[1] for region in row]))
         step = estimate_region_step(row, median_width)
+        if is_sparse_layout and len(row) < 3 and global_step:
+            step = global_step
         existing_x = sorted(region[0] for region in row)
+        added_to_row = len(row)
 
         predicted_x_positions = set(existing_x)
         predicted_x_positions.update(fill_missing_row_positions(existing_x, step))
         predicted_x_positions.update(global_x_positions)
         current_x = existing_x[0]
-        while current_x - step >= int(image_width * 0.14):
+        while (current_x - step + (median_width / 2.0)) >= min_center_x:
             current_x -= step
             predicted_x_positions.add(int(round(current_x)))
 
         current_x = existing_x[-1]
-        while current_x + step + median_width <= int(image_width * 0.86):
+        while (current_x + step + (median_width / 2.0)) <= max_center_x:
             current_x += step
             predicted_x_positions.add(int(round(current_x)))
 
         for x in sorted(predicted_x_positions):
+            if added_to_row >= target_columns:
+                break
+
             candidate_box = (int(x), median_y, median_width, median_height)
             if any(intersection_over_union(candidate_box, existing[:4]) > 0.4 for existing in expanded):
                 continue
@@ -463,10 +527,12 @@ def expand_template_anchor_regions(regions, image):
 
             card = image[y1:y2, x1:x2]
             _uptie, confidence = score_frame_templates(card)
-            if confidence < max(FRAME_REGION_MATCH_THRESHOLD, 0.5):
+            threshold = FRAME_CROP_MATCH_THRESHOLD if is_sparse_layout else max(FRAME_REGION_MATCH_THRESHOLD, 0.5)
+            if confidence < threshold:
                 continue
 
             expanded.append((x1, y1, x2 - x1, y2 - y1, confidence))
+            added_to_row += 1
 
     deduped = []
     for candidate in sorted(expanded, key=lambda item: item[4], reverse=True):
@@ -479,13 +545,15 @@ def expand_template_anchor_regions(regions, image):
 
 def filter_template_anchor_regions(regions, image_shape):
     image_height, image_width = image_shape
+    min_center_x = image_width * CARD_REGION_EDGE_MARGIN_RATIO
+    max_center_x = image_width * (1.0 - CARD_REGION_EDGE_MARGIN_RATIO)
     filtered = []
 
     for x, y, width, height in regions:
         center_x = x + (width / 2.0)
         center_y = y + (height / 2.0)
 
-        if center_x < image_width * 0.14 or center_x > image_width * 0.86:
+        if center_x < min_center_x or center_x > max_center_x:
             continue
 
         if center_y < image_height * 0.1 or center_y > image_height * 0.85:
@@ -529,6 +597,25 @@ def estimate_region_step(row, default_width):
         return int(round(float(np.median(steps))))
 
     return int(round(default_width * 1.04))
+
+
+def estimate_global_region_step(regions):
+    if len(regions) < 3:
+        return None
+
+    median_width = float(np.median([region[2] for region in regions]))
+    sorted_x = sorted({region[0] for region in regions})
+    steps = []
+
+    for left_x, right_x in zip(sorted_x, sorted_x[1:]):
+        delta = right_x - left_x
+        if median_width * 0.75 <= delta <= median_width * 1.5:
+            steps.append(delta)
+
+    if not steps:
+        return None
+
+    return int(round(float(np.median(steps))))
 
 
 def fill_missing_row_positions(existing_x, step):
@@ -607,12 +694,44 @@ def extract_name_candidates(card):
 
 
 def match_card_name(card, manifest):
+    name_candidates = extract_name_candidates(card)
+    icon_matches = rank_identity_icon_matches(card)
+    icon_manifest = narrow_manifest_with_icon_hints(manifest, icon_matches, name_candidates)
     best_text = ''
     best_label = ''
     best_entry = None
     best_score = 0.0
 
-    for candidate in extract_name_candidates(card):
+    for candidate in name_candidates:
+        matched_entry, score = match_manifest_entry(candidate, icon_manifest)
+        detected_label = normalize_detected_label(candidate, matched_entry, score, icon_manifest)
+
+        if score > best_score:
+            best_text = candidate
+            best_label = detected_label
+            best_entry = matched_entry
+            best_score = score
+
+    if icon_manifest is not manifest and (best_score < 0.72 or best_entry is None):
+        fallback_text, fallback_label, fallback_entry, fallback_score = match_card_name_against_manifest(name_candidates, manifest)
+        if fallback_score >= best_score:
+            return fallback_text, fallback_label, fallback_entry, fallback_score
+
+    if best_text:
+        return best_text, best_label, best_entry, best_score
+
+    raw_name = extract_name(card)
+    matched_entry, score = match_manifest_entry(raw_name, manifest)
+    return raw_name, normalize_detected_label(raw_name, matched_entry, score, manifest), matched_entry, score
+
+
+def match_card_name_against_manifest(name_candidates, manifest):
+    best_text = ''
+    best_label = ''
+    best_entry = None
+    best_score = 0.0
+
+    for candidate in name_candidates:
         matched_entry, score = match_manifest_entry(candidate, manifest)
         detected_label = normalize_detected_label(candidate, matched_entry, score, manifest)
 
@@ -622,12 +741,192 @@ def match_card_name(card, manifest):
             best_entry = matched_entry
             best_score = score
 
-    if best_text:
-        return best_text, best_label, best_entry, best_score
+    return best_text, best_label, best_entry, best_score
 
-    raw_name = extract_name(card)
-    matched_entry, score = match_manifest_entry(raw_name, manifest)
-    return raw_name, normalize_detected_label(raw_name, matched_entry, score, manifest), matched_entry, score
+
+def narrow_manifest_with_icon_hints(manifest, icon_matches, name_candidates):
+    if not manifest or not icon_matches:
+        return manifest
+
+    ambiguous_name = is_ambiguous_name_candidate_set(name_candidates)
+    top_score = icon_matches[0]['score']
+    second_score = icon_matches[1]['score'] if len(icon_matches) > 1 else 0.0
+    margin = top_score - second_score
+
+    if top_score >= ICON_MATCH_STRONG_SCORE_THRESHOLD and margin >= ICON_MATCH_STRONG_MARGIN:
+        allowed_labels = {icon_matches[0]['label']}
+    elif ambiguous_name and top_score >= ICON_MATCH_WEAK_SCORE_THRESHOLD:
+        allowed_labels = {
+            match['label']
+            for match in icon_matches[:ICON_MATCH_TOP_K]
+            if (top_score - match['score']) <= 0.04
+        }
+    else:
+        return manifest
+
+    narrowed = [
+        entry for entry in manifest
+        if match_manifest_sinner_label(entry.get('sinnerKey'), allowed_labels)
+    ]
+    return narrowed or manifest
+
+
+def is_ambiguous_name_candidate_set(name_candidates):
+    if not name_candidates:
+        return True
+
+    for candidate in name_candidates:
+        lowered = str(candidate).lower()
+        if 'lcb sinner' in lowered:
+            return True
+
+    longest_candidate = max((len(tokenize_name(candidate)) for candidate in name_candidates), default=0)
+    return longest_candidate <= 3
+
+
+def match_manifest_sinner_label(sinner_key, labels):
+    if not sinner_key or not labels:
+        return False
+
+    normalized_key = normalize_manifest_sinner_key(sinner_key)
+    for label in labels:
+        if normalized_key in SINNER_ICON_ALIASES.get(label, (label,)):
+            return True
+
+    return False
+
+
+def normalize_manifest_sinner_key(sinner_key):
+    return re.sub(r'(IDs|EGOs)$', '', str(sinner_key or ''))
+
+
+def rank_identity_icon_matches(card):
+    top_band_variants = extract_identity_icon_regions(card)
+    if not top_band_variants:
+        return []
+
+    scores = {}
+
+    for template in load_identity_icon_templates():
+        best_score = 0.0
+        for crop in top_band_variants:
+            best_score = max(best_score, score_identity_icon_template(crop, template))
+
+        if best_score > 0.0:
+            scores[template['label']] = max(scores.get(template['label'], 0.0), best_score)
+
+    return [
+        {'label': label, 'score': score}
+        for label, score in sorted(scores.items(), key=lambda item: item[1], reverse=True)
+    ]
+
+
+def extract_identity_icon_regions(card):
+    regions = []
+    height, width = card.shape[:2]
+
+    for left, top, right, bottom in IDENTITY_ICON_REGIONS:
+        x1 = max(0, int(width * left))
+        y1 = max(0, int(height * top))
+        x2 = min(width, int(width * right))
+        y2 = min(height, int(height * bottom))
+        if x2 <= x1 or y2 <= y1:
+            continue
+
+        crop = card[y1:y2, x1:x2]
+        if crop.size:
+            regions.append(crop)
+
+    return regions
+
+
+def score_identity_icon_template(crop, template):
+    crop_gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+    _threshold, crop_dark = cv2.threshold(crop_gray, 156, 255, cv2.THRESH_BINARY_INV)
+    crop_dark = cv2.morphologyEx(crop_dark, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)))
+    crop_edges = cv2.Canny(crop_gray, 70, 180)
+    crop_height, crop_width = crop_gray.shape[:2]
+    best_score = 0.0
+
+    for scale_ratio in IDENTITY_ICON_SCALE_RATIOS:
+        target_height = int(crop_height * scale_ratio)
+        if target_height < 12:
+            continue
+
+        scale = target_height / float(template['height'])
+        target_width = int(template['width'] * scale)
+        if target_width < 12 or target_width >= crop_width or target_height >= crop_height:
+            continue
+
+        interpolation = cv2.INTER_AREA if scale < 1.0 else cv2.INTER_CUBIC
+        resized_dark = cv2.resize(template['dark'], (target_width, target_height), interpolation=interpolation)
+        resized_edges = cv2.resize(template['edges'], (target_width, target_height), interpolation=cv2.INTER_NEAREST)
+        resized_mask = cv2.resize(template['mask'], (target_width, target_height), interpolation=cv2.INTER_NEAREST)
+
+        if np.count_nonzero(resized_mask) < 24:
+            continue
+
+        dark_score = sanitize_template_score(cv2.matchTemplate(crop_dark, resized_dark, cv2.TM_CCORR_NORMED, mask=resized_mask))
+        edge_score = sanitize_template_score(cv2.matchTemplate(crop_edges, resized_edges, cv2.TM_CCORR_NORMED, mask=resized_mask))
+        best_score = max(best_score, (dark_score * 0.65) + (edge_score * 0.35))
+
+    return best_score
+
+
+def sanitize_template_score(result):
+    if result is None or not getattr(result, 'size', 0):
+        return 0.0
+
+    finite = result[np.isfinite(result)]
+    if not finite.size:
+        return 0.0
+
+    return float(np.clip(finite.max(), 0.0, 1.0))
+
+
+@lru_cache(maxsize=1)
+def load_identity_icon_templates():
+    templates = []
+
+    if not IDENTITY_ICON_TEMPLATES_DIR.exists():
+        return tuple()
+
+    for template_path in sorted(IDENTITY_ICON_TEMPLATES_DIR.iterdir()):
+        if template_path.suffix.lower() not in IMAGE_EXTENSIONS:
+            continue
+
+        template = cv2.imread(str(template_path), cv2.IMREAD_UNCHANGED)
+        if template is None or template.ndim != 3:
+            continue
+
+        if template.shape[2] == 4:
+            alpha = template[:, :, 3]
+            color = template[:, :, :3]
+        else:
+            color = template[:, :, :3]
+            alpha = np.where(cv2.cvtColor(color, cv2.COLOR_BGR2GRAY) < 250, 255, 0).astype(np.uint8)
+
+        gray = cv2.cvtColor(color, cv2.COLOR_BGR2GRAY)
+        _threshold, dark = cv2.threshold(gray, 220, 255, cv2.THRESH_BINARY_INV)
+        dark = cv2.bitwise_and(dark, dark, mask=alpha)
+        edges = cv2.Canny(gray, 70, 180)
+        edges = cv2.bitwise_and(edges, edges, mask=alpha)
+
+        if not np.count_nonzero(alpha):
+            continue
+
+        templates.append(
+            {
+                'label': template_path.stem,
+                'width': gray.shape[1],
+                'height': gray.shape[0],
+                'mask': alpha,
+                'dark': dark,
+                'edges': edges,
+            }
+        )
+
+    return tuple(templates)
 
 
 def collect_card_ocr_candidates(card, normalized_regions, whitelist=''):
@@ -643,6 +942,7 @@ def collect_card_ocr_candidates(card, normalized_regions, whitelist=''):
     raw_candidates.extend(
         [
             ocr_result.get('name', ''),
+            ocr_result.get('tagged_name', ''),
             strip_level_prefix(ocr_result.get('text', '')),
             ocr_result.get('text', ''),
             ocr_result.get('raw_output', ''),
@@ -710,10 +1010,16 @@ def generate_qwen_card_ocr(image_bytes):
     inputs = processor(text=[prompt], images=[image], return_tensors='pt')
     device = get_qwen_vl_device(model)
     inputs = {key: value.to(device) if hasattr(value, 'to') else value for key, value in inputs.items()}
+    generation_config = copy.deepcopy(model.generation_config)
+    generation_config.do_sample = False
+    generation_config.temperature = None
+    generation_config.top_p = None
+    generation_config.top_k = None
 
     with torch.inference_mode():
         generated_ids = model.generate(
             **inputs,
+            generation_config=generation_config,
             max_new_tokens=int(os.environ.get('QWEN_VL_MAX_NEW_TOKENS', '192')),
             do_sample=False,
         )
@@ -726,7 +1032,7 @@ def generate_qwen_card_ocr(image_bytes):
 def get_qwen_vl_components():
     model_name = os.environ.get('QWEN_VL_MODEL', DEFAULT_QWEN_VL_MODEL)
     model_kwargs = {
-        'torch_dtype': resolve_qwen_torch_dtype(),
+        'dtype': resolve_qwen_torch_dtype(),
         'low_cpu_mem_usage': True,
     }
 
@@ -769,14 +1075,16 @@ def resolve_qwen_torch_dtype():
 def parse_qwen_card_ocr_output(output_text):
     normalized_output = normalize_ocr_text(output_text)
     payload = extract_json_object(output_text)
+    tagged_fields = extract_tagged_fields(output_text)
 
-    name = normalize_ocr_text(str(payload.get('name', '') or '')) if payload else ''
-    level = normalize_ocr_text(str(payload.get('level', '') or '')) if payload else ''
-    text = normalize_ocr_text(str(payload.get('text', '') or '')) if payload else ''
+    name = normalize_ocr_text(str((payload or {}).get('name', '') or tagged_fields.get('name', '')))
+    level = normalize_ocr_text(str((payload or {}).get('level', '') or tagged_fields.get('level', '')))
+    text = normalize_ocr_text(str((payload or {}).get('text', '') or tagged_fields.get('text', '')))
 
     if not text:
         text = normalized_output
 
+    name = cleanup_identity_name(name)
     if not name:
         name = strip_level_prefix(text)
 
@@ -789,6 +1097,7 @@ def parse_qwen_card_ocr_output(output_text):
 
     return {
         'name': name,
+        'tagged_name': tagged_fields.get('name', ''),
         'level': level,
         'text': text,
         'raw_output': normalized_output,
@@ -810,6 +1119,26 @@ def extract_json_object(text):
             return None
 
     return parsed if isinstance(parsed, dict) else None
+
+
+def extract_tagged_fields(text):
+    fields = {}
+
+    for match in QWEN_TAGGED_FIELD_REGEX.finditer(str(text)):
+        key = match.group(1).lower()
+        value = normalize_ocr_text(match.group(2))
+        if value:
+            fields[key] = value
+
+    return fields
+
+
+def cleanup_identity_name(text):
+    cleaned = normalize_ocr_text(text)
+    cleaned = re.sub(r'^(?:name|text)\s*[:=-]\s*', '', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'\b(?:new|lv|level)\b.*$', '', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'\s+', ' ', cleaned).strip(" -.:')(")
+    return cleaned
 
 
 def score_identity_text(text):
@@ -947,8 +1276,8 @@ def partial_ratio(left_text, right_text):
     return best
 
 
-def infer_uptie(card, matched_entry=None):
-    rarity = normalize_rarity((matched_entry or {}).get('rarity'))
+def infer_uptie(card, matched_entry=None, detected_label=''):
+    rarity = normalize_rarity((matched_entry or {}).get('rarity')) or infer_known_label_rarity(detected_label)
     template_level, template_confidence = match_frame_templates(card, rarity=rarity)
     if template_level is not None:
         return template_level, template_confidence
@@ -974,23 +1303,43 @@ def infer_uptie(card, matched_entry=None):
 
 
 def match_frame_templates(card, rarity=None):
-    best_level, best_score = score_frame_templates(card, rarity=rarity)
-
-    if best_level is None or best_score < FRAME_UPTIE_MATCH_THRESHOLD:
+    level_scores = collect_frame_level_scores(card, rarity=rarity)
+    if not level_scores:
         return None, 0.0
+
+    ranked_levels = sorted(level_scores.items(), key=lambda item: item[1], reverse=True)
+    best_level, best_score = ranked_levels[0]
+    second_score = ranked_levels[1][1] if len(ranked_levels) > 1 else 0.0
+    threshold = FRAME_UPTIE_MATCH_THRESHOLD_WITH_RARITY if rarity else FRAME_UPTIE_MATCH_THRESHOLD
+
+    if best_score < threshold:
+        return None, 0.0
+
+    if best_score - second_score < FRAME_UPTIE_MIN_MARGIN and best_level in (2, 3):
+        higher_level_score = level_scores.get(best_level + 1, 0.0)
+        if higher_level_score >= max(threshold - 0.03, best_score - 0.02):
+            return best_level + 1, higher_level_score
 
     return best_level, best_score
 
 
 def score_frame_templates(card, rarity=None):
+    level_scores = collect_frame_level_scores(card, rarity=rarity)
+    if not level_scores:
+        return None, 0.0
+
+    best_level, best_score = max(level_scores.items(), key=lambda item: item[1])
+    return best_level, best_score
+
+
+def collect_frame_level_scores(card, rarity=None):
     signature = extract_frame_signature(card)
     grayscale = cv2.cvtColor(signature, cv2.COLOR_BGR2GRAY)
     hsv = cv2.cvtColor(signature, cv2.COLOR_BGR2HSV)
     saturation = hsv[:, :, 1]
     value = hsv[:, :, 2]
     edges = cv2.Canny(grayscale, 50, 150)
-    best_level = None
-    best_score = 0.0
+    level_scores = {}
 
     for template in load_scaled_frame_templates(grayscale.shape[0], grayscale.shape[1]):
         if rarity and template['rarity'] and template['rarity'] != rarity:
@@ -1006,12 +1355,9 @@ def score_frame_templates(card, rarity=None):
             + (float(saturation_score) * 0.15)
             + (float(value_score) * 0.1)
         )
+        level_scores[template['uptie_level']] = max(level_scores.get(template['uptie_level'], 0.0), score)
 
-        if score > best_score:
-            best_score = score
-            best_level = template['uptie_level']
-
-    return best_level, best_score
+    return level_scores
 
 
 @lru_cache(maxsize=24)
@@ -1088,7 +1434,38 @@ def extract_frame_signature(card):
     border = max(4, int(min(height, width) * 0.09))
     signature = card.copy()
     signature[border:height - border, border:width - border] = 0
+    mask_frame_overlays(signature)
     return signature
+
+
+def mask_frame_overlays(signature):
+    height, width = signature.shape[:2]
+    if height <= 0 or width <= 0:
+        return
+
+    # Remove rarity pips and round badge overlays that do not exist in frame templates.
+    cv2.rectangle(signature, (0, 0), (int(width * 0.28), int(height * 0.16)), (0, 0, 0), thickness=-1)
+    cv2.circle(signature, (int(width * 0.86), int(height * 0.08)), int(min(height, width) * 0.14), (0, 0, 0), thickness=-1)
+    cv2.rectangle(signature, (int(width * 0.36), 0), (int(width * 0.64), int(height * 0.08)), (0, 0, 0), thickness=-1)
+
+
+def infer_known_label_rarity(text):
+    normalized_text = normalize_detected_label(str(text or ''), None, 0.0, [])
+    return KNOWN_OCR_LABEL_RARITIES.get(normalized_text)
+
+
+def build_card_debug_report(card, matched_entry=None, detected_label=''):
+    ocr_result = extract_card_ocr_result(card)
+    rarity = normalize_rarity((matched_entry or {}).get('rarity')) or infer_known_label_rarity(detected_label or ocr_result.get('name', ''))
+    return {
+        'ocr': ocr_result,
+        'name_candidates': extract_name_candidates(card),
+        'level': extract_level(card),
+        'frame_scores_any': collect_frame_level_scores(card),
+        'frame_scores_rarity': collect_frame_level_scores(card, rarity=rarity) if rarity else {},
+        'inferred_uptie': infer_uptie(card, matched_entry, detected_label or ocr_result.get('name', '')),
+        'rarity_hint': rarity,
+    }
 
 
 def build_frame_scale_candidates(template_shape, image_shape):

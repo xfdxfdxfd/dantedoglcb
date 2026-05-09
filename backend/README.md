@@ -53,6 +53,14 @@ docker compose up -d --build backend
 
 The first OCR request downloads the model weights into the Docker volume `dantedoglcb-huggingface-cache`. If you want Docker to download the model immediately on startup, set `QWEN_VL_WARM_ON_START=1` in `.env` before running compose.
 
+If your Docker host exposes an NVIDIA GPU, local `Qwen3-VL` inference is much faster with GPU acceleration. This workspace includes an optional [docker-compose.gpu.yml](docker-compose.gpu.yml) override:
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build backend
+```
+
+The current container environment may still run on CPU if no GPU is exposed to Docker. You can verify that inside the container with `python -c "import torch; print(torch.cuda.is_available())"`.
+
 If you change the OCR packages or Dockerfile, rebuild with:
 
 ```powershell
@@ -76,6 +84,14 @@ Default model:
 This default is the smallest open `Qwen3-VL` instruct checkpoint and is the most practical option for local Docker usage. CPU inference works but is slow; a CUDA GPU is strongly recommended for responsive OCR.
 
 If you want to override Django settings, copy `backend/.env.example` values into your shell environment or repository-root `.env` file before starting compose.
+
+## Debugging OCR
+
+For faster OCR tuning on real screenshots, use the Django management command below. It prints one detected card at a time and can optionally write each crop plus a JSON report to disk.
+
+```powershell
+docker compose exec backend python manage.py debug_cards /app/test_image/testimg2.png --output-dir /app/debug_cards
+```
 
 ## Optional frame templates
 

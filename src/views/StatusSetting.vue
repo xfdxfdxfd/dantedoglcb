@@ -13,9 +13,7 @@
                         </div>
 
                         <div class="hero-card">
-                            <p class="section-kicker">{{ $t(`StatusActions`) }}</p>
-                            <div class="deco-divider mt-4">{{ $t(`StatusControlPanel`) }}</div>
-                            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                                <div class="mt-4 grid gap-3 sm:grid-cols-2">
                                 <button type="button" class="action-button" @click="openFileUpload()">{{ $t(`Import Setting`) }}</button>
                                 <button type="button" class="action-button" @click="download()">{{ $t(`Export Setting`) }}</button>
                                 <button type="button" class="action-button action-button--accent" :disabled="syncState.loading" @click="openScreenshotUpload()">

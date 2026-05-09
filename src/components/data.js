@@ -17,6 +17,12 @@ function buildEntries(entries) {
 export const rosterCatalog = {
     YiSangIDs: {
         IDs: [
+            ['Lobotomy E.G.O::Solemn Lament Yi Sang', 'Rarity000'],
+            ['Liu Assoc. South Section 3 Yi Sang', 'Rarity000'],
+            ['N Corp. E.G.O::Fell Bullet Yi Sang', 'Rarity000'],
+            ['Heishou Pack - Wu Branch Adept Yi Sang', 'Rarity000'],
+            ['The House of Spiders: The Index Nursefather Yi Sang', 'Rarity000'],
+
             ['The Ring Pointillist Student Yi Sang', 'Rarity000'],
             ['Effloresced E.G.O::Spicebush YiSang', 'Rarity000'],
             ['Blade Lineage Salsu YiSang', 'Rarity000'],
@@ -24,7 +30,7 @@ export const rosterCatalog = {
             ['Seven Assoc. South Section 6 YiSang', 'Rarity00'],
             ['Molar Office Fixer YiSang', 'Rarity00'],
             ['The Pequod First Mate Yi Sang', 'Rarity00'],
-            ['Dieci South Section 4 Yi Sang', 'Rarity00'],
+            ['Dieci Assoc. South Section 4 Yi Sang', 'Rarity00'],
             ['LCB Sinner YiSang', 'Rarity0'],
         ],
         EGOs: [
@@ -38,6 +44,13 @@ export const rosterCatalog = {
     },
     FaustIDs: {
         IDs: [
+            ['MultiCrack Office Rep Faust', 'Rarity000'],
+            ['LCE E.G.O::Ardor Blossom Star Faust', 'Rarity000'],
+            ['Heishou Pack - Mao Branch Adept Faust', 'Rarity000'],
+            ['Shi Assoc. East Section 3 Faust', 'Rarity000'],
+            ['The Index Proselyte:【Paper Slip】Faust', 'Rarity000'],
+            ['The House of Spiders: The Ring Apprentice Faust', 'Rarity000'],
+
             ['Seven Assoc. South Section 4 Faust', 'Rarity000'],
             ['Blade Lineage Salsu Faust', 'Rarity000'],
             ['The One Who Grips Faust', 'Rarity000'],
