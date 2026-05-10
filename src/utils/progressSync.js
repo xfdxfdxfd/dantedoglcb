@@ -15,7 +15,7 @@ export function sanitizeLevel(value) {
     return 1;
   }
 
-  return Math.min(Math.max(parsed, 1), 50);
+  return Math.min(Math.max(parsed, 1), 60);
 }
 
 export function sanitizeUptie(value) {

@@ -26,3 +26,10 @@ pnpm-debug.log*
 /backend/debug_cards_after_fix
 /backend/debug_icon_probe
 /backend/roster_sync/__pycache__
+/backend/debug_cards_qwen_choice
+/backend/debug_cards_qwen_uptie
+/backend/debug_cards_qwen_choice_live
+/backend/debug_cards_qwen_choice_live_after_patch
+/backend/debug_cards_qwen_choice_live_after_patch_v2
+/backend/debug_cards_qwen_choice_live_after_patch_v3
+/backend/debug_cards_testimg3_before_fix
