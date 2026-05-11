@@ -3,7 +3,7 @@ import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
-from .services import merge_updates_into_progress, recognize_screenshots_payload
+from .services import merge_updates_into_progress, recognize_screenshots_payload, store_recognition_feedback
 
 
 def healthcheck(_request):
@@ -40,3 +40,21 @@ def recognize_screenshots(request):
             'merged_progress': merged_progress,
         }
     )
+
+
+@csrf_exempt
+def record_recognition_feedback(request):
+    if request.method != 'POST':
+        return JsonResponse({'detail': 'Method not allowed.'}, status=405)
+
+    try:
+        payload = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'detail': 'Invalid JSON payload.'}, status=400)
+
+    feedback_items = payload.get('feedback') or []
+    if not isinstance(feedback_items, list):
+        return JsonResponse({'detail': 'Feedback payload must be a list.'}, status=400)
+
+    persisted = store_recognition_feedback(feedback_items)
+    return JsonResponse({'saved_feedback': persisted})

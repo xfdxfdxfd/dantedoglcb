@@ -115,3 +115,24 @@ export async function syncProgressWithScreenshots(files, progress) {
 
   return response.json();
 }
+
+export async function submitRecognitionFeedback(feedback = []) {
+  if (!Array.isArray(feedback) || !feedback.length) {
+    return { saved_feedback: 0 };
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/sync/feedback/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ feedback }),
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || 'Failed to save recognition feedback.');
+  }
+
+  return response.json();
+}

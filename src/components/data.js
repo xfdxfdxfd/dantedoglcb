@@ -31,6 +31,7 @@ export const rosterCatalog = {
             ['Molar Office Fixer YiSang', 'Rarity00'],
             ['The Pequod First Mate Yi Sang', 'Rarity00'],
             ['Dieci Assoc. South Section 4 Yi Sang', 'Rarity00'],
+            ['LCE E.G.O::Lantern Yi Sang', 'Rarity00'],
             ['LCB Sinner YiSang', 'Rarity0'],
         ],
         EGOs: [

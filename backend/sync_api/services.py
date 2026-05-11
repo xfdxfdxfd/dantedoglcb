@@ -1,12 +1,16 @@
+import base64
 import ast
 import copy
 import difflib
+import hashlib
 import io
 import json
 import os
 import re
+import time
 from functools import lru_cache
 from pathlib import Path
+from threading import Lock
 
 import cv2
 import numpy as np
@@ -17,6 +21,8 @@ from transformers import AutoModelForImageTextToText, AutoProcessor
 
 FRAME_TEMPLATES_DIR = Path(__file__).resolve().parent / 'frame_templates'
 IDENTITY_ICON_TEMPLATES_DIR = Path(__file__).resolve().parent / 'identityIcon_templates'
+OCR_FEEDBACK_PATH = Path(__file__).resolve().parent / 'ocr_feedback.json'
+OCR_FEEDBACK_SAMPLES_DIR = Path(__file__).resolve().parent / 'ocr_feedback_samples'
 NAME_SANITIZER = re.compile(r'[^a-z0-9]+')
 LEVEL_REGEX = re.compile(r'(?:lv|l|v)?\s*[:.]?\s*(\d{1,2})', re.IGNORECASE)
 IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.webp', '.bmp'}
@@ -26,10 +32,22 @@ FRAME_UPTIE_MATCH_THRESHOLD = 0.58
 FRAME_UPTIE_MATCH_THRESHOLD_WITH_RARITY = 0.42
 FRAME_UPTIE_MIN_MARGIN = 0.035
 CARD_REGION_EDGE_MARGIN_RATIO = 0.05
+FEEDBACK_SAMPLE_MIN_SCORE = 0.72
+FEEDBACK_SAMPLE_MIN_MARGIN = 0.035
 ICON_MATCH_STRONG_SCORE_THRESHOLD = 0.36
 ICON_MATCH_WEAK_SCORE_THRESHOLD = 0.26
 ICON_MATCH_STRONG_MARGIN = 0.045
 ICON_MATCH_TOP_K = 3
+ALIAS_MATCH_EXACT_BONUS = 0.08
+AMBIGUOUS_MATCH_SCORE_MARGIN = 0.035
+MANIFEST_TOKEN_STOPWORDS = {
+    'assoc', 'association', 'section', 'south', 'north', 'east', 'west', 'director',
+    'office', 'fixer', 'corp', 'agent', 'sinner', 'pack', 'branch', 'student', 'adept',
+    'manager', 'captain', 'first', 'mate', 'assistant', 'chief', 'butler', 'family',
+    'workshop', 'cleanup', 'class', 'grade', 'the', 'of', 'and', 'lcb', 'yi', 'sang',
+    'hong', 'lu', 'don', 'quixote', 'meursault', 'faust', 'ryoshu', 'heathcliff',
+    'ishmael', 'rodion', 'sinclair', 'outis', 'gregor',
+}
 DEFAULT_QWEN_VL_MODEL = 'Qwen/Qwen3-VL-2B-Instruct'
 QWEN_CARD_OCR_PROMPT = (
     'Inspect the labeled panels of one game identity card. '
@@ -48,7 +66,8 @@ QWEN_CARD_OCR_PROMPT = (
     '3) LEVEL must contain digits only. '
     '4) TEXT may contain other visible card text that supports the read. '
     '5) If unreadable, leave the value empty after the colon. '
-    '6) Do not invent words or numbers that are not visible in the image.'
+    '6) Do not invent words or numbers that are not visible in the image. '
+    '7) Many titles share words like Assoc., South, and Section. Read the first distinctive faction word carefully and do not replace it with another faction name.'
 )
 QWEN_CARD_UPTIE_PROMPT = (
     'Inspect the labeled panels of one game identity card frame. '
@@ -73,9 +92,10 @@ QWEN_CARD_NAME_CHOICE_PROMPT = (
     'CHOICE: C1 or CHOICE: C2 or CHOICE: C3 or CHOICE: C4. '
     'Rules: '
     '1) Use the visible title text first. '
-    '2) Use the sinner icon only as a tie-breaker. '
-    '3) Ignore uptie pips, frame decorations, and level numbers except when needed to reject a bad option. '
-    '4) If uncertain, still choose the closest of the listed candidates.'
+    '2) Pay special attention to the first distinctive word in the title because many candidates share suffixes like Assoc., South, and Section. '
+    '3) Use the sinner icon only as a tie-breaker. '
+    '4) Ignore uptie pips, frame decorations, and level numbers except when needed to reject a bad option. '
+    '5) If uncertain, still choose the closest of the listed candidates.'
 )
 RARITY_TEMPLATE_REGEX = re.compile(r'_(0{1,3})$', re.IGNORECASE)
 QWEN_TAGGED_FIELD_REGEX = re.compile(
@@ -155,10 +175,208 @@ SINNER_ICON_ALIASES = {
     'Sinclair': ('Sinclair',),
     'YiSang': ('YiSang',),
 }
+OCR_FEEDBACK_LOCK = Lock()
 
 
 def sanitize_name(text):
     return NAME_SANITIZER.sub('', text.lower())
+
+
+def log_recognition_timing(stage, **fields):
+    payload = ' '.join(f'{key}={value}' for key, value in fields.items())
+    print(f'[recognition] {stage} {payload}'.strip(), flush=True)
+
+
+def canonical_feedback_entry_key(sinner_key, category, entry_key):
+    return f'{sinner_key}::{category}::{entry_key}'
+
+
+def normalize_feedback_alias(text):
+    cleaned = cleanup_identity_name(text)
+    if cleaned:
+        return cleaned
+
+    normalized = normalize_ocr_text(text)
+    return strip_level_prefix(normalized)
+
+
+def normalize_manifest_entry(entry):
+    feedback = load_ocr_feedback_store()
+    feedback_entry = feedback.get(canonical_feedback_entry_key(entry.get('sinnerKey'), entry.get('category'), entry.get('entryKey')), {})
+    aliases = []
+    for alias in feedback_entry.get('aliases', []):
+        normalized_alias = normalize_feedback_alias(alias)
+        if normalized_alias and normalized_alias not in aliases:
+            aliases.append(normalized_alias)
+
+    return {
+        **entry,
+        'normalized_name': sanitize_name(entry.get('name', '')),
+        'name_tokens': tokenize_name(entry.get('name', '')),
+        'match_aliases': tuple(aliases),
+        'match_alias_tokens': tuple(tokenize_name(alias) for alias in aliases),
+        'feedback_samples': tuple(feedback_entry.get('samples', [])),
+    }
+
+
+def load_ocr_feedback_store():
+    if not OCR_FEEDBACK_PATH.exists():
+        return {}
+
+    try:
+        payload = json.loads(OCR_FEEDBACK_PATH.read_text(encoding='utf-8'))
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+    if not isinstance(payload, dict):
+        return {}
+
+    normalized = {}
+    for entry_key, entry_payload in payload.items():
+        if not isinstance(entry_payload, dict):
+            continue
+
+        aliases = []
+        for alias in entry_payload.get('aliases', []):
+            normalized_alias = normalize_feedback_alias(alias)
+            if normalized_alias and normalized_alias not in aliases:
+                aliases.append(normalized_alias)
+
+        if aliases:
+            normalized[entry_key] = {
+                'aliases': aliases,
+                'raw_aliases': list(entry_payload.get('raw_aliases', [])),
+                'samples': list(entry_payload.get('samples', [])),
+            }
+
+    return normalized
+
+
+def save_ocr_feedback_store(payload):
+    OCR_FEEDBACK_PATH.parent.mkdir(parents=True, exist_ok=True)
+    OCR_FEEDBACK_PATH.write_text(json.dumps(payload, indent=2, ensure_ascii=True), encoding='utf-8')
+
+
+def sanitize_feedback_path_component(text):
+    cleaned = re.sub(r'[^A-Za-z0-9._-]+', '-', str(text or '').strip())
+    return cleaned.strip('.-') or 'sample'
+
+
+def decode_feedback_image_data_url(data_url):
+    if not isinstance(data_url, str):
+        return None, None
+
+    match = re.match(r'^data:image/(?P<format>png|jpeg|jpg|webp);base64,(?P<data>.+)$', data_url, flags=re.IGNORECASE)
+    if not match:
+        return None, None
+
+    try:
+        image_bytes = base64.b64decode(match.group('data'))
+    except (ValueError, TypeError):
+        return None, None
+
+    image_format = match.group('format').lower().replace('jpeg', 'jpg')
+    return image_bytes, image_format
+
+
+def save_feedback_sample_image(feedback_key, corrected_text, image_data_url):
+    image_bytes, image_format = decode_feedback_image_data_url(image_data_url)
+    if not image_bytes or not image_format:
+        return ''
+
+    entry_directory = OCR_FEEDBACK_SAMPLES_DIR / sanitize_feedback_path_component(feedback_key)
+    entry_directory.mkdir(parents=True, exist_ok=True)
+    digest = hashlib.sha256(image_bytes + corrected_text.encode('utf-8')).hexdigest()[:24]
+    sample_path = entry_directory / f'{digest}.{image_format}'
+
+    if not sample_path.exists():
+        sample_path.write_bytes(image_bytes)
+
+    return sample_path.relative_to(OCR_FEEDBACK_PATH.parent).as_posix()
+
+
+def build_feedback_sample_record(item, feedback_key, entry_key):
+    corrected_text = ' '.join(str(item.get('corrected_text') or entry_key).split())
+    image_path = save_feedback_sample_image(feedback_key, corrected_text, item.get('card_image_data_url'))
+    if not image_path:
+        return None
+
+    bounds = item.get('bounds') or {}
+    return {
+        'image_path': image_path,
+        'corrected_text': corrected_text,
+        'observed_name': ' '.join(str(item.get('observed_name') or '').split()),
+        'raw_ocr_name': ' '.join(str(item.get('raw_ocr_name') or '').split()),
+        'source_image': ' '.join(str(item.get('source_image') or '').split()),
+        'bounds': {
+            'x': int(bounds.get('x') or 0),
+            'y': int(bounds.get('y') or 0),
+            'width': int(bounds.get('width') or 0),
+            'height': int(bounds.get('height') or 0),
+        },
+        'manual': bool(item.get('manual')),
+        'saved_at': int(time.time()),
+    }
+
+
+def store_recognition_feedback(feedback_items):
+    persisted = 0
+
+    with OCR_FEEDBACK_LOCK:
+        existing = load_ocr_feedback_store()
+
+        for item in feedback_items:
+            entry = item.get('entry') or {}
+            sinner_key = entry.get('sinnerKey')
+            category = entry.get('category')
+            entry_key = entry.get('entryKey')
+            if not sinner_key or not category or not entry_key:
+                continue
+
+            aliases = []
+            for candidate in (item.get('observed_name'), item.get('raw_ocr_name')):
+                normalized_alias = normalize_feedback_alias(candidate)
+                if normalized_alias:
+                    aliases.append(normalized_alias)
+
+            if not aliases:
+                continue
+
+            feedback_key = canonical_feedback_entry_key(sinner_key, category, entry_key)
+            feedback_entry = existing.setdefault(feedback_key, {'aliases': [], 'raw_aliases': [], 'samples': []})
+            known_aliases = list(feedback_entry.get('aliases', []))
+            known_raw_aliases = list(feedback_entry.get('raw_aliases', []))
+            known_samples = list(feedback_entry.get('samples', []))
+            changed = False
+
+            for alias in aliases:
+                if alias == entry_key or alias in known_aliases:
+                    continue
+                known_aliases.append(alias)
+                changed = True
+
+            for candidate in (item.get('observed_name'), item.get('raw_ocr_name')):
+                raw_alias = ' '.join(str(candidate or '').split())
+                if not raw_alias or raw_alias in known_raw_aliases:
+                    continue
+                known_raw_aliases.append(raw_alias)
+                changed = True
+
+            sample_record = build_feedback_sample_record(item, feedback_key, entry_key)
+            if sample_record and not any(existing_sample.get('image_path') == sample_record['image_path'] for existing_sample in known_samples):
+                known_samples.append(sample_record)
+                changed = True
+
+            if changed:
+                feedback_entry['aliases'] = known_aliases[-24:]
+                feedback_entry['raw_aliases'] = known_raw_aliases[-24:]
+                feedback_entry['samples'] = known_samples[-24:]
+                persisted += 1
+
+        if persisted:
+            save_ocr_feedback_store(existing)
+
+    return persisted
 
 
 def sanitize_level(value):
@@ -207,21 +425,24 @@ def merge_updates_into_progress(progress, updates):
 
 
 def recognize_screenshots_payload(images, roster_manifest):
-    manifest = [
-        {
-            **entry,
-            'normalized_name': sanitize_name(entry.get('name', '')),
-            'name_tokens': tokenize_name(entry.get('name', '')),
-        }
-        for entry in roster_manifest
-    ]
+    started_at = time.perf_counter()
+    manifest_started_at = time.perf_counter()
+    manifest = [normalize_manifest_entry(entry) for entry in roster_manifest]
+    manifest_elapsed = time.perf_counter() - manifest_started_at
 
     updates_by_key = {}
     all_cards = []
 
     for uploaded_file in images:
+        file_started_at = time.perf_counter()
         image_bytes = uploaded_file.read()
         cards = recognize_single_screenshot(image_bytes, uploaded_file.name, manifest)
+        log_recognition_timing(
+            'screenshot',
+            name=uploaded_file.name,
+            cards=len(cards),
+            seconds=f'{time.perf_counter() - file_started_at:.3f}',
+        )
 
         for card in cards:
             all_cards.append(card)
@@ -253,6 +474,14 @@ def recognize_screenshots_payload(images, roster_manifest):
             updates_by_key[update_key] = update
 
     updates = sorted(updates_by_key.values(), key=lambda item: item['confidence'], reverse=True)
+    log_recognition_timing(
+        'batch',
+        images=len(images),
+        cards=len(all_cards),
+        manifest_entries=len(manifest),
+        manifest_seconds=f'{manifest_elapsed:.3f}',
+        total_seconds=f'{time.perf_counter() - started_at:.3f}',
+    )
 
     return {
         'processed_screenshots': len(images),
@@ -262,17 +491,43 @@ def recognize_screenshots_payload(images, roster_manifest):
 
 
 def recognize_single_screenshot(image_bytes, source_name, manifest):
+    screenshot_started_at = time.perf_counter()
+    decode_started_at = time.perf_counter()
     image = decode_image(image_bytes)
+    decode_elapsed = time.perf_counter() - decode_started_at
+    region_started_at = time.perf_counter()
     regions = extract_card_regions(image)
+    region_elapsed = time.perf_counter() - region_started_at
     results = []
 
-    for bounds in regions:
+    for index, bounds in enumerate(regions, start=1):
+        card_started_at = time.perf_counter()
         x, y, width, height = bounds
         card = image[y:y + height, x:x + width]
-        raw_name, detected_label, matched_entry, name_confidence = match_card_name(card, manifest)
-        level = extract_level(card)
+        ocr_started_at = time.perf_counter()
+        ocr_result = extract_card_ocr_result(card)
+        ocr_elapsed = time.perf_counter() - ocr_started_at
+        match_started_at = time.perf_counter()
+        raw_name, detected_label, matched_entry, name_confidence = match_card_name(card, manifest, ocr_result=ocr_result)
+        match_elapsed = time.perf_counter() - match_started_at
+        level_started_at = time.perf_counter()
+        level = extract_level(card, ocr_result=ocr_result)
+        level_elapsed = time.perf_counter() - level_started_at
+        uptie_started_at = time.perf_counter()
         uptie, uptie_confidence = infer_uptie(card, matched_entry, detected_label or raw_name)
+        uptie_elapsed = time.perf_counter() - uptie_started_at
         combined_confidence = round((name_confidence * 0.8) + (uptie_confidence * 0.2), 4)
+        log_recognition_timing(
+            'card',
+            image=source_name,
+            index=index,
+            ocr_seconds=f'{ocr_elapsed:.3f}',
+            match_seconds=f'{match_elapsed:.3f}',
+            level_seconds=f'{level_elapsed:.3f}',
+            uptie_seconds=f'{uptie_elapsed:.3f}',
+            total_seconds=f'{time.perf_counter() - card_started_at:.3f}',
+            matched=bool(matched_entry),
+        )
 
         results.append(
             {
@@ -286,6 +541,15 @@ def recognize_single_screenshot(image_bytes, source_name, manifest):
                 'matched_entry': matched_entry,
             }
         )
+
+    log_recognition_timing(
+        'regions',
+        image=source_name,
+        decode_seconds=f'{decode_elapsed:.3f}',
+        region_seconds=f'{region_elapsed:.3f}',
+        cards=len(results),
+        total_seconds=f'{time.perf_counter() - screenshot_started_at:.3f}',
+    )
 
     return results
 
@@ -849,8 +1113,8 @@ def qwen_card_looks_like_identity(card):
     )
 
 
-def extract_level(card):
-    for text in collect_card_ocr_candidates(card, LEVEL_OCR_REGIONS, whitelist='LVlv0123456789.:'):
+def extract_level(card, ocr_result=None):
+    for text in collect_card_ocr_candidates(card, LEVEL_OCR_REGIONS, whitelist='LVlv0123456789.:', ocr_result=ocr_result):
         match = LEVEL_REGEX.search(text)
         if match:
             return sanitize_level(match.group(1))
@@ -908,8 +1172,9 @@ def build_name_candidates_from_ocr_result(ocr_result):
     return [candidate for candidate in candidates if candidate]
 
 
-def match_card_name(card, manifest):
-    ocr_result = extract_card_ocr_result(card)
+def match_card_name(card, manifest, ocr_result=None):
+    if ocr_result is None:
+        ocr_result = extract_card_ocr_result(card)
     name_candidates = extract_name_candidates(card, ocr_result=ocr_result)
     icon_matches = rank_identity_icon_matches(card)
     qwen_sinner_hint = normalize_qwen_sinner_hint(ocr_result.get('sinner', ''))
@@ -933,6 +1198,11 @@ def match_card_name(card, manifest):
         fallback_text, fallback_label, fallback_entry, fallback_score = match_card_name_against_manifest(name_candidates, manifest)
         if fallback_score >= best_score:
             return fallback_text, fallback_label, fallback_entry, fallback_score
+
+    sample_choice_entry, sample_choice_score = choose_manifest_entry_with_feedback_samples(card, icon_manifest, best_score, best_entry)
+    if sample_choice_entry:
+        chosen_text = sample_choice_entry['entryKey']
+        return chosen_text, chosen_text, sample_choice_entry, max(best_score, sample_choice_score)
 
     qwen_choice_entry = choose_manifest_entry_with_qwen(card, name_candidates, icon_manifest, best_score, best_entry)
     if qwen_choice_entry:
@@ -1052,13 +1322,112 @@ def choose_manifest_entry_with_qwen(card, name_candidates, manifest, best_score,
     return None
 
 
+def choose_manifest_entry_with_feedback_samples(card, manifest, best_score, best_entry):
+    if best_entry is not None and best_score >= 0.86:
+        return None, 0.0
+
+    entries_with_samples = [entry for entry in manifest if entry.get('feedback_samples')]
+    if not entries_with_samples:
+        return None, 0.0
+
+    card_signature = build_feedback_sample_signature(card)
+    best_sample_entry = None
+    best_sample_score = 0.0
+    second_best_score = 0.0
+
+    for entry in entries_with_samples:
+        entry_score = 0.0
+
+        for sample in entry.get('feedback_samples') or ():
+            sample_signature = load_feedback_sample_signature(sample.get('image_path', ''))
+            if sample_signature is None:
+                continue
+
+            entry_score = max(entry_score, score_feedback_sample_signature(card_signature, sample_signature))
+
+        if entry_score > best_sample_score:
+            second_best_score = best_sample_score
+            best_sample_score = entry_score
+            best_sample_entry = entry
+        elif entry_score > second_best_score:
+            second_best_score = entry_score
+
+    if best_sample_entry is None:
+        return None, 0.0
+
+    if best_sample_score < FEEDBACK_SAMPLE_MIN_SCORE:
+        return None, best_sample_score
+
+    if (best_sample_score - second_best_score) < FEEDBACK_SAMPLE_MIN_MARGIN:
+        return None, best_sample_score
+
+    return {
+        'sinnerKey': best_sample_entry['sinnerKey'],
+        'category': best_sample_entry['category'],
+        'entryKey': best_sample_entry['entryKey'],
+        'rarity': normalize_rarity(best_sample_entry.get('rarity')),
+        'hasLevel': best_sample_entry['hasLevel'],
+    }, best_sample_score
+
+
+def build_feedback_sample_signature(card):
+    grayscale = cv2.cvtColor(card, cv2.COLOR_BGR2GRAY)
+    edges = cv2.Canny(grayscale, 50, 150)
+    name_main = cv2.cvtColor(crop_relative_region(card, *QWEN_NAME_MAIN_REGION), cv2.COLOR_BGR2GRAY)
+    name_alt = cv2.cvtColor(crop_relative_region(card, *QWEN_NAME_ALT_REGION), cv2.COLOR_BGR2GRAY)
+    frame = cv2.cvtColor(extract_frame_signature(card), cv2.COLOR_BGR2GRAY)
+
+    return {
+        'full': cv2.resize(grayscale, (128, 192), interpolation=cv2.INTER_AREA),
+        'edges': cv2.resize(edges, (128, 192), interpolation=cv2.INTER_NEAREST),
+        'name_main': cv2.resize(name_main, (196, 72), interpolation=cv2.INTER_AREA),
+        'name_alt': cv2.resize(name_alt, (196, 72), interpolation=cv2.INTER_AREA),
+        'frame': cv2.resize(frame, (128, 192), interpolation=cv2.INTER_AREA),
+    }
+
+
+@lru_cache(maxsize=512)
+def load_feedback_sample_signature(sample_path):
+    if not sample_path:
+        return None
+
+    image_path = OCR_FEEDBACK_PATH.parent / str(sample_path)
+    if not image_path.exists():
+        return None
+
+    sample_image = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
+    if sample_image is None or not sample_image.size:
+        return None
+
+    return build_feedback_sample_signature(sample_image)
+
+
+def score_feedback_sample_signature(card_signature, sample_signature):
+    if not card_signature or not sample_signature:
+        return 0.0
+
+    full_score = sanitize_template_score(cv2.matchTemplate(card_signature['full'], sample_signature['full'], cv2.TM_CCOEFF_NORMED))
+    edge_score = sanitize_template_score(cv2.matchTemplate(card_signature['edges'], sample_signature['edges'], cv2.TM_CCORR_NORMED))
+    name_main_score = sanitize_template_score(cv2.matchTemplate(card_signature['name_main'], sample_signature['name_main'], cv2.TM_CCOEFF_NORMED))
+    name_alt_score = sanitize_template_score(cv2.matchTemplate(card_signature['name_alt'], sample_signature['name_alt'], cv2.TM_CCOEFF_NORMED))
+    frame_score = sanitize_template_score(cv2.matchTemplate(card_signature['frame'], sample_signature['frame'], cv2.TM_CCOEFF_NORMED))
+    return (
+        (full_score * 0.28)
+        + (edge_score * 0.18)
+        + (name_main_score * 0.26)
+        + (name_alt_score * 0.18)
+        + (frame_score * 0.10)
+    )
+
+
 def get_top_manifest_entry_candidates(name_candidates, manifest, limit=4):
     ranked_entries = []
 
     for entry in manifest:
         best_candidate_score = 0.0
         for candidate in name_candidates:
-            best_candidate_score = max(best_candidate_score, fuzzy_label_score(candidate, entry.get('entryKey', '')))
+            score = score_manifest_candidate(candidate, entry)
+            best_candidate_score = max(best_candidate_score, score)
         ranked_entries.append({**entry, 'candidateScore': best_candidate_score})
 
     ranked_entries.sort(key=lambda item: item['candidateScore'], reverse=True)
@@ -1234,10 +1603,11 @@ def load_identity_icon_templates():
     return tuple(templates)
 
 
-def collect_card_ocr_candidates(card, normalized_regions, whitelist=''):
+def collect_card_ocr_candidates(card, normalized_regions, whitelist='', ocr_result=None):
     candidates = []
     seen = set()
-    ocr_result = extract_card_ocr_result(card)
+    if ocr_result is None:
+        ocr_result = extract_card_ocr_result(card)
 
     raw_candidates = []
     if ocr_result.get('level'):
@@ -1446,30 +1816,39 @@ def encode_png_bytes(image):
 
 @lru_cache(maxsize=96)
 def run_qwen_card_ocr(image_bytes):
+    started_at = time.perf_counter()
     try:
         output_text = generate_qwen_response(image_bytes, QWEN_CARD_OCR_PROMPT)
     except Exception as exc:
         raise RuntimeError(f'Qwen3-VL OCR request failed: {exc}') from exc
+
+    log_recognition_timing('qwen_ocr', seconds=f'{time.perf_counter() - started_at:.3f}', bytes=len(image_bytes))
 
     return parse_qwen_card_ocr_output(output_text)
 
 
 @lru_cache(maxsize=96)
 def run_qwen_card_uptie(image_bytes):
+    started_at = time.perf_counter()
     try:
         output_text = generate_qwen_response(image_bytes, QWEN_CARD_UPTIE_PROMPT)
     except Exception as exc:
         raise RuntimeError(f'Qwen3-VL uptie request failed: {exc}') from exc
+
+    log_recognition_timing('qwen_uptie', seconds=f'{time.perf_counter() - started_at:.3f}', bytes=len(image_bytes))
 
     return parse_qwen_card_uptie_output(output_text)
 
 
 @lru_cache(maxsize=96)
 def run_qwen_card_name_choice(image_bytes):
+    started_at = time.perf_counter()
     try:
         output_text = generate_qwen_response(image_bytes, QWEN_CARD_NAME_CHOICE_PROMPT)
     except Exception as exc:
         raise RuntimeError(f'Qwen3-VL name-choice request failed: {exc}') from exc
+
+    log_recognition_timing('qwen_name_choice', seconds=f'{time.perf_counter() - started_at:.3f}', bytes=len(image_bytes))
 
     return parse_qwen_card_name_choice_output(output_text)
 
@@ -1702,31 +2081,117 @@ def fuzzy_label_score(left_text, right_text):
     return (max(base_score, partial_score) * 0.75) + (token_score * 0.25)
 
 
+def build_manifest_token_weights(manifest):
+    document_frequency = {}
+
+    for entry in manifest:
+        entry_tokens = set(entry.get('name_tokens') or ())
+        for alias_tokens in entry.get('match_alias_tokens') or ():
+            entry_tokens.update(alias_tokens)
+
+        for token in entry_tokens:
+            document_frequency[token] = document_frequency.get(token, 0) + 1
+
+    total_entries = max(len(manifest), 1)
+    return {
+        token: 1.0 + max(0.0, 1.8 - (frequency / total_entries * 3.0))
+        for token, frequency in document_frequency.items()
+    }
+
+
+def weighted_overlap_score(left_tokens, right_tokens, token_weights):
+    left_chunks = set(left_tokens)
+    right_chunks = set(right_tokens)
+    if not left_chunks or not right_chunks:
+        return 0.0
+
+    union_tokens = left_chunks | right_chunks
+    denominator = sum(token_weights.get(token, 1.0) for token in union_tokens)
+    if denominator <= 0:
+        return 0.0
+
+    numerator = sum(token_weights.get(token, 1.0) for token in (left_chunks & right_chunks))
+    return numerator / denominator
+
+
+def distinctive_token_score(input_tokens, entry_tokens, token_weights):
+    entry_distinctive = [
+        token for token in set(entry_tokens)
+        if len(token) > 2 and token not in MANIFEST_TOKEN_STOPWORDS and token_weights.get(token, 1.0) >= 1.15
+    ]
+    if not entry_distinctive:
+        return 0.0
+
+    input_token_set = set(input_tokens)
+    matched_weight = sum(token_weights.get(token, 1.0) for token in entry_distinctive if token in input_token_set)
+    total_weight = sum(token_weights.get(token, 1.0) for token in entry_distinctive)
+    if total_weight <= 0:
+        return 0.0
+
+    return matched_weight / total_weight
+
+
+def score_manifest_text_variant(raw_name, candidate_name, entry_tokens, token_weights):
+    normalized_input = sanitize_name(raw_name)
+    normalized_candidate = sanitize_name(candidate_name)
+    if not normalized_input or not normalized_candidate:
+        return 0.0
+
+    input_tokens = tokenize_name(raw_name)
+    ratio = difflib.SequenceMatcher(None, normalized_input, normalized_candidate).ratio()
+    partial = partial_ratio(normalized_input, normalized_candidate)
+    token_bonus = weighted_overlap_score(input_tokens, entry_tokens, token_weights)
+    distinctive_bonus = distinctive_token_score(input_tokens, entry_tokens, token_weights)
+    containment_bonus = 1.0 if normalized_input in normalized_candidate or normalized_candidate in normalized_input else 0.0
+    return (
+        (max(ratio, partial) * 0.5)
+        + (token_bonus * 0.2)
+        + (distinctive_bonus * 0.22)
+        + (containment_bonus * 0.08)
+    )
+
+
+def score_manifest_candidate(raw_name, entry, token_weights=None):
+    token_weights = token_weights or {}
+    best_score = score_manifest_text_variant(raw_name, entry.get('entryKey', ''), entry.get('name_tokens') or (), token_weights)
+
+    for alias, alias_tokens in zip(entry.get('match_aliases') or (), entry.get('match_alias_tokens') or ()):
+        alias_score = score_manifest_text_variant(raw_name, alias, alias_tokens, token_weights)
+        if sanitize_name(raw_name) == sanitize_name(alias):
+            alias_score += ALIAS_MATCH_EXACT_BONUS
+        best_score = max(best_score, alias_score)
+
+    return min(best_score, 1.0)
+
+
 def match_manifest_entry(raw_name, manifest):
     normalized_input = sanitize_name(raw_name)
-    input_tokens = tokenize_name(raw_name)
     best_entry = None
     best_score = 0.0
+    second_best_score = 0.0
 
     if not normalized_input:
         return None, 0.0
 
+    token_weights = build_manifest_token_weights(manifest)
+
     for entry in manifest:
-        candidate = entry['normalized_name']
-        if not candidate:
+        if not entry.get('normalized_name'):
             continue
 
-        ratio = difflib.SequenceMatcher(None, normalized_input, candidate).ratio()
-        partial = partial_ratio(normalized_input, candidate)
-        token_bonus = overlap_score(input_tokens, entry['name_tokens'])
-        containment_bonus = 1.0 if normalized_input in candidate or candidate in normalized_input else 0.0
-        score = (max(ratio, partial) * 0.65) + (token_bonus * 0.25) + (containment_bonus * 0.1)
+        score = score_manifest_candidate(raw_name, entry, token_weights=token_weights)
 
         if score > best_score:
+            second_best_score = best_score
             best_score = score
             best_entry = entry
+        elif score > second_best_score:
+            second_best_score = score
 
     if best_score < 0.4:
+        return None, best_score
+
+    if best_score < 0.8 and (best_score - second_best_score) < AMBIGUOUS_MATCH_SCORE_MARGIN:
         return None, best_score
 
     return {

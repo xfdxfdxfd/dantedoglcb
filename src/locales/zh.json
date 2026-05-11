@@ -302,6 +302,11 @@
     "RecognitionReview":"辨識結果校對",
     "RecognitionWorkspace":"結果工作區",
     "RecognitionReviewHint":"在套用到已儲存進度前先檢查辨識到的卡片。你可以在圖片上拖曳新增手動框選，然後選擇正確的人格或 EGO 並填入數值。",
+    "ReviewAlias":"修正提示",
+    "ReviewAliasHint":"如果 OCR 讀錯，請在這裡改成你看到的名稱。儲存後，系統會在之後的相似截圖中重用這個提示。",
+    "SaveHint":"儲存提示",
+    "HintSaved":"已儲存提示，之後辨識會重用這個修正。",
+    "SelectEntryBeforeSavingHint":"儲存提示前，請先選擇對應的人格或 EGO。",
     "StartManualFrame":"開始手動框選",
     "StopManualFrame":"停止手動框選",
     "ApplyReviewResults":"套用校對結果",
@@ -317,8 +322,10 @@
     "RemoveReviewCard":"移除此卡片",
     "ManualCard":"手動卡片",
     "AutoDetectedCard":"自動辨識",
+    "FeedbackSaveFailed":"進度已套用，但無法儲存 OCR 校正資料供下次辨識使用。",
     "UnmatchedCard":"待指定",
     "ManualFrameHintIdle":"開啟手動框選模式後，在圖片上拖曳框住遺漏的卡片，即可加入校對清單。",
-    "ManualFrameHintActive":"在圖片上拖曳建立卡片框。放開後，該框選卡片會加入校對清單。",
+    "ManualFrameTutorialTitle":"手動框選教學",
+    "ManualFrameHintActive":"按住右鍵並拖曳從遺漏卡片的一角到對角，放開後就會新增這張卡片。之後再選擇正確的人格或 EGO，並填入數值。",
     "NoReviewCardsForImage":"這張圖片目前沒有列出任何卡片；若辨識遺漏，可以手動新增。"
 }

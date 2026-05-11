@@ -303,6 +303,11 @@
     "RecognitionReview":"Recognition Review",
     "RecognitionWorkspace":"Result Workspace",
     "RecognitionReviewHint":"Review detected cards before applying them to your saved roster. You can drag on an image to add a manual frame, then choose the correct identity or EGO and enter its values.",
+    "ReviewAlias":"Correction hint",
+    "ReviewAliasHint":"Edit this when OCR is wrong. The saved hint is reused to improve future matches for similar screenshots.",
+    "SaveHint":"Save hint",
+    "HintSaved":"Hint saved for future recognition.",
+    "SelectEntryBeforeSavingHint":"Choose the matched identity or EGO before saving a hint.",
     "StartManualFrame":"Start Manual Frame",
     "StopManualFrame":"Stop Manual Frame",
     "ApplyReviewResults":"Apply Review Results",
@@ -318,9 +323,11 @@
     "RemoveReviewCard":"Remove card",
     "ManualCard":"Manual card",
     "AutoDetectedCard":"Auto detected",
+    "FeedbackSaveFailed":"Progress was applied, but the OCR feedback could not be saved for future runs.",
     "UnmatchedCard":"Needs match",
     "ManualFrameHintIdle":"Turn on manual frame mode, then drag over a missed card in the image to add it to the review list.",
-    "ManualFrameHintActive":"Drag on the image to draw a card frame. Release the pointer to add that framed card to the review list.",
+    "ManualFrameTutorialTitle":"Manual frame guide",
+    "ManualFrameHintActive":"Hold the right mouse button and drag from one corner of the missing card to the opposite corner. Release to add that frame, then choose the correct identity or EGO and save its values.",
     "NoReviewCardsForImage":"No cards are currently listed for this image. Add one manually if detection missed it."
 
 }

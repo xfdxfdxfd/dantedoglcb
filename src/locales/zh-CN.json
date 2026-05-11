@@ -285,6 +285,11 @@
   "RecognitionReview": "辨识结果校对",
   "RecognitionWorkspace": "结果工作区",
   "RecognitionReviewHint": "在套用到已保存进度前先检查辨识到的卡片。你可以在图片上拖曳新增手动框选，然后选择正确的人格或 EGO 并填入数值。",
+  "ReviewAlias": "修正提示",
+  "ReviewAliasHint": "如果 OCR 读错，请在这里改成你看到的名称。保存后，系统会在之后的相似截图中重用这个提示。",
+  "SaveHint": "保存提示",
+  "HintSaved": "提示已保存，之后辨识会重用这个修正。",
+  "SelectEntryBeforeSavingHint": "保存提示前，请先选择对应的人格或 EGO。",
   "StartManualFrame": "开始手动框选",
   "StopManualFrame": "停止手动框选",
   "ApplyReviewResults": "套用校对结果",
@@ -300,8 +305,10 @@
   "RemoveReviewCard": "移除此卡片",
   "ManualCard": "手动卡片",
   "AutoDetectedCard": "自动辨识",
+  "FeedbackSaveFailed": "进度已套用，但无法保存 OCR 校正资料供下次辨识使用。",
   "UnmatchedCard": "待指定",
   "ManualFrameHintIdle": "开启手动框选模式后，在图片上拖曳框住遗漏的卡片，即可加入校对清单。",
-  "ManualFrameHintActive": "在图片上拖曳建立卡片框。放开后，该框选卡片会加入校对清单。",
+  "ManualFrameTutorialTitle": "手动框选教学",
+  "ManualFrameHintActive": "按住右键并拖曳从遗漏卡片的一角到对角，放开后就会新增这张卡片。之后再选择正确的人格或 EGO，并填入数值。",
   "NoReviewCardsForImage": "这张图片目前没有列出任何卡片；如果辨识遗漏，可以手动新增。"
 }

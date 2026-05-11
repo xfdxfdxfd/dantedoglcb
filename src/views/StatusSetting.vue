@@ -122,7 +122,11 @@
                                             </div>
                                         </div>
 
-                                        <p class="mt-3 text-xs leading-6 text-stone-400">{{ $t(reviewState.manualFrameMode ? `ManualFrameHintActive` : `ManualFrameHintIdle`) }}</p>
+                                        <div v-if="reviewState.manualFrameMode" class="mt-4 rounded-2xl border border-sky-300/30 bg-sky-400/10 p-4 text-sm text-sky-100">
+                                            <p class="font-semibold uppercase tracking-[0.18em] text-sky-200">{{ $t(`ManualFrameTutorialTitle`) }}</p>
+                                            <p class="mt-2 leading-6">{{ $t(`ManualFrameHintActive`) }}</p>
+                                        </div>
+                                        <p v-else class="mt-3 text-xs leading-6 text-stone-400">{{ $t(`ManualFrameHintIdle`) }}</p>
                                     </div>
 
                                     <div class="max-h-[42rem] space-y-3 overflow-y-auto pr-1">
@@ -143,6 +147,37 @@
                                                     {{ getReviewCardBadge(card) }}
                                                 </span>
                                             </div>
+
+                                            <label class="mt-4 block">
+                                                <span class="field-label">{{ $t(`ReviewAlias`) }}</span>
+                                                <div class="mt-2 flex gap-2">
+                                                    <input
+                                                        v-model.trim="card.feedbackAlias"
+                                                        type="text"
+                                                        class="field-select min-w-0 flex-1"
+                                                        :placeholder="card.ocrName || $t('NoDetectedName')"
+                                                        @change="handleReviewAliasChange(card)"
+                                                    >
+                                                    <button
+                                                        type="button"
+                                                        class="action-button action-button--accent min-h-0 px-2 py-1"
+                                                        :disabled="!canSaveReviewAlias(card)"
+                                                        :title="$t(`SaveHint`)"
+                                                        @click.stop="saveReviewAlias(card)"
+                                                    >
+                                                        <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                            <path d="M5 3h11l3 3v15H5z"></path>
+                                                            <path d="M8 3v6h8"></path>
+                                                            <path d="M9 14h6"></path>
+                                                            <path d="M9 18h6"></path>
+                                                        </svg>
+                                                        <span class="sr-only">{{ $t(`SaveHint`) }}</span>
+                                                    </button>
+                                                </div>
+                                                <p class="mt-2 text-xs leading-5 text-stone-400">{{ $t(`ReviewAliasHint`) }}</p>
+                                                <p v-if="card.feedbackStatus === 'saved'" class="mt-2 text-xs text-emerald-300">{{ $t(`HintSaved`) }}</p>
+                                                <p v-else-if="card.feedbackStatus === 'error'" class="mt-2 text-xs text-red-300">{{ card.feedbackError || $t(`FeedbackSaveFailed`) }}</p>
+                                            </label>
 
                                             <div class="mt-4 grid gap-3 sm:grid-cols-2">
                                                 <div>
@@ -301,6 +336,7 @@ import {
     mergeRecognizedUpdates,
     sanitizeLevel,
     sanitizeUptie,
+    submitRecognitionFeedback,
     syncProgressWithScreenshots,
 } from '../utils/progressSync';
 
@@ -598,12 +634,18 @@ export default {
         },
         createReviewCard(rawCard = {}) {
             const matchedEntry = rawCard.matched_entry || rawCard.matchedEntry || null;
+            const ocrName = rawCard.ocr_name || rawCard.ocrName || '';
+            const rawOcrName = rawCard.raw_ocr_name || rawCard.rawOcrName || ocrName;
 
             return {
                 id: this.reviewState.nextCardId++,
                 sourceImage: rawCard.source_image || rawCard.sourceImage || '',
                 bounds: rawCard.bounds || { x: 0, y: 0, width: 0, height: 0 },
-                ocrName: rawCard.ocr_name || rawCard.ocrName || '',
+                ocrName,
+                rawOcrName,
+                feedbackAlias: rawCard.feedbackAlias || ocrName,
+                feedbackStatus: rawCard.feedbackStatus || 'idle',
+                feedbackError: rawCard.feedbackError || '',
                 confidence: Number(rawCard.confidence || 0),
                 selectedEntryKey: matchedEntry ? this.serializeEntryKey(matchedEntry) : '',
                 uptie: sanitizeUptie(rawCard.uptie ?? rawCard.uptied ?? 0),
@@ -678,6 +720,8 @@ export default {
         },
         handleReviewEntryChange(card) {
             const entry = this.parseEntryKey(card.selectedEntryKey);
+            card.feedbackStatus = 'idle';
+            card.feedbackError = '';
 
             if (!entry) {
                 card.level = sanitizeLevel(card.level ?? 1);
@@ -689,6 +733,116 @@ export default {
                 card.level = 1;
             } else {
                 card.level = sanitizeLevel(card.level);
+            }
+
+            this.persistPendingReview();
+        },
+        handleReviewAliasChange(card) {
+            card.feedbackAlias = String(card.feedbackAlias || '').trim();
+            card.feedbackStatus = 'idle';
+            card.feedbackError = '';
+            this.persistPendingReview();
+        },
+        canSaveReviewAlias(card) {
+            return Boolean(this.parseEntryKey(card.selectedEntryKey) && String(card.feedbackAlias || '').trim() && card.feedbackStatus !== 'saving');
+        },
+        getReviewImageBlob(sourceImage) {
+            return this.reviewState.images.find((image) => image.name === sourceImage)?.file || null;
+        },
+        async cropReviewCardDataUrl(card) {
+            const imageBlob = this.getReviewImageBlob(card.sourceImage);
+            if (!(imageBlob instanceof Blob) || !card?.bounds) {
+                return '';
+            }
+
+            const cropBounds = {
+                x: Math.max(0, Math.round(Number(card.bounds.x || 0))),
+                y: Math.max(0, Math.round(Number(card.bounds.y || 0))),
+                width: Math.max(1, Math.round(Number(card.bounds.width || 0))),
+                height: Math.max(1, Math.round(Number(card.bounds.height || 0))),
+            };
+
+            if (typeof createImageBitmap === 'function') {
+                const bitmap = await createImageBitmap(imageBlob);
+
+                try {
+                    const width = Math.max(1, Math.min(cropBounds.width, bitmap.width - cropBounds.x));
+                    const height = Math.max(1, Math.min(cropBounds.height, bitmap.height - cropBounds.y));
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+
+                    if (!context) {
+                        return '';
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    context.drawImage(bitmap, cropBounds.x, cropBounds.y, width, height, 0, 0, width, height);
+                    return canvas.toDataURL('image/png');
+                } finally {
+                    if (typeof bitmap.close === 'function') {
+                        bitmap.close();
+                    }
+                }
+            }
+
+            return '';
+        },
+        async buildRecognitionFeedbackItem(card) {
+            const entry = this.parseEntryKey(card.selectedEntryKey);
+
+            if (!entry) {
+                return null;
+            }
+
+            const feedbackAlias = String(card.feedbackAlias || '').trim();
+            const detectedName = String(card.ocrName || '').trim();
+            const correctedText = feedbackAlias && feedbackAlias !== detectedName
+                ? feedbackAlias
+                : entry.entryKey;
+
+            return {
+                entry,
+                corrected_text: correctedText,
+                observed_name: feedbackAlias || detectedName,
+                raw_ocr_name: String(card.rawOcrName || card.ocrName || '').trim(),
+                card_image_data_url: await this.cropReviewCardDataUrl(card),
+                source_image: String(card.sourceImage || ''),
+                bounds: {
+                    x: Number(card.bounds?.x || 0),
+                    y: Number(card.bounds?.y || 0),
+                    width: Number(card.bounds?.width || 0),
+                    height: Number(card.bounds?.height || 0),
+                },
+                manual: Boolean(card.manual),
+            };
+        },
+        async saveReviewAlias(card) {
+            const entry = this.parseEntryKey(card.selectedEntryKey);
+
+            if (!entry) {
+                card.feedbackStatus = 'error';
+                card.feedbackError = this.$t('SelectEntryBeforeSavingHint');
+                this.persistPendingReview();
+                return;
+            }
+
+            card.feedbackStatus = 'saving';
+            card.feedbackError = '';
+            this.persistPendingReview();
+
+            try {
+                const feedbackItem = await this.buildRecognitionFeedbackItem(card);
+
+                if (!feedbackItem?.card_image_data_url) {
+                    throw new Error(this.$t('FeedbackSaveFailed'));
+                }
+
+                await submitRecognitionFeedback([feedbackItem]);
+                card.feedbackStatus = 'saved';
+            } catch (error) {
+                card.feedbackStatus = 'error';
+                card.feedbackError = error.message || this.$t('FeedbackSaveFailed');
             }
 
             this.persistPendingReview();
@@ -827,6 +981,10 @@ export default {
                             height: Number(card.bounds?.height || 0),
                         },
                         ocrName: card.ocrName,
+                        rawOcrName: card.rawOcrName,
+                        feedbackAlias: card.feedbackAlias,
+                        feedbackStatus: card.feedbackStatus,
+                        feedbackError: card.feedbackError,
                         confidence: card.confidence,
                         selectedEntryKey: card.selectedEntryKey,
                         uptie: card.uptie,
@@ -926,7 +1084,7 @@ export default {
 
             return Array.from(deduped.values());
         },
-        applyReviewResults() {
+        async applyReviewResults() {
             const updates = this.buildReviewUpdates();
             const mergedProgress = mergeRecognizedUpdates(this.All_IDs, updates);
 
@@ -935,6 +1093,7 @@ export default {
                 ...this.syncState,
                 recognizedEntries: updates.length,
                 matchedNames: updates.map((item) => item.entryKey),
+                error: '',
                 updatedAt: new Date().toLocaleString(),
                 reviewPending: false,
             };
