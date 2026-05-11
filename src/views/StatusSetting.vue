@@ -142,6 +142,9 @@
                                                 <div>
                                                     <p class="field-label">{{ $t(`DetectedName`) }}</p>
                                                     <p class="mt-2 text-sm text-stone-200">{{ card.ocrName || $t(`NoDetectedName`) }}</p>
+                                                    <p v-if="card.ocrSupportText && card.ocrSupportText !== card.ocrName" class="mt-2 text-xs leading-5 text-stone-400">
+                                                        {{ $t(`DetectedSupportText`) }}: {{ card.ocrSupportText }}
+                                                    </p>
                                                 </div>
                                                 <span class="rounded-full px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em]" :class="card.manual ? 'bg-sky-400/15 text-sky-200' : 'bg-gold/15 text-gold'">
                                                     {{ getReviewCardBadge(card) }}
@@ -636,6 +639,8 @@ export default {
             const matchedEntry = rawCard.matched_entry || rawCard.matchedEntry || null;
             const ocrName = rawCard.ocr_name || rawCard.ocrName || '';
             const rawOcrName = rawCard.raw_ocr_name || rawCard.rawOcrName || ocrName;
+            const ocrSupportText = rawCard.ocr_support_text || rawCard.ocrSupportText || '';
+            const ocrSinnerHint = rawCard.ocr_sinner_hint || rawCard.ocrSinnerHint || '';
 
             return {
                 id: this.reviewState.nextCardId++,
@@ -643,6 +648,8 @@ export default {
                 bounds: rawCard.bounds || { x: 0, y: 0, width: 0, height: 0 },
                 ocrName,
                 rawOcrName,
+                ocrSupportText,
+                ocrSinnerHint,
                 feedbackAlias: rawCard.feedbackAlias || ocrName,
                 feedbackStatus: rawCard.feedbackStatus || 'idle',
                 feedbackError: rawCard.feedbackError || '',
@@ -806,6 +813,9 @@ export default {
                 corrected_text: correctedText,
                 observed_name: feedbackAlias || detectedName,
                 raw_ocr_name: String(card.rawOcrName || card.ocrName || '').trim(),
+                ocr_support_text: String(card.ocrSupportText || '').trim(),
+                ocr_sinner_hint: String(card.ocrSinnerHint || '').trim(),
+                recognition_confidence: Number(card.confidence || 0),
                 card_image_data_url: await this.cropReviewCardDataUrl(card),
                 source_image: String(card.sourceImage || ''),
                 bounds: {
@@ -982,6 +992,8 @@ export default {
                         },
                         ocrName: card.ocrName,
                         rawOcrName: card.rawOcrName,
+                        ocrSupportText: card.ocrSupportText,
+                        ocrSinnerHint: card.ocrSinnerHint,
                         feedbackAlias: card.feedbackAlias,
                         feedbackStatus: card.feedbackStatus,
                         feedbackError: card.feedbackError,

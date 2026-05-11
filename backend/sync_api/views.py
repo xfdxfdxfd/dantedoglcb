@@ -1,9 +1,14 @@
 import json
 
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
-from .services import merge_updates_into_progress, recognize_screenshots_payload, store_recognition_feedback
+from .services import (
+    export_ocr_feedback_dataset,
+    merge_updates_into_progress,
+    recognize_screenshots_payload,
+    store_recognition_feedback,
+)
 
 
 def healthcheck(_request):
@@ -58,3 +63,15 @@ def record_recognition_feedback(request):
 
     persisted = store_recognition_feedback(feedback_items)
     return JsonResponse({'saved_feedback': persisted})
+
+
+def export_recognition_feedback(request):
+    if request.method != 'GET':
+        return JsonResponse({'detail': 'Method not allowed.'}, status=405)
+
+    output_format = request.GET.get('format', 'json')
+    payload = export_ocr_feedback_dataset(output_format=output_format)
+    if str(output_format).lower() == 'jsonl':
+        return HttpResponse(payload, content_type='application/x-ndjson; charset=utf-8')
+
+    return JsonResponse(payload)

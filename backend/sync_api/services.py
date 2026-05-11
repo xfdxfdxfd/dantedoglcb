@@ -34,6 +34,8 @@ FRAME_UPTIE_MIN_MARGIN = 0.035
 CARD_REGION_EDGE_MARGIN_RATIO = 0.05
 FEEDBACK_SAMPLE_MIN_SCORE = 0.72
 FEEDBACK_SAMPLE_MIN_MARGIN = 0.035
+FEEDBACK_TEXT_PROFILE_LIMIT = 48
+FEEDBACK_EXAMPLE_LIMIT = 96
 ICON_MATCH_STRONG_SCORE_THRESHOLD = 0.36
 ICON_MATCH_WEAK_SCORE_THRESHOLD = 0.26
 ICON_MATCH_STRONG_MARGIN = 0.045
@@ -52,7 +54,8 @@ DEFAULT_QWEN_VL_MODEL = 'Qwen/Qwen3-VL-2B-Instruct'
 QWEN_CARD_OCR_PROMPT = (
     'Inspect the labeled panels of one game identity card. '
     'The panel labeled CARD is the full card. '
-    'The panels labeled NAME MAIN and NAME ALT are zooms of the identity title area. '
+    'The panel labeled NAME MAIN is a raw zoom of the identity title area. '
+    'The panel labeled NAME ALT is a contrast-enhanced zoom of the same identity title area. '
     'The panel labeled SINNER ICON is a zoom of the top-right sinner icon. '
     'The panel labeled LEVEL is a zoom of the level number. '
     'Return exactly four lines in this exact format with no markdown, no prose, and no extra keys: '
@@ -67,7 +70,8 @@ QWEN_CARD_OCR_PROMPT = (
     '4) TEXT may contain other visible card text that supports the read. '
     '5) If unreadable, leave the value empty after the colon. '
     '6) Do not invent words or numbers that are not visible in the image. '
-    '7) Many titles share words like Assoc., South, and Section. Read the first distinctive faction word carefully and do not replace it with another faction name.'
+    '7) Many titles share words like Assoc., South, and Section. Preserve the first distinctive faction or title word exactly as shown. '
+    '8) Do not repeat the identity title or the sinner name twice.'
 )
 QWEN_CARD_UPTIE_PROMPT = (
     'Inspect the labeled panels of one game identity card frame. '
@@ -109,6 +113,7 @@ QWEN_PANEL_LABEL_HEIGHT = 34
 QWEN_PANEL_GAP = 12
 QWEN_NAME_MAIN_REGION = (0.08, 0.56, 0.94, 0.88)
 QWEN_NAME_ALT_REGION = (0.06, 0.48, 0.95, 0.9)
+QWEN_NAME_FOCUS_REGION = (0.14, 0.58, 0.94, 0.84)
 QWEN_SINNER_ICON_REGION = (0.54, 0.0, 0.98, 0.26)
 QWEN_LEVEL_REGION = (0.4, 0.5, 1.0, 0.9)
 QWEN_UPTIE_TOP_RIGHT_REGION = (0.62, 0.0, 1.0, 0.28)
@@ -176,6 +181,8 @@ SINNER_ICON_ALIASES = {
     'YiSang': ('YiSang',),
 }
 OCR_FEEDBACK_LOCK = Lock()
+DEFAULT_QWEN_OCR_MAX_NEW_TOKENS = 80
+DEFAULT_QWEN_CHOICE_MAX_NEW_TOKENS = 12
 
 
 def sanitize_name(text):
@@ -200,8 +207,93 @@ def normalize_feedback_alias(text):
     return strip_level_prefix(normalized)
 
 
-def normalize_manifest_entry(entry):
-    feedback = load_ocr_feedback_store()
+def trim_feedback_text(text):
+    return ' '.join(str(text or '').split())
+
+
+def sanitize_feedback_confidence(value):
+    try:
+        return round(max(0.0, min(float(value), 1.0)), 4)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def normalize_feedback_text_profile(profile):
+    if not isinstance(profile, dict):
+        return None
+
+    observed_name = normalize_feedback_alias(profile.get('observed_name', ''))
+    raw_ocr_name = normalize_feedback_alias(profile.get('raw_ocr_name', ''))
+    ocr_support_text = cleanup_identity_name(profile.get('ocr_support_text') or profile.get('support_text', ''))
+    ocr_sinner_hint = normalize_qwen_sinner_hint(profile.get('ocr_sinner_hint') or profile.get('sinner_hint', ''))
+
+    if not any((observed_name, raw_ocr_name, ocr_support_text, ocr_sinner_hint)):
+        return None
+
+    return {
+        'observed_name': observed_name,
+        'raw_ocr_name': raw_ocr_name,
+        'ocr_support_text': ocr_support_text,
+        'ocr_sinner_hint': ocr_sinner_hint,
+        'saved_at': int(profile.get('saved_at') or 0),
+    }
+
+
+def feedback_text_profile_key(profile):
+    return (
+        profile.get('observed_name', ''),
+        profile.get('raw_ocr_name', ''),
+        profile.get('ocr_support_text', ''),
+        profile.get('ocr_sinner_hint', ''),
+    )
+
+
+def normalize_feedback_example_record(example):
+    if not isinstance(example, dict):
+        return None
+
+    input_payload = example.get('input') if isinstance(example.get('input'), dict) else {}
+    target_payload = example.get('target') if isinstance(example.get('target'), dict) else {}
+    entry_key = trim_feedback_text(target_payload.get('entry_key') or target_payload.get('entryKey') or '')
+    if not entry_key:
+        return None
+
+    return {
+        'image_path': trim_feedback_text(example.get('image_path') or ''),
+        'input': {
+            'observed_name': trim_feedback_text(input_payload.get('observed_name') or ''),
+            'raw_ocr_name': trim_feedback_text(input_payload.get('raw_ocr_name') or ''),
+            'ocr_support_text': trim_feedback_text(input_payload.get('ocr_support_text') or ''),
+            'ocr_sinner_hint': trim_feedback_text(input_payload.get('ocr_sinner_hint') or ''),
+            'recognition_confidence': sanitize_feedback_confidence(input_payload.get('recognition_confidence') or 0.0),
+            'source_image': trim_feedback_text(input_payload.get('source_image') or ''),
+            'manual': bool(input_payload.get('manual')),
+        },
+        'target': {
+            'sinner_key': trim_feedback_text(target_payload.get('sinner_key') or target_payload.get('sinnerKey') or ''),
+            'category': trim_feedback_text(target_payload.get('category') or ''),
+            'entry_key': entry_key,
+            'canonical_name': trim_feedback_text(target_payload.get('canonical_name') or target_payload.get('canonicalName') or entry_key),
+            'visible_name': trim_feedback_text(target_payload.get('visible_name') or target_payload.get('visibleName') or entry_key),
+        },
+        'saved_at': int(example.get('saved_at') or 0),
+    }
+
+
+def feedback_example_key(example):
+    return json.dumps(
+        {
+            'image_path': example.get('image_path', ''),
+            'input': example.get('input', {}),
+            'target': example.get('target', {}),
+        },
+        sort_keys=True,
+        ensure_ascii=True,
+    )
+
+
+def normalize_manifest_entry(entry, feedback_store=None):
+    feedback = feedback_store if feedback_store is not None else load_ocr_feedback_store()
     feedback_entry = feedback.get(canonical_feedback_entry_key(entry.get('sinnerKey'), entry.get('category'), entry.get('entryKey')), {})
     aliases = []
     for alias in feedback_entry.get('aliases', []):
@@ -216,6 +308,7 @@ def normalize_manifest_entry(entry):
         'match_aliases': tuple(aliases),
         'match_alias_tokens': tuple(tokenize_name(alias) for alias in aliases),
         'feedback_samples': tuple(feedback_entry.get('samples', [])),
+        'feedback_text_profiles': tuple(feedback_entry.get('text_profiles', [])),
     }
 
 
@@ -242,11 +335,37 @@ def load_ocr_feedback_store():
             if normalized_alias and normalized_alias not in aliases:
                 aliases.append(normalized_alias)
 
-        if aliases:
+        text_profiles = []
+        seen_profile_keys = set()
+        for profile in entry_payload.get('text_profiles', []):
+            normalized_profile = normalize_feedback_text_profile(profile)
+            if not normalized_profile:
+                continue
+            profile_key = feedback_text_profile_key(normalized_profile)
+            if profile_key in seen_profile_keys:
+                continue
+            seen_profile_keys.add(profile_key)
+            text_profiles.append(normalized_profile)
+
+        examples = []
+        seen_example_keys = set()
+        for example in entry_payload.get('examples', []):
+            normalized_example = normalize_feedback_example_record(example)
+            if not normalized_example:
+                continue
+            example_key = feedback_example_key(normalized_example)
+            if example_key in seen_example_keys:
+                continue
+            seen_example_keys.add(example_key)
+            examples.append(normalized_example)
+
+        if aliases or text_profiles or entry_payload.get('samples') or examples:
             normalized[entry_key] = {
                 'aliases': aliases,
                 'raw_aliases': list(entry_payload.get('raw_aliases', [])),
                 'samples': list(entry_payload.get('samples', [])),
+                'text_profiles': text_profiles,
+                'examples': examples,
             }
 
     return normalized
@@ -307,6 +426,9 @@ def build_feedback_sample_record(item, feedback_key, entry_key):
         'corrected_text': corrected_text,
         'observed_name': ' '.join(str(item.get('observed_name') or '').split()),
         'raw_ocr_name': ' '.join(str(item.get('raw_ocr_name') or '').split()),
+        'ocr_support_text': ' '.join(str(item.get('ocr_support_text') or '').split()),
+        'ocr_sinner_hint': ' '.join(str(item.get('ocr_sinner_hint') or '').split()),
+        'recognition_confidence': sanitize_feedback_confidence(item.get('recognition_confidence') or 0.0),
         'source_image': ' '.join(str(item.get('source_image') or '').split()),
         'bounds': {
             'x': int(bounds.get('x') or 0),
@@ -315,6 +437,46 @@ def build_feedback_sample_record(item, feedback_key, entry_key):
             'height': int(bounds.get('height') or 0),
         },
         'manual': bool(item.get('manual')),
+        'saved_at': int(time.time()),
+    }
+
+
+def build_feedback_text_profile_record(item):
+    return normalize_feedback_text_profile(
+        {
+            'observed_name': item.get('observed_name', ''),
+            'raw_ocr_name': item.get('raw_ocr_name', ''),
+            'ocr_support_text': item.get('ocr_support_text', ''),
+            'ocr_sinner_hint': item.get('ocr_sinner_hint', ''),
+            'saved_at': int(time.time()),
+        }
+    )
+
+
+def build_feedback_example_record(item, entry, sample_record=None):
+    entry_key = trim_feedback_text((entry or {}).get('entryKey') or '')
+    if not entry_key:
+        return None
+
+    corrected_text = trim_feedback_text(item.get('corrected_text') or entry_key)
+    return {
+        'image_path': (sample_record or {}).get('image_path', ''),
+        'input': {
+            'observed_name': trim_feedback_text(item.get('observed_name') or ''),
+            'raw_ocr_name': trim_feedback_text(item.get('raw_ocr_name') or ''),
+            'ocr_support_text': trim_feedback_text(item.get('ocr_support_text') or ''),
+            'ocr_sinner_hint': trim_feedback_text(item.get('ocr_sinner_hint') or ''),
+            'recognition_confidence': sanitize_feedback_confidence(item.get('recognition_confidence') or 0.0),
+            'source_image': trim_feedback_text(item.get('source_image') or ''),
+            'manual': bool(item.get('manual')),
+        },
+        'target': {
+            'sinner_key': trim_feedback_text((entry or {}).get('sinnerKey') or ''),
+            'category': trim_feedback_text((entry or {}).get('category') or ''),
+            'entry_key': entry_key,
+            'canonical_name': entry_key,
+            'visible_name': corrected_text or entry_key,
+        },
         'saved_at': int(time.time()),
     }
 
@@ -339,14 +501,13 @@ def store_recognition_feedback(feedback_items):
                 if normalized_alias:
                     aliases.append(normalized_alias)
 
-            if not aliases:
-                continue
-
             feedback_key = canonical_feedback_entry_key(sinner_key, category, entry_key)
-            feedback_entry = existing.setdefault(feedback_key, {'aliases': [], 'raw_aliases': [], 'samples': []})
+            feedback_entry = existing.setdefault(feedback_key, {'aliases': [], 'raw_aliases': [], 'samples': [], 'text_profiles': [], 'examples': []})
             known_aliases = list(feedback_entry.get('aliases', []))
             known_raw_aliases = list(feedback_entry.get('raw_aliases', []))
             known_samples = list(feedback_entry.get('samples', []))
+            known_text_profiles = list(feedback_entry.get('text_profiles', []))
+            known_examples = list(feedback_entry.get('examples', []))
             changed = False
 
             for alias in aliases:
@@ -367,10 +528,29 @@ def store_recognition_feedback(feedback_items):
                 known_samples.append(sample_record)
                 changed = True
 
+            text_profile = build_feedback_text_profile_record(item)
+            if text_profile:
+                text_profile_key = feedback_text_profile_key(text_profile)
+                if not any(feedback_text_profile_key(existing_profile) == text_profile_key for existing_profile in known_text_profiles):
+                    known_text_profiles.append(text_profile)
+                    changed = True
+
+            example_record = build_feedback_example_record(item, entry, sample_record=sample_record)
+            if example_record:
+                example_identity = feedback_example_key(example_record)
+                if not any(feedback_example_key(existing_example) == example_identity for existing_example in known_examples):
+                    known_examples.append(example_record)
+                    changed = True
+
+            if not aliases and not sample_record and not text_profile and not example_record:
+                continue
+
             if changed:
                 feedback_entry['aliases'] = known_aliases[-24:]
                 feedback_entry['raw_aliases'] = known_raw_aliases[-24:]
                 feedback_entry['samples'] = known_samples[-24:]
+                feedback_entry['text_profiles'] = known_text_profiles[-FEEDBACK_TEXT_PROFILE_LIMIT:]
+                feedback_entry['examples'] = known_examples[-FEEDBACK_EXAMPLE_LIMIT:]
                 persisted += 1
 
         if persisted:
@@ -427,7 +607,8 @@ def merge_updates_into_progress(progress, updates):
 def recognize_screenshots_payload(images, roster_manifest):
     started_at = time.perf_counter()
     manifest_started_at = time.perf_counter()
-    manifest = [normalize_manifest_entry(entry) for entry in roster_manifest]
+    feedback_store = load_ocr_feedback_store()
+    manifest = [normalize_manifest_entry(entry, feedback_store=feedback_store) for entry in roster_manifest]
     manifest_elapsed = time.perf_counter() - manifest_started_at
 
     updates_by_key = {}
@@ -535,6 +716,8 @@ def recognize_single_screenshot(image_bytes, source_name, manifest):
                 'bounds': {'x': int(x), 'y': int(y), 'width': int(width), 'height': int(height)},
                 'ocr_name': detected_label or raw_name,
                 'raw_ocr_name': raw_name,
+                'ocr_support_text': ocr_result.get('text', ''),
+                'ocr_sinner_hint': ocr_result.get('sinner', ''),
                 'level': level,
                 'uptie': uptie,
                 'confidence': combined_confidence,
@@ -1145,6 +1328,7 @@ def extract_name_candidates(card, ocr_result=None):
         card,
         NAME_OCR_REGIONS,
         whitelist="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-.'/ :",
+        ocr_result=ocr_result,
     ):
         score = score_identity_text(text)
         ranked_candidates.append((score, text))
@@ -1176,6 +1360,7 @@ def match_card_name(card, manifest, ocr_result=None):
     if ocr_result is None:
         ocr_result = extract_card_ocr_result(card)
     name_candidates = extract_name_candidates(card, ocr_result=ocr_result)
+    support_text = build_ocr_support_text(ocr_result)
     icon_matches = rank_identity_icon_matches(card)
     qwen_sinner_hint = normalize_qwen_sinner_hint(ocr_result.get('sinner', ''))
     icon_manifest = narrow_manifest_with_icon_hints(manifest, icon_matches, name_candidates, qwen_sinner_hint)
@@ -1185,7 +1370,7 @@ def match_card_name(card, manifest, ocr_result=None):
     best_score = 0.0
 
     for candidate in name_candidates:
-        matched_entry, score = match_manifest_entry(candidate, icon_manifest)
+        matched_entry, score = match_manifest_entry(candidate, icon_manifest, support_text=support_text)
         detected_label = normalize_detected_label(candidate, matched_entry, score, icon_manifest)
 
         if score > best_score:
@@ -1195,7 +1380,11 @@ def match_card_name(card, manifest, ocr_result=None):
             best_score = score
 
     if icon_manifest is not manifest and (best_score < 0.72 or best_entry is None):
-        fallback_text, fallback_label, fallback_entry, fallback_score = match_card_name_against_manifest(name_candidates, manifest)
+        fallback_text, fallback_label, fallback_entry, fallback_score = match_card_name_against_manifest(
+            name_candidates,
+            manifest,
+            support_text=support_text,
+        )
         if fallback_score >= best_score:
             return fallback_text, fallback_label, fallback_entry, fallback_score
 
@@ -1204,7 +1393,7 @@ def match_card_name(card, manifest, ocr_result=None):
         chosen_text = sample_choice_entry['entryKey']
         return chosen_text, chosen_text, sample_choice_entry, max(best_score, sample_choice_score)
 
-    qwen_choice_entry = choose_manifest_entry_with_qwen(card, name_candidates, icon_manifest, best_score, best_entry)
+    qwen_choice_entry = choose_manifest_entry_with_qwen(card, name_candidates, icon_manifest, best_score, best_entry, support_text=support_text)
     if qwen_choice_entry:
         return qwen_choice_entry['entryKey'], qwen_choice_entry['entryKey'], qwen_choice_entry, max(best_score, 0.78)
 
@@ -1212,18 +1401,18 @@ def match_card_name(card, manifest, ocr_result=None):
         return best_text, best_label, best_entry, best_score
 
     raw_name = ocr_result.get('name') or extract_name(card)
-    matched_entry, score = match_manifest_entry(raw_name, manifest)
+    matched_entry, score = match_manifest_entry(raw_name, manifest, support_text=support_text)
     return raw_name, normalize_detected_label(raw_name, matched_entry, score, manifest), matched_entry, score
 
 
-def match_card_name_against_manifest(name_candidates, manifest):
+def match_card_name_against_manifest(name_candidates, manifest, support_text=''):
     best_text = ''
     best_label = ''
     best_entry = None
     best_score = 0.0
 
     for candidate in name_candidates:
-        matched_entry, score = match_manifest_entry(candidate, manifest)
+        matched_entry, score = match_manifest_entry(candidate, manifest, support_text=support_text)
         detected_label = normalize_detected_label(candidate, matched_entry, score, manifest)
 
         if score > best_score:
@@ -1294,8 +1483,8 @@ def normalize_qwen_sinner_hint(text):
     return best_label
 
 
-def choose_manifest_entry_with_qwen(card, name_candidates, manifest, best_score, best_entry):
-    candidate_entries = get_top_manifest_entry_candidates(name_candidates, manifest, limit=4)
+def choose_manifest_entry_with_qwen(card, name_candidates, manifest, best_score, best_entry, support_text=''):
+    candidate_entries = get_top_manifest_entry_candidates(name_candidates, manifest, limit=4, support_text=support_text)
     if len(candidate_entries) < 2:
         return None
 
@@ -1420,13 +1609,13 @@ def score_feedback_sample_signature(card_signature, sample_signature):
     )
 
 
-def get_top_manifest_entry_candidates(name_candidates, manifest, limit=4):
+def get_top_manifest_entry_candidates(name_candidates, manifest, limit=4, support_text=''):
     ranked_entries = []
 
     for entry in manifest:
         best_candidate_score = 0.0
         for candidate in name_candidates:
-            score = score_manifest_candidate(candidate, entry)
+            score = score_manifest_candidate(candidate, entry, support_text=support_text)
             best_candidate_score = max(best_candidate_score, score)
         ranked_entries.append({**entry, 'candidateScore': best_candidate_score})
 
@@ -1653,10 +1842,12 @@ def extract_card_ocr_result(card):
 
 
 def build_qwen_card_ocr_image(card):
+    name_main = crop_relative_region(card, *QWEN_NAME_MAIN_REGION)
+    name_alt = enhance_identity_text_region(crop_relative_region(card, *QWEN_NAME_FOCUS_REGION))
     panels = [
         build_qwen_labeled_panel('CARD', card),
-        build_qwen_labeled_panel('NAME MAIN', crop_relative_region(card, *QWEN_NAME_MAIN_REGION)),
-        build_qwen_labeled_panel('NAME ALT', crop_relative_region(card, *QWEN_NAME_ALT_REGION)),
+        build_qwen_labeled_panel('NAME MAIN', name_main),
+        build_qwen_labeled_panel('NAME ALT', name_alt),
         build_qwen_labeled_panel('SINNER ICON', crop_relative_region(card, *QWEN_SINNER_ICON_REGION)),
         build_qwen_labeled_panel('LEVEL', crop_relative_region(card, *QWEN_LEVEL_REGION)),
     ]
@@ -1665,10 +1856,12 @@ def build_qwen_card_ocr_image(card):
 
 
 def build_qwen_card_name_choice_image(card, candidates):
+    name_main = crop_relative_region(card, *QWEN_NAME_MAIN_REGION)
+    name_alt = enhance_identity_text_region(crop_relative_region(card, *QWEN_NAME_FOCUS_REGION))
     panels = [
         build_qwen_labeled_panel('CARD', card),
-        build_qwen_labeled_panel('NAME MAIN', crop_relative_region(card, *QWEN_NAME_MAIN_REGION)),
-        build_qwen_labeled_panel('NAME ALT', crop_relative_region(card, *QWEN_NAME_ALT_REGION)),
+        build_qwen_labeled_panel('NAME MAIN', name_main),
+        build_qwen_labeled_panel('NAME ALT', name_alt),
         build_qwen_labeled_panel('SINNER ICON', crop_relative_region(card, *QWEN_SINNER_ICON_REGION)),
         build_qwen_labeled_panel('LEVEL', crop_relative_region(card, *QWEN_LEVEL_REGION)),
     ]
@@ -1806,6 +1999,28 @@ def build_qwen_text_block(text):
     return canvas
 
 
+def enhance_identity_text_region(image):
+    if image is None or not image.size:
+        return image
+
+    scale = 2.0 if max(image.shape[:2]) < 220 else 1.5
+    resized = cv2.resize(image, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
+    grayscale = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+    normalized = cv2.normalize(grayscale, None, 0, 255, cv2.NORM_MINMAX)
+    blurred = cv2.GaussianBlur(normalized, (0, 0), 1.1)
+    sharpened = cv2.addWeighted(normalized, 1.45, blurred, -0.45, 0)
+    thresholded = cv2.adaptiveThreshold(
+        sharpened,
+        255,
+        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv2.THRESH_BINARY,
+        31,
+        7,
+    )
+    cleaned = cv2.medianBlur(thresholded, 3)
+    return cv2.cvtColor(cleaned, cv2.COLOR_GRAY2BGR)
+
+
 def encode_png_bytes(image):
     success, encoded = cv2.imencode('.png', image)
     if not success:
@@ -1818,7 +2033,11 @@ def encode_png_bytes(image):
 def run_qwen_card_ocr(image_bytes):
     started_at = time.perf_counter()
     try:
-        output_text = generate_qwen_response(image_bytes, QWEN_CARD_OCR_PROMPT)
+        output_text = generate_qwen_response(
+            image_bytes,
+            QWEN_CARD_OCR_PROMPT,
+            max_new_tokens=int(os.environ.get('QWEN_VL_OCR_MAX_NEW_TOKENS', str(DEFAULT_QWEN_OCR_MAX_NEW_TOKENS))),
+        )
     except Exception as exc:
         raise RuntimeError(f'Qwen3-VL OCR request failed: {exc}') from exc
 
@@ -1831,7 +2050,11 @@ def run_qwen_card_ocr(image_bytes):
 def run_qwen_card_uptie(image_bytes):
     started_at = time.perf_counter()
     try:
-        output_text = generate_qwen_response(image_bytes, QWEN_CARD_UPTIE_PROMPT)
+        output_text = generate_qwen_response(
+            image_bytes,
+            QWEN_CARD_UPTIE_PROMPT,
+            max_new_tokens=int(os.environ.get('QWEN_VL_CHOICE_MAX_NEW_TOKENS', str(DEFAULT_QWEN_CHOICE_MAX_NEW_TOKENS))),
+        )
     except Exception as exc:
         raise RuntimeError(f'Qwen3-VL uptie request failed: {exc}') from exc
 
@@ -1844,7 +2067,11 @@ def run_qwen_card_uptie(image_bytes):
 def run_qwen_card_name_choice(image_bytes):
     started_at = time.perf_counter()
     try:
-        output_text = generate_qwen_response(image_bytes, QWEN_CARD_NAME_CHOICE_PROMPT)
+        output_text = generate_qwen_response(
+            image_bytes,
+            QWEN_CARD_NAME_CHOICE_PROMPT,
+            max_new_tokens=int(os.environ.get('QWEN_VL_CHOICE_MAX_NEW_TOKENS', str(DEFAULT_QWEN_CHOICE_MAX_NEW_TOKENS))),
+        )
     except Exception as exc:
         raise RuntimeError(f'Qwen3-VL name-choice request failed: {exc}') from exc
 
@@ -1853,7 +2080,7 @@ def run_qwen_card_name_choice(image_bytes):
     return parse_qwen_card_name_choice_output(output_text)
 
 
-def generate_qwen_response(image_bytes, prompt_text):
+def generate_qwen_response(image_bytes, prompt_text, max_new_tokens=DEFAULT_QWEN_OCR_MAX_NEW_TOKENS):
     model, processor = get_qwen_vl_components()
     image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
     messages = [
@@ -1879,7 +2106,7 @@ def generate_qwen_response(image_bytes, prompt_text):
         generated_ids = model.generate(
             **inputs,
             generation_config=generation_config,
-            max_new_tokens=int(os.environ.get('QWEN_VL_MAX_NEW_TOKENS', '192')),
+            max_new_tokens=int(max_new_tokens),
             do_sample=False,
         )
 
@@ -2009,6 +2236,7 @@ def cleanup_identity_name(text):
     cleaned = re.sub(r'^(?:name|text)\s*[:=-]\s*', '', cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r'\bsinner\b.*$', '', cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r'\b(?:new|lv|level)\b.*$', '', cleaned, flags=re.IGNORECASE)
+    cleaned = collapse_repeated_token_sequence(cleaned)
     cleaned = re.sub(r'\s+', ' ', cleaned).strip(" -.:')(")
     return cleaned
 
@@ -2021,7 +2249,48 @@ def score_identity_text(text):
 
 
 def normalize_ocr_text(text):
-    return ' '.join(text.replace('\n', ' ').replace('|', 'I').split())
+    normalized = str(text or '')
+    for source, target in (
+        ('\r', ' '),
+        ('\n', ' '),
+        ('|', 'I'),
+        ('—', '-'),
+        ('–', '-'),
+        ('’', "'"),
+        ('‘', "'"),
+        ('“', '"'),
+        ('”', '"'),
+    ):
+        normalized = normalized.replace(source, target)
+
+    return collapse_repeated_token_sequence(' '.join(normalized.split()))
+
+
+def collapse_repeated_token_sequence(text, max_window=4):
+    tokens = str(text or '').split()
+    if len(tokens) < 2:
+        return ' '.join(tokens)
+
+    normalized_tokens = [sanitize_name(token) for token in tokens]
+    changed = True
+
+    while changed and len(tokens) >= 2:
+        changed = False
+        max_candidate_window = min(max_window, len(tokens) // 2)
+        for window in range(max_candidate_window, 0, -1):
+            if normalized_tokens[-window:] and normalized_tokens[-window:] == normalized_tokens[-(window * 2):-window]:
+                tokens = tokens[:-window]
+                normalized_tokens = normalized_tokens[:-window]
+                changed = True
+                break
+
+    deduped_tokens = []
+    for token, normalized_token in zip(tokens, normalized_tokens):
+        if deduped_tokens and normalized_token == sanitize_name(deduped_tokens[-1]):
+            continue
+        deduped_tokens.append(token)
+
+    return ' '.join(deduped_tokens)
 
 
 def tokenize_name(text):
@@ -2131,6 +2400,47 @@ def distinctive_token_score(input_tokens, entry_tokens, token_weights):
     return matched_weight / total_weight
 
 
+def ordered_distinctive_tokens(tokens, token_weights):
+    ordered = []
+
+    for token in tokens:
+        if not token:
+            continue
+        if token in MANIFEST_TOKEN_STOPWORDS:
+            continue
+        if len(token) <= 1 and not token.isdigit():
+            continue
+        if not token.isdigit() and token_weights.get(token, 1.0) < 1.05:
+            continue
+        if ordered and ordered[-1] == token:
+            continue
+        ordered.append(token)
+
+    return tuple(ordered)
+
+
+def leading_distinctive_token_adjustment(input_tokens, entry_tokens, token_weights):
+    input_distinctive = ordered_distinctive_tokens(input_tokens, token_weights)
+    entry_distinctive = ordered_distinctive_tokens(entry_tokens, token_weights)
+
+    if not input_distinctive or not entry_distinctive:
+        return 0.0
+
+    if input_distinctive[0] == entry_distinctive[0]:
+        prefix_matches = 1
+        for left_token, right_token in zip(input_distinctive[1:], entry_distinctive[1:]):
+            if left_token != right_token:
+                break
+            prefix_matches += 1
+
+        return min(0.18, 0.1 + ((prefix_matches - 1) * 0.04))
+
+    if input_distinctive[0] in entry_distinctive[:2] or entry_distinctive[0] in input_distinctive[:2]:
+        return 0.03
+
+    return -0.12
+
+
 def score_manifest_text_variant(raw_name, candidate_name, entry_tokens, token_weights):
     normalized_input = sanitize_name(raw_name)
     normalized_candidate = sanitize_name(candidate_name)
@@ -2143,17 +2453,53 @@ def score_manifest_text_variant(raw_name, candidate_name, entry_tokens, token_we
     token_bonus = weighted_overlap_score(input_tokens, entry_tokens, token_weights)
     distinctive_bonus = distinctive_token_score(input_tokens, entry_tokens, token_weights)
     containment_bonus = 1.0 if normalized_input in normalized_candidate or normalized_candidate in normalized_input else 0.0
-    return (
+    leading_adjustment = leading_distinctive_token_adjustment(input_tokens, entry_tokens, token_weights)
+    score = (
         (max(ratio, partial) * 0.5)
         + (token_bonus * 0.2)
-        + (distinctive_bonus * 0.22)
+        + (distinctive_bonus * 0.18)
         + (containment_bonus * 0.08)
+        + leading_adjustment
     )
+    return float(np.clip(score, 0.0, 1.0))
 
 
-def score_manifest_candidate(raw_name, entry, token_weights=None):
+def score_feedback_text_profiles(raw_name, support_text, text_profiles, token_weights):
+    if not text_profiles:
+        return 0.0
+
+    candidate_texts = []
+    for candidate_text in (cleanup_identity_name(raw_name), cleanup_identity_name(support_text)):
+        if candidate_text and candidate_text not in candidate_texts:
+            candidate_texts.append(candidate_text)
+
+    if not candidate_texts:
+        return 0.0
+
+    best_score = 0.0
+    for profile in text_profiles:
+        for profile_text in (
+            profile.get('observed_name', ''),
+            profile.get('raw_ocr_name', ''),
+            profile.get('ocr_support_text', ''),
+        ):
+            if not profile_text:
+                continue
+
+            profile_tokens = tokenize_name(profile_text)
+            for candidate_text in candidate_texts:
+                profile_score = score_manifest_text_variant(candidate_text, profile_text, profile_tokens, token_weights)
+                if sanitize_name(candidate_text) == sanitize_name(profile_text):
+                    profile_score = min(1.0, profile_score + ALIAS_MATCH_EXACT_BONUS)
+                best_score = max(best_score, profile_score)
+
+    return best_score
+
+
+def score_manifest_candidate(raw_name, entry, token_weights=None, support_text=''):
     token_weights = token_weights or {}
     best_score = score_manifest_text_variant(raw_name, entry.get('entryKey', ''), entry.get('name_tokens') or (), token_weights)
+    best_support_score = 0.0
 
     for alias, alias_tokens in zip(entry.get('match_aliases') or (), entry.get('match_alias_tokens') or ()):
         alias_score = score_manifest_text_variant(raw_name, alias, alias_tokens, token_weights)
@@ -2161,10 +2507,29 @@ def score_manifest_candidate(raw_name, entry, token_weights=None):
             alias_score += ALIAS_MATCH_EXACT_BONUS
         best_score = max(best_score, alias_score)
 
+        if support_text:
+            best_support_score = max(best_support_score, score_manifest_text_variant(support_text, alias, alias_tokens, token_weights))
+
+    if support_text:
+        best_support_score = max(
+            best_support_score,
+            score_manifest_text_variant(support_text, entry.get('entryKey', ''), entry.get('name_tokens') or (), token_weights),
+        )
+        best_score = max(best_score, (best_score * 0.82) + (best_support_score * 0.18))
+
+    feedback_profile_score = score_feedback_text_profiles(
+        raw_name,
+        support_text,
+        entry.get('feedback_text_profiles') or (),
+        token_weights,
+    )
+    if feedback_profile_score:
+        best_score = max(best_score, (best_score * 0.76) + (feedback_profile_score * 0.24))
+
     return min(best_score, 1.0)
 
 
-def match_manifest_entry(raw_name, manifest):
+def match_manifest_entry(raw_name, manifest, support_text=''):
     normalized_input = sanitize_name(raw_name)
     best_entry = None
     best_score = 0.0
@@ -2179,7 +2544,7 @@ def match_manifest_entry(raw_name, manifest):
         if not entry.get('normalized_name'):
             continue
 
-        score = score_manifest_candidate(raw_name, entry, token_weights=token_weights)
+        score = score_manifest_candidate(raw_name, entry, token_weights=token_weights, support_text=support_text)
 
         if score > best_score:
             second_best_score = best_score
@@ -2201,6 +2566,64 @@ def match_manifest_entry(raw_name, manifest):
         'rarity': normalize_rarity(best_entry.get('rarity')),
         'hasLevel': best_entry['hasLevel'],
     }, best_score
+
+
+def build_ocr_support_text(ocr_result):
+    support_chunks = []
+
+    for key in ('tagged_name', 'text', 'raw_output'):
+        value = cleanup_identity_name((ocr_result or {}).get(key, ''))
+        if not value:
+            continue
+        if value not in support_chunks:
+            support_chunks.append(value)
+
+    return ' '.join(support_chunks[:2])
+
+
+def build_feedback_export_records():
+    feedback_store = load_ocr_feedback_store()
+    records = []
+
+    for feedback_key, feedback_entry in sorted(feedback_store.items()):
+        for example in feedback_entry.get('examples', []):
+            input_payload = example.get('input', {})
+            target_payload = example.get('target', {})
+            records.append(
+                {
+                    'feedback_key': feedback_key,
+                    'image_path': example.get('image_path', ''),
+                    'input': input_payload,
+                    'target': target_payload,
+                    'messages': [
+                        {
+                            'role': 'system',
+                            'content': 'Read one Limbus Company identity card crop and map it to the canonical roster entry.',
+                        },
+                        {
+                            'role': 'user',
+                            'content': json.dumps(input_payload, ensure_ascii=True, sort_keys=True),
+                        },
+                        {
+                            'role': 'assistant',
+                            'content': json.dumps(target_payload, ensure_ascii=True, sort_keys=True),
+                        },
+                    ],
+                }
+            )
+
+    return records
+
+
+def export_ocr_feedback_dataset(output_format='json'):
+    records = build_feedback_export_records()
+    if str(output_format or '').lower() == 'jsonl':
+        return '\n'.join(json.dumps(record, ensure_ascii=True) for record in records)
+
+    return {
+        'count': len(records),
+        'records': records,
+    }
 
 
 def overlap_score(left_tokens, right_tokens):
