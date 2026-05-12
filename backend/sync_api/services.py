@@ -21,6 +21,7 @@ from transformers import AutoModelForImageTextToText, AutoProcessor
 
 FRAME_TEMPLATES_DIR = Path(__file__).resolve().parent / 'frame_templates'
 IDENTITY_ICON_TEMPLATES_DIR = Path(__file__).resolve().parent / 'identityIcon_templates'
+EGO_RARITY_TEMPLATES_DIR = Path(__file__).resolve().parent / 'ego_rarity_templates'
 OCR_FEEDBACK_PATH = Path(__file__).resolve().parent / 'ocr_feedback.json'
 OCR_FEEDBACK_SAMPLES_DIR = Path(__file__).resolve().parent / 'ocr_feedback_samples'
 NAME_SANITIZER = re.compile(r'[^a-z0-9]+')
@@ -40,8 +41,13 @@ ICON_MATCH_STRONG_SCORE_THRESHOLD = 0.36
 ICON_MATCH_WEAK_SCORE_THRESHOLD = 0.26
 ICON_MATCH_STRONG_MARGIN = 0.045
 ICON_MATCH_TOP_K = 3
+EGO_RARITY_STRONG_SCORE_THRESHOLD = 0.34
+EGO_RARITY_WEAK_SCORE_THRESHOLD = 0.28
+EGO_RARITY_STRONG_MARGIN = 0.035
 ALIAS_MATCH_EXACT_BONUS = 0.08
 AMBIGUOUS_MATCH_SCORE_MARGIN = 0.035
+CARD_KIND_IDENTITY = 'identity'
+CARD_KIND_EGO = 'ego'
 MANIFEST_TOKEN_STOPWORDS = {
     'assoc', 'association', 'section', 'south', 'north', 'east', 'west', 'director',
     'office', 'fixer', 'corp', 'agent', 'sinner', 'pack', 'branch', 'student', 'adept',
@@ -101,9 +107,46 @@ QWEN_CARD_NAME_CHOICE_PROMPT = (
     '4) Ignore uptie pips, frame decorations, and level numbers except when needed to reject a bad option. '
     '5) If uncertain, still choose the closest of the listed candidates.'
 )
+QWEN_CARD_OCR_EGO_PROMPT = (
+    'Inspect the labeled panels of one Limbus Company EGO card. '
+    'The panel labeled CARD is the full EGO card. '
+    'The panel labeled NAME MAIN is a raw zoom of the EGO title area. '
+    'The panel labeled NAME ALT is a contrast-enhanced zoom of the same EGO title area. '
+    'The panel labeled SINNER ICON is the sinner badge above the card. '
+    'The panel labeled RISK is the EGO risk label area. '
+    'The panel labeled UPTIE is the Roman numeral or number on the right side of the name plate. '
+    'Return exactly five lines in this exact format with no markdown, no prose, and no extra keys: '
+    'NAME: <ego name>\n'
+    'SINNER: <sinner name only>\n'
+    'RISK: <ZAYIN or TETH or HE or WAW>\n'
+    'UPTIE: <1 or 2 or 3 or 4 only>\n'
+    'TEXT: <short supporting OCR text>. '
+    'Rules: '
+    '1) NAME must contain only the EGO name and must not include the sinner name, risk label, uptie numerals, NEW, or labels. '
+    '2) SINNER must contain only the sinner name, such as Yi Sang, Faust, Don Quixote, or Rodion. '
+    '3) RISK must be one of ZAYIN, TETH, HE, or WAW. '
+    '4) UPTIE must be digits 1 through 4 only. '
+    '5) TEXT may contain other visible text that supports the read. '
+    '6) If unreadable, leave the value empty after the colon. '
+    '7) Do not invent words or numbers that are not visible in the image. '
+    '8) If the sinner icon is unclear, focus on the visible badge art and name plate before guessing.'
+)
+QWEN_CARD_NAME_CHOICE_EGO_PROMPT = (
+    'Inspect the labeled panels of one game EGO card. '
+    'The first panels show the real card, title area, sinner icon, risk area, and uptie area. '
+    'The later panels labeled C1, C2, C3, and C4 are candidate EGO names. '
+    'Choose the candidate whose full EGO name best matches the visible card title and sinner icon. '
+    'Return exactly one line in this exact format with no markdown, no prose, and no extra keys: '
+    'CHOICE: C1 or CHOICE: C2 or CHOICE: C3 or CHOICE: C4. '
+    'Rules: '
+    '1) Use the visible title text first. '
+    '2) Use the sinner icon and risk label as tie-breakers. '
+    '3) Ignore decorative frame details. '
+    '4) If uncertain, still choose the closest of the listed candidates.'
+)
 RARITY_TEMPLATE_REGEX = re.compile(r'_(0{1,3})$', re.IGNORECASE)
 QWEN_TAGGED_FIELD_REGEX = re.compile(
-    r'(name|sinner|level|text)\s*[:=-]\s*(.*?)\s*(?=(?:name|sinner|level|text)\s*[:=-]|$)',
+    r'(name|sinner|level|risk|uptie|text)\s*[:=-]\s*(.*?)\s*(?=(?:name|sinner|level|risk|uptie|text)\s*[:=-]|$)',
     re.IGNORECASE | re.DOTALL,
 )
 QWEN_UPTIE_CHOICE_REGEX = re.compile(r'choice\s*[:=-]\s*(c[12])', re.IGNORECASE)
@@ -116,6 +159,10 @@ QWEN_NAME_ALT_REGION = (0.06, 0.48, 0.95, 0.9)
 QWEN_NAME_FOCUS_REGION = (0.14, 0.58, 0.94, 0.84)
 QWEN_SINNER_ICON_REGION = (0.54, 0.0, 0.98, 0.26)
 QWEN_LEVEL_REGION = (0.4, 0.5, 1.0, 0.9)
+QWEN_EGO_NAME_MAIN_REGION = (0.12, 0.68, 0.9, 0.98)
+QWEN_EGO_NAME_ALT_REGION = (0.08, 0.62, 0.92, 0.98)
+QWEN_EGO_RISK_REGION = (0.18, 0.5, 0.82, 0.72)
+QWEN_EGO_UPTIE_REGION = (0.72, 0.56, 1.0, 0.98)
 QWEN_UPTIE_TOP_RIGHT_REGION = (0.62, 0.0, 1.0, 0.28)
 QWEN_UPTIE_BOTTOM_LEFT_REGION = (0.0, 0.72, 0.38, 1.0)
 LEVEL_OCR_REGIONS = (
@@ -169,7 +216,24 @@ IDENTITY_ICON_BADGE_REGIONS = (
     (0.62, 0.0, 1.0, 0.24),
     (0.58, 0.0, 1.0, 0.28),
 )
+EGO_SINNER_ICON_REGIONS = (
+    (0.18, 0.0, 0.82, 0.26),
+    (0.24, 0.0, 0.76, 0.22),
+    (0.14, 0.0, 0.86, 0.3),
+)
+EGO_SINNER_ICON_BADGE_REGIONS = (
+    (0.22, 0.0, 0.78, 0.24),
+    (0.18, 0.0, 0.82, 0.28),
+)
 IDENTITY_ICON_SCALE_RATIOS = (0.58, 0.68, 0.78, 0.88)
+EGO_RARITY_SCALE_RATIOS = (0.3, 0.4, 0.5, 0.6, 0.7, 0.8)
+EGO_RARITY_ICON_REGIONS = (
+    (0.0, 0.66, 0.28, 0.98),
+    (0.02, 0.68, 0.24, 0.96),
+    (0.0, 0.6, 0.32, 0.98),
+)
+IDENTITY_ICON_CONTEXT_PADDING = (0.04, 0.12, 0.16, 0.02)
+EGO_ICON_CONTEXT_PADDING = (0.08, 0.18, 0.08, 0.02)
 IDENTITY_ICON_BADGE_PADDING = 6
 IDENTITY_ICON_BADGE_CANVAS_SIZE = 128
 IDENTITY_ICON_BADGE_TARGET_SIZE = 84
@@ -187,6 +251,24 @@ IDENTITY_ICON_ORB_EDGE_THRESHOLD = 5
 IDENTITY_ICON_ORB_FAST_THRESHOLD = 5
 IDENTITY_ICON_ORB_RATIO_TEST = 0.7
 IDENTITY_ICON_SCORE_SATURATION = 12.0
+UPTIE_ROMAN_VALUES = {
+    'I': '1',
+    'II': '2',
+    'III': '3',
+    'IV': '4',
+}
+EGO_RARITY_NORMALIZATION_MAP = {
+    'Z': 'Z',
+    'ZAYIN': 'Z',
+    'ZNOTORIGINAL': 'Z',
+    'T': 'T',
+    'TETH': 'T',
+    'HE': 'H',
+    'H': 'H',
+    'W': 'W',
+    'WAW': 'W',
+}
+EGO_RARITY_CODES = frozenset({'Z', 'T', 'H', 'W'})
 SINNER_ICON_ALIASES = {
     'DonQuixote': ('Don', 'DonQuixote'),
     'Faust': ('Faust',),
@@ -317,7 +399,7 @@ def normalize_manifest_entry(entry, feedback_store=None):
     feedback = feedback_store if feedback_store is not None else load_ocr_feedback_store()
     feedback_entry = feedback.get(canonical_feedback_entry_key(entry.get('sinnerKey'), entry.get('category'), entry.get('entryKey')), {})
     aliases = []
-    for alias in feedback_entry.get('aliases', []):
+    for alias in collect_manual_feedback_aliases(feedback_entry):
         normalized_alias = normalize_feedback_alias(alias)
         if normalized_alias and normalized_alias not in aliases:
             aliases.append(normalized_alias)
@@ -325,12 +407,82 @@ def normalize_manifest_entry(entry, feedback_store=None):
     return {
         **entry,
         'normalized_name': sanitize_name(entry.get('name', '')),
+        'normalized_rarity': normalize_match_rarity(entry.get('rarity')),
         'name_tokens': tokenize_name(entry.get('name', '')),
         'match_aliases': tuple(aliases),
         'match_alias_tokens': tuple(tokenize_name(alias) for alias in aliases),
-        'feedback_samples': tuple(feedback_entry.get('samples', [])),
-        'feedback_text_profiles': tuple(feedback_entry.get('text_profiles', [])),
+        'feedback_samples': tuple(collect_manual_feedback_samples(feedback_entry)),
+        'feedback_text_profiles': tuple(collect_manual_feedback_text_profiles(feedback_entry)),
     }
+
+
+def is_manual_feedback_example(example):
+    if not isinstance(example, dict):
+        return False
+
+    input_payload = example.get('input') if isinstance(example.get('input'), dict) else {}
+    return bool(input_payload.get('manual') or example.get('manual'))
+
+
+def is_manual_feedback_sample(sample):
+    return bool(isinstance(sample, dict) and sample.get('manual'))
+
+
+def collect_manual_feedback_aliases(feedback_entry):
+    aliases = []
+
+    for example in feedback_entry.get('examples', []) or ():
+        if not is_manual_feedback_example(example):
+            continue
+
+        input_payload = example.get('input') if isinstance(example.get('input'), dict) else {}
+        for candidate in (input_payload.get('observed_name', ''), input_payload.get('raw_ocr_name', '')):
+            normalized_alias = normalize_feedback_alias(candidate)
+            if normalized_alias and normalized_alias not in aliases:
+                aliases.append(normalized_alias)
+
+    return tuple(aliases)
+
+
+def collect_manual_feedback_samples(feedback_entry):
+    samples = []
+
+    for sample in feedback_entry.get('samples', []) or ():
+        if is_manual_feedback_sample(sample):
+            samples.append(sample)
+
+    return tuple(samples)
+
+
+def collect_manual_feedback_text_profiles(feedback_entry):
+    profiles = []
+    seen = set()
+
+    for example in feedback_entry.get('examples', []) or ():
+        if not is_manual_feedback_example(example):
+            continue
+
+        input_payload = example.get('input') if isinstance(example.get('input'), dict) else {}
+        profile = normalize_feedback_text_profile(
+            {
+                'observed_name': input_payload.get('observed_name', ''),
+                'raw_ocr_name': input_payload.get('raw_ocr_name', ''),
+                'ocr_support_text': input_payload.get('ocr_support_text', ''),
+                'ocr_sinner_hint': input_payload.get('ocr_sinner_hint', ''),
+                'saved_at': example.get('saved_at') or 0,
+            }
+        )
+        if not profile:
+            continue
+
+        profile_key = feedback_text_profile_key(profile)
+        if profile_key in seen:
+            continue
+
+        seen.add(profile_key)
+        profiles.append(profile)
+
+    return tuple(profiles)
 
 
 def load_ocr_feedback_store():
@@ -602,6 +754,87 @@ def normalize_rarity(value):
     return normalized or None
 
 
+def normalize_match_rarity(value):
+    normalized = str(value or '').strip()
+    if not normalized:
+        return None
+
+    compact = sanitize_name(normalized).upper()
+    if compact.startswith('RARITY'):
+        return normalized
+
+    return EGO_RARITY_NORMALIZATION_MAP.get(compact, normalized)
+
+
+def normalize_ego_rarity_hint(value):
+    normalized = normalize_match_rarity(value)
+    return normalized if normalized in EGO_RARITY_CODES else None
+
+
+def normalize_uptie_hint(value):
+    normalized = normalize_ocr_text(value).upper().strip(' :')
+    if not normalized:
+        return ''
+
+    if normalized in UPTIE_ROMAN_VALUES:
+        return UPTIE_ROMAN_VALUES[normalized]
+
+    if normalized in {'1', '2', '3', '4'}:
+        return normalized
+
+    explicit_match = re.search(r'\b(?:UPTIE|TIER)\b\s*[:=-]?\s*(IV|III|II|I|4|3|2|1)\b', normalized)
+    if explicit_match:
+        return UPTIE_ROMAN_VALUES.get(explicit_match.group(1), explicit_match.group(1))
+
+    if len(normalized.split()) <= 4:
+        loose_match = re.search(r'\b(IV|III|II|I|4|3|2|1)\b', normalized)
+        if loose_match:
+            return UPTIE_ROMAN_VALUES.get(loose_match.group(1), loose_match.group(1))
+
+    return ''
+
+
+def is_ego_rarity_key(value):
+    return normalize_ego_rarity_hint(value) in EGO_RARITY_CODES
+
+
+def crop_bounds_with_padding(image, bounds, left_ratio=0.0, top_ratio=0.0, right_ratio=0.0, bottom_ratio=0.0):
+    if image is None or not getattr(image, 'size', 0) or not bounds:
+        return None
+
+    x, y, width, height = bounds
+    image_height, image_width = image.shape[:2]
+    x1 = max(0, int(round(x - (width * left_ratio))))
+    y1 = max(0, int(round(y - (height * top_ratio))))
+    x2 = min(image_width, int(round(x + width + (width * right_ratio))))
+    y2 = min(image_height, int(round(y + height + (height * bottom_ratio))))
+
+    if x2 <= x1 or y2 <= y1:
+        return None
+
+    return image[y1:y2, x1:x2]
+
+
+def build_card_icon_context(image, bounds, card_kind=CARD_KIND_IDENTITY):
+    padding = EGO_ICON_CONTEXT_PADDING if card_kind == CARD_KIND_EGO else IDENTITY_ICON_CONTEXT_PADDING
+    return crop_bounds_with_padding(
+        image,
+        bounds,
+        left_ratio=padding[0],
+        top_ratio=padding[1],
+        right_ratio=padding[2],
+        bottom_ratio=padding[3],
+    )
+
+
+def infer_card_kind(card):
+    return CARD_KIND_IDENTITY, None
+
+
+def is_probable_ego_ocr_result(ocr_result):
+    return any(is_ego_rarity_key((ocr_result or {}).get(key)) for key in ('risk', 'sinner'))
+
+
 def merge_updates_into_progress(progress, updates):
     merged = progress.copy()
 
@@ -706,17 +939,38 @@ def recognize_single_screenshot(image_bytes, source_name, manifest):
         card_started_at = time.perf_counter()
         x, y, width, height = bounds
         card = image[y:y + height, x:x + width]
+        card_kind, rarity_hint = infer_card_kind(card)
+        icon_context = build_card_icon_context(image, bounds, card_kind=card_kind)
         ocr_started_at = time.perf_counter()
-        ocr_result = extract_card_ocr_result(card)
+        ocr_result = extract_card_ocr_result(card, card_kind=card_kind, icon_context=icon_context)
+        if card_kind != CARD_KIND_EGO and is_probable_ego_ocr_result(ocr_result):
+            card_kind = CARD_KIND_EGO
+            rarity_hint = rarity_hint or normalize_ego_rarity_hint(ocr_result.get('risk')) or normalize_ego_rarity_hint(ocr_result.get('sinner'))
+            icon_context = build_card_icon_context(image, bounds, card_kind=card_kind)
+            ocr_result = extract_card_ocr_result(card, card_kind=card_kind, icon_context=icon_context)
         ocr_elapsed = time.perf_counter() - ocr_started_at
         match_started_at = time.perf_counter()
-        raw_name, detected_label, matched_entry, name_confidence = match_card_name(card, manifest, ocr_result=ocr_result)
+        raw_name, detected_label, matched_entry, name_confidence = match_card_name(
+            card,
+            manifest,
+            ocr_result=ocr_result,
+            card_kind=card_kind,
+            icon_context=icon_context,
+            rarity_hint=rarity_hint,
+        )
         match_elapsed = time.perf_counter() - match_started_at
         level_started_at = time.perf_counter()
-        level = extract_level(card, ocr_result=ocr_result)
+        level = extract_level(card, ocr_result=ocr_result) if card_kind == CARD_KIND_IDENTITY else 1
         level_elapsed = time.perf_counter() - level_started_at
         uptie_started_at = time.perf_counter()
-        uptie, uptie_confidence = infer_uptie(card, matched_entry, detected_label or raw_name)
+        uptie, uptie_confidence = infer_uptie(
+            card,
+            matched_entry,
+            detected_label or raw_name,
+            card_kind=card_kind,
+            ocr_result=ocr_result,
+            rarity_hint=rarity_hint,
+        )
         uptie_elapsed = time.perf_counter() - uptie_started_at
         combined_confidence = round((name_confidence * 0.8) + (uptie_confidence * 0.2), 4)
         log_recognition_timing(
@@ -1306,6 +1560,8 @@ def is_visually_dense_card(card):
 
 def qwen_card_looks_like_identity(card):
     ocr_result = extract_card_ocr_result(card)
+    if is_probable_ego_ocr_result(ocr_result):
+        return False
     name = cleanup_identity_name(ocr_result.get('name', ''))
     support_text = normalize_ocr_text(ocr_result.get('text', ''))
     letter_count = len(re.findall(r'[A-Za-z]', name))
@@ -1377,14 +1633,45 @@ def build_name_candidates_from_ocr_result(ocr_result):
     return [candidate for candidate in candidates if candidate]
 
 
-def match_card_name(card, manifest, ocr_result=None):
+def filter_manifest_by_card_kind(manifest, card_kind):
+    if card_kind == CARD_KIND_EGO:
+        filtered = [entry for entry in manifest if entry.get('category') == 'EGOs']
+        return filtered or manifest
+
+    filtered = [entry for entry in manifest if entry.get('category') == 'IDs']
+    return filtered or manifest
+
+
+def narrow_manifest_with_rarity_hint(manifest, rarity_hint):
+    normalized_hint = normalize_ego_rarity_hint(rarity_hint)
+    if not normalized_hint:
+        return manifest
+
+    narrowed = [
+        entry for entry in manifest
+        if normalize_ego_rarity_hint(entry.get('normalized_rarity') or entry.get('rarity')) == normalized_hint
+    ]
+    return narrowed or manifest
+
+
+def match_card_name(card, manifest, ocr_result=None, card_kind=CARD_KIND_IDENTITY, icon_context=None, rarity_hint=None):
     if ocr_result is None:
-        ocr_result = extract_card_ocr_result(card)
+        ocr_result = extract_card_ocr_result(card, card_kind=card_kind, icon_context=icon_context)
+    manifest = filter_manifest_by_card_kind(manifest, card_kind)
+    resolved_rarity_hint = (
+        normalize_ego_rarity_hint((ocr_result or {}).get('risk'))
+        or normalize_ego_rarity_hint(rarity_hint)
+        or normalize_ego_rarity_hint((ocr_result or {}).get('sinner'))
+    )
+    if card_kind == CARD_KIND_EGO:
+        manifest = narrow_manifest_with_rarity_hint(manifest, resolved_rarity_hint)
     name_candidates = extract_name_candidates(card, ocr_result=ocr_result)
     support_text = build_ocr_support_text(ocr_result)
-    icon_matches = rank_identity_icon_matches(card)
+    icon_matches = rank_identity_icon_matches(card, card_kind=card_kind, icon_context=icon_context)
     qwen_sinner_hint = normalize_qwen_sinner_hint(ocr_result.get('sinner', ''))
     icon_manifest = narrow_manifest_with_icon_hints(manifest, icon_matches, name_candidates, qwen_sinner_hint)
+    if card_kind == CARD_KIND_EGO:
+        icon_manifest = narrow_manifest_with_rarity_hint(icon_manifest, resolved_rarity_hint)
     best_text = ''
     best_label = ''
     best_entry = None
@@ -1414,7 +1701,16 @@ def match_card_name(card, manifest, ocr_result=None):
         chosen_text = sample_choice_entry['entryKey']
         return chosen_text, chosen_text, sample_choice_entry, max(best_score, sample_choice_score)
 
-    qwen_choice_entry = choose_manifest_entry_with_qwen(card, name_candidates, icon_manifest, best_score, best_entry, support_text=support_text)
+    qwen_choice_entry = choose_manifest_entry_with_qwen(
+        card,
+        name_candidates,
+        icon_manifest,
+        best_score,
+        best_entry,
+        support_text=support_text,
+        card_kind=card_kind,
+        icon_context=icon_context,
+    )
     if qwen_choice_entry:
         return qwen_choice_entry['entryKey'], qwen_choice_entry['entryKey'], qwen_choice_entry, max(best_score, 0.78)
 
@@ -1504,18 +1800,23 @@ def normalize_qwen_sinner_hint(text):
     return best_label
 
 
-def choose_manifest_entry_with_qwen(card, name_candidates, manifest, best_score, best_entry, support_text=''):
+def choose_manifest_entry_with_qwen(card, name_candidates, manifest, best_score, best_entry, support_text='', card_kind=CARD_KIND_IDENTITY, icon_context=None):
     candidate_entries = get_top_manifest_entry_candidates(name_candidates, manifest, limit=4, support_text=support_text)
     if len(candidate_entries) < 2:
         return None
 
     top_candidate_score = candidate_entries[0]['candidateScore']
     second_candidate_score = candidate_entries[1]['candidateScore'] if len(candidate_entries) > 1 else 0.0
-    needs_qwen = best_entry is None or best_score < 0.86 or (top_candidate_score - second_candidate_score) < 0.05
+    score_margin = top_candidate_score - second_candidate_score
+    has_clear_text_winner = best_entry is not None and best_score >= 0.7 and score_margin >= 0.08
+    needs_qwen = best_entry is None or ((best_score < 0.86 or top_candidate_score < 0.78) and not has_clear_text_winner and score_margin < 0.08)
     if not needs_qwen:
         return None
 
-    choice = run_qwen_card_name_choice(encode_png_bytes(build_qwen_card_name_choice_image(card, candidate_entries)))
+    choice = run_qwen_card_name_choice(
+        encode_png_bytes(build_qwen_card_name_choice_image(card, candidate_entries, card_kind=card_kind, icon_context=icon_context)),
+        prompt_text=QWEN_CARD_NAME_CHOICE_EGO_PROMPT if card_kind == CARD_KIND_EGO else QWEN_CARD_NAME_CHOICE_PROMPT,
+    )
     if not choice:
         return None
 
@@ -1632,11 +1933,12 @@ def score_feedback_sample_signature(card_signature, sample_signature):
 
 def get_top_manifest_entry_candidates(name_candidates, manifest, limit=4, support_text=''):
     ranked_entries = []
+    token_weights = build_manifest_token_weights(manifest)
 
     for entry in manifest:
         best_candidate_score = 0.0
         for candidate in name_candidates:
-            score = score_manifest_candidate(candidate, entry, support_text=support_text)
+            score = score_manifest_candidate(candidate, entry, token_weights=token_weights, support_text=support_text)
             best_candidate_score = max(best_candidate_score, score)
         ranked_entries.append({**entry, 'candidateScore': best_candidate_score})
 
@@ -1826,11 +2128,12 @@ def extract_identity_icon_badges_from_crop(crop):
     return tuple(badges)
 
 
-def extract_identity_icon_badge_regions(card):
+def extract_identity_icon_badge_regions(card, card_kind=CARD_KIND_IDENTITY):
     regions = []
     height, width = card.shape[:2]
+    normalized_regions = EGO_SINNER_ICON_BADGE_REGIONS if card_kind == CARD_KIND_EGO else IDENTITY_ICON_BADGE_REGIONS
 
-    for left, top, right, bottom in IDENTITY_ICON_BADGE_REGIONS:
+    for left, top, right, bottom in normalized_regions:
         x1 = max(0, int(width * left))
         y1 = max(0, int(height * top))
         x2 = min(width, int(width * right))
@@ -1845,8 +2148,8 @@ def extract_identity_icon_badge_regions(card):
     return tuple(regions)
 
 
-def extract_identity_icon_badge_signatures(card):
-    for crop in extract_identity_icon_badge_regions(card):
+def extract_identity_icon_badge_signatures(card, card_kind=CARD_KIND_IDENTITY):
+    for crop in extract_identity_icon_badge_regions(card, card_kind=card_kind):
         for badge in extract_identity_icon_badges_from_crop(crop):
             signature = build_identity_icon_badge_signature(badge)
             if signature is not None:
@@ -1881,10 +2184,11 @@ def score_identity_icon_badge_signature(signature, template):
     return good_matches / float(good_matches + IDENTITY_ICON_SCORE_SATURATION)
 
 
-def rank_identity_icon_matches(card):
+def rank_identity_icon_matches(card, card_kind=CARD_KIND_IDENTITY, icon_context=None):
     scores = {}
+    source = icon_context if icon_context is not None and getattr(icon_context, 'size', 0) else card
 
-    badge_signatures = extract_identity_icon_badge_signatures(card)
+    badge_signatures = extract_identity_icon_badge_signatures(source, card_kind=card_kind)
     if badge_signatures:
         for template in load_identity_icon_templates():
             best_score = 0.0
@@ -1895,7 +2199,7 @@ def rank_identity_icon_matches(card):
                 scores[template['label']] = max(scores.get(template['label'], 0.0), best_score)
 
     if not scores:
-        top_band_variants = extract_identity_icon_regions(card)
+        top_band_variants = extract_identity_icon_regions(source, card_kind=card_kind)
         if not top_band_variants:
             return []
 
@@ -1913,11 +2217,12 @@ def rank_identity_icon_matches(card):
     ]
 
 
-def extract_identity_icon_regions(card):
+def extract_identity_icon_regions(card, card_kind=CARD_KIND_IDENTITY):
     regions = []
     height, width = card.shape[:2]
+    normalized_regions = EGO_SINNER_ICON_REGIONS if card_kind == CARD_KIND_EGO else IDENTITY_ICON_REGIONS
 
-    for left, top, right, bottom in IDENTITY_ICON_REGIONS:
+    for left, top, right, bottom in normalized_regions:
         x1 = max(0, int(width * left))
         y1 = max(0, int(height * top))
         x2 = min(width, int(width * right))
@@ -1967,6 +2272,65 @@ def score_identity_icon_template_legacy(crop, template):
         best_score = max(best_score, (dark_score * 0.65) + (edge_score * 0.35))
 
     return best_score
+
+
+def extract_ego_rarity_regions(card):
+    regions = []
+
+    for left, top, right, bottom in EGO_RARITY_ICON_REGIONS:
+        crop = crop_relative_region(card, left, top, right, bottom)
+        if crop is not None and getattr(crop, 'size', 0):
+            regions.append(crop)
+
+    return tuple(regions)
+
+
+def score_ego_rarity_template(crop, template):
+    crop_hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
+    crop_gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+    crop_edges = cv2.Canny(crop_gray, 50, 150)
+    crop_orange = cv2.inRange(crop_hsv, (4, 70, 80), (38, 255, 255))
+    crop_height, crop_width = crop_gray.shape[:2]
+    best_score = 0.0
+
+    for scale_ratio in EGO_RARITY_SCALE_RATIOS:
+        target_height = int(crop_height * scale_ratio)
+        if target_height < 10:
+            continue
+
+        scale = target_height / float(template['height'])
+        target_width = int(template['width'] * scale)
+        if target_width < 10 or target_width >= crop_width or target_height >= crop_height:
+            continue
+
+        interpolation = cv2.INTER_AREA if scale < 1.0 else cv2.INTER_CUBIC
+        resized_orange = cv2.resize(template['orange'], (target_width, target_height), interpolation=interpolation)
+        resized_edges = cv2.resize(template['edges'], (target_width, target_height), interpolation=cv2.INTER_NEAREST)
+        resized_mask = cv2.resize(template['mask'], (target_width, target_height), interpolation=cv2.INTER_NEAREST)
+
+        if np.count_nonzero(resized_mask) < 16:
+            continue
+
+        orange_score = sanitize_template_score(cv2.matchTemplate(crop_orange, resized_orange, cv2.TM_CCORR_NORMED, mask=resized_mask))
+        edge_score = sanitize_template_score(cv2.matchTemplate(crop_edges, resized_edges, cv2.TM_CCORR_NORMED, mask=resized_mask))
+        best_score = max(best_score, (orange_score * 0.72) + (edge_score * 0.28))
+
+    return best_score
+
+
+def rank_ego_rarity_matches(card):
+    scores = {}
+
+    for crop in extract_ego_rarity_regions(card):
+        for template in load_ego_rarity_templates():
+            score = score_ego_rarity_template(crop, template)
+            if score > 0.0:
+                scores[template['rarity']] = max(scores.get(template['rarity'], 0.0), score)
+
+    return [
+        {'rarity': rarity, 'score': score}
+        for rarity, score in sorted(scores.items(), key=lambda item: item[1], reverse=True)
+    ]
 
 
 def sanitize_template_score(result):
@@ -2028,6 +2392,69 @@ def load_identity_icon_templates():
     return tuple(templates)
 
 
+def parse_ego_rarity_template_label(template_path):
+    stem = template_path.stem.upper()
+    if 'ZAYIN' in stem:
+        return 'Z'
+    if 'TETH' in stem:
+        return 'T'
+    if 'HE' in stem:
+        return 'H'
+    if 'WAW' in stem:
+        return 'W'
+    return None
+
+
+@lru_cache(maxsize=1)
+def load_ego_rarity_templates():
+    templates = []
+
+    if not EGO_RARITY_TEMPLATES_DIR.exists():
+        return tuple()
+
+    for template_path in sorted(EGO_RARITY_TEMPLATES_DIR.iterdir()):
+        if template_path.suffix.lower() not in IMAGE_EXTENSIONS:
+            continue
+
+        template = cv2.imread(str(template_path), cv2.IMREAD_UNCHANGED)
+        if template is None or template.ndim != 3:
+            continue
+
+        rarity = parse_ego_rarity_template_label(template_path)
+        if not rarity:
+            continue
+
+        if template.shape[2] == 4:
+            alpha = template[:, :, 3]
+            color = template[:, :, :3]
+        else:
+            color = template[:, :, :3]
+            alpha = np.where(cv2.cvtColor(color, cv2.COLOR_BGR2GRAY) < 250, 255, 0).astype(np.uint8)
+
+        hsv = cv2.cvtColor(color, cv2.COLOR_BGR2HSV)
+        orange = cv2.inRange(hsv, (4, 70, 80), (38, 255, 255))
+        orange = cv2.bitwise_and(orange, orange, mask=alpha)
+        gray = cv2.cvtColor(color, cv2.COLOR_BGR2GRAY)
+        edges = cv2.Canny(gray, 50, 150)
+        edges = cv2.bitwise_and(edges, edges, mask=alpha)
+
+        if not np.count_nonzero(alpha):
+            continue
+
+        templates.append(
+            {
+                'rarity': rarity,
+                'width': gray.shape[1],
+                'height': gray.shape[0],
+                'mask': alpha,
+                'orange': orange,
+                'edges': edges,
+            }
+        )
+
+    return tuple(templates)
+
+
 def collect_card_ocr_candidates(card, normalized_regions, whitelist='', ocr_result=None):
     candidates = []
     seen = set()
@@ -2071,39 +2498,84 @@ def filter_ocr_text(text, whitelist=''):
     return ' '.join(filtered.split())
 
 
-def extract_card_ocr_result(card):
-    analysis_image = build_qwen_card_ocr_image(card)
+def extract_card_ocr_result(card, card_kind=CARD_KIND_IDENTITY, icon_context=None):
+    analysis_image = build_qwen_card_ocr_image(card, card_kind=card_kind, icon_context=icon_context)
     image_bytes = encode_png_bytes(analysis_image)
-    return run_qwen_card_ocr(image_bytes)
+    prompt_text = QWEN_CARD_OCR_EGO_PROMPT if card_kind == CARD_KIND_EGO else QWEN_CARD_OCR_PROMPT
+    return run_qwen_card_ocr(image_bytes, prompt_text=prompt_text)
 
 
-def build_qwen_card_ocr_image(card):
+def extract_primary_sinner_icon_crop(card, card_kind=CARD_KIND_IDENTITY, icon_context=None):
+    source = icon_context if icon_context is not None and getattr(icon_context, 'size', 0) else card
+    badge_regions = extract_identity_icon_badge_regions(source, card_kind=card_kind)
+    for crop in badge_regions:
+        badges = extract_identity_icon_badges_from_crop(crop)
+        if badges:
+            return badges[0]
+
+    if badge_regions:
+        return badge_regions[0]
+
+    icon_regions = extract_identity_icon_regions(source, card_kind=card_kind)
+    if icon_regions:
+        return icon_regions[0]
+
+    fallback_regions = EGO_SINNER_ICON_REGIONS if card_kind == CARD_KIND_EGO else IDENTITY_ICON_BADGE_REGIONS
+    return crop_relative_region(source, *fallback_regions[0])
+
+
+def build_qwen_card_ocr_image(card, card_kind=CARD_KIND_IDENTITY, icon_context=None):
+    if card_kind == CARD_KIND_EGO:
+        name_main = crop_relative_region(card, *QWEN_EGO_NAME_MAIN_REGION)
+        name_alt = enhance_identity_text_region(crop_relative_region(card, *QWEN_EGO_NAME_ALT_REGION))
+        panels = [
+            build_qwen_labeled_panel('CARD', card),
+            build_qwen_labeled_panel('NAME MAIN', name_main),
+            build_qwen_labeled_panel('NAME ALT', name_alt),
+            build_qwen_labeled_panel('SINNER ICON', extract_primary_sinner_icon_crop(card, card_kind=card_kind, icon_context=icon_context)),
+            build_qwen_labeled_panel('RISK', crop_relative_region(card, *QWEN_EGO_RISK_REGION)),
+            build_qwen_labeled_panel('UPTIE', crop_relative_region(card, *QWEN_EGO_UPTIE_REGION)),
+        ]
+        return stack_qwen_panels(panels)
+
     name_main = crop_relative_region(card, *QWEN_NAME_MAIN_REGION)
     name_alt = enhance_identity_text_region(crop_relative_region(card, *QWEN_NAME_FOCUS_REGION))
     panels = [
         build_qwen_labeled_panel('CARD', card),
         build_qwen_labeled_panel('NAME MAIN', name_main),
         build_qwen_labeled_panel('NAME ALT', name_alt),
-        build_qwen_labeled_panel('SINNER ICON', crop_relative_region(card, *QWEN_SINNER_ICON_REGION)),
+        build_qwen_labeled_panel('SINNER ICON', extract_primary_sinner_icon_crop(card, card_kind=card_kind, icon_context=icon_context)),
         build_qwen_labeled_panel('LEVEL', crop_relative_region(card, *QWEN_LEVEL_REGION)),
     ]
 
     return stack_qwen_panels(panels)
 
 
-def build_qwen_card_name_choice_image(card, candidates):
-    name_main = crop_relative_region(card, *QWEN_NAME_MAIN_REGION)
-    name_alt = enhance_identity_text_region(crop_relative_region(card, *QWEN_NAME_FOCUS_REGION))
-    panels = [
-        build_qwen_labeled_panel('CARD', card),
-        build_qwen_labeled_panel('NAME MAIN', name_main),
-        build_qwen_labeled_panel('NAME ALT', name_alt),
-        build_qwen_labeled_panel('SINNER ICON', crop_relative_region(card, *QWEN_SINNER_ICON_REGION)),
-        build_qwen_labeled_panel('LEVEL', crop_relative_region(card, *QWEN_LEVEL_REGION)),
-    ]
+def build_qwen_card_name_choice_image(card, candidates, card_kind=CARD_KIND_IDENTITY, icon_context=None):
+    if card_kind == CARD_KIND_EGO:
+        name_main = crop_relative_region(card, *QWEN_EGO_NAME_MAIN_REGION)
+        name_alt = enhance_identity_text_region(crop_relative_region(card, *QWEN_EGO_NAME_ALT_REGION))
+        panels = [
+            build_qwen_labeled_panel('CARD', card),
+            build_qwen_labeled_panel('NAME MAIN', name_main),
+            build_qwen_labeled_panel('NAME ALT', name_alt),
+            build_qwen_labeled_panel('SINNER ICON', extract_primary_sinner_icon_crop(card, card_kind=card_kind, icon_context=icon_context)),
+            build_qwen_labeled_panel('RISK', crop_relative_region(card, *QWEN_EGO_RISK_REGION)),
+            build_qwen_labeled_panel('UPTIE', crop_relative_region(card, *QWEN_EGO_UPTIE_REGION)),
+        ]
+    else:
+        name_main = crop_relative_region(card, *QWEN_NAME_MAIN_REGION)
+        name_alt = enhance_identity_text_region(crop_relative_region(card, *QWEN_NAME_FOCUS_REGION))
+        panels = [
+            build_qwen_labeled_panel('CARD', card),
+            build_qwen_labeled_panel('NAME MAIN', name_main),
+            build_qwen_labeled_panel('NAME ALT', name_alt),
+            build_qwen_labeled_panel('SINNER ICON', extract_primary_sinner_icon_crop(card, card_kind=card_kind, icon_context=icon_context)),
+            build_qwen_labeled_panel('LEVEL', crop_relative_region(card, *QWEN_LEVEL_REGION)),
+        ]
 
     for index, entry in enumerate(candidates, start=1):
-        panels.append(build_qwen_labeled_panel(f'C{index}', build_qwen_text_block(entry['entryKey'])))
+        panels.append(build_qwen_labeled_panel(f'C{index}', build_qwen_text_block(build_manifest_candidate_display_label(entry))))
 
     return stack_qwen_panels(panels)
 
@@ -2235,6 +2707,18 @@ def build_qwen_text_block(text):
     return canvas
 
 
+def build_manifest_candidate_display_label(entry):
+    entry_key = str((entry or {}).get('entryKey', '') or '')
+    if (entry or {}).get('category') != 'EGOs':
+        return entry_key
+
+    sinner_label = normalize_manifest_sinner_key((entry or {}).get('sinnerKey'))
+    if not sinner_label:
+        return entry_key
+
+    return f'{sinner_label} {entry_key}'
+
+
 def enhance_identity_text_region(image):
     if image is None or not image.size:
         return image
@@ -2266,12 +2750,12 @@ def encode_png_bytes(image):
 
 
 @lru_cache(maxsize=96)
-def run_qwen_card_ocr(image_bytes):
+def run_qwen_card_ocr(image_bytes, prompt_text=QWEN_CARD_OCR_PROMPT):
     started_at = time.perf_counter()
     try:
         output_text = generate_qwen_response(
             image_bytes,
-            QWEN_CARD_OCR_PROMPT,
+            prompt_text,
             max_new_tokens=int(os.environ.get('QWEN_VL_OCR_MAX_NEW_TOKENS', str(DEFAULT_QWEN_OCR_MAX_NEW_TOKENS))),
         )
     except Exception as exc:
@@ -2300,12 +2784,12 @@ def run_qwen_card_uptie(image_bytes):
 
 
 @lru_cache(maxsize=96)
-def run_qwen_card_name_choice(image_bytes):
+def run_qwen_card_name_choice(image_bytes, prompt_text=QWEN_CARD_NAME_CHOICE_PROMPT):
     started_at = time.perf_counter()
     try:
         output_text = generate_qwen_response(
             image_bytes,
-            QWEN_CARD_NAME_CHOICE_PROMPT,
+            prompt_text,
             max_new_tokens=int(os.environ.get('QWEN_VL_CHOICE_MAX_NEW_TOKENS', str(DEFAULT_QWEN_CHOICE_MAX_NEW_TOKENS))),
         )
     except Exception as exc:
@@ -2402,6 +2886,8 @@ def parse_qwen_card_ocr_output(output_text):
     name = normalize_ocr_text(str((payload or {}).get('name', '') or tagged_fields.get('name', '')))
     sinner = normalize_ocr_text(str((payload or {}).get('sinner', '') or tagged_fields.get('sinner', '')))
     level = normalize_ocr_text(str((payload or {}).get('level', '') or tagged_fields.get('level', '')))
+    risk = normalize_ocr_text(str((payload or {}).get('risk', '') or tagged_fields.get('risk', '')))
+    uptie = normalize_ocr_text(str((payload or {}).get('uptie', '') or tagged_fields.get('uptie', '')))
     text = normalize_ocr_text(str((payload or {}).get('text', '') or tagged_fields.get('text', '')))
 
     if not text:
@@ -2418,11 +2904,16 @@ def parse_qwen_card_ocr_output(output_text):
         digit_match = re.search(r'(\d{1,2})', level) or re.search(r'(\d{1,2})', text)
         level = digit_match.group(1) if digit_match else ''
 
+    risk = normalize_ego_rarity_hint(risk) or ''
+    uptie = normalize_uptie_hint(uptie) or normalize_uptie_hint(text)
+
     return {
         'name': name,
         'sinner': sinner,
         'tagged_name': tagged_fields.get('name', ''),
         'level': level,
+        'risk': risk,
+        'uptie': uptie,
         'text': text,
         'raw_output': normalized_output,
     }
@@ -2471,6 +2962,7 @@ def cleanup_identity_name(text):
     cleaned = normalize_ocr_text(text)
     cleaned = re.sub(r'^(?:name|text)\s*[:=-]\s*', '', cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r'\bsinner\b.*$', '', cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r'\b(?:risk|uptie|category)\b.*$', '', cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r'\b(?:new|lv|level)\b.*$', '', cleaned, flags=re.IGNORECASE)
     cleaned = collapse_repeated_token_sequence(cleaned)
     cleaned = re.sub(r'\s+', ' ', cleaned).strip(" -.:')(")
@@ -2893,7 +3385,25 @@ def partial_ratio(left_text, right_text):
     return best
 
 
-def infer_uptie(card, matched_entry=None, detected_label=''):
+def infer_ego_uptie(card, ocr_result=None):
+    if ocr_result is None:
+        ocr_result = extract_card_ocr_result(card, card_kind=CARD_KIND_EGO)
+
+    for key in ('uptie', 'text', 'raw_output'):
+        candidate = normalize_uptie_hint((ocr_result or {}).get(key, ''))
+        if candidate:
+            return int(candidate)
+
+    return None
+
+
+def infer_uptie(card, matched_entry=None, detected_label='', card_kind=CARD_KIND_IDENTITY, ocr_result=None, rarity_hint=None):
+    if card_kind == CARD_KIND_EGO:
+        ego_uptie = infer_ego_uptie(card, ocr_result=ocr_result)
+        if ego_uptie is not None:
+            return ego_uptie, 0.58
+        return 1, 0.24
+
     rarity = normalize_rarity((matched_entry or {}).get('rarity')) or infer_known_label_rarity(detected_label)
     template_level, template_confidence = match_frame_templates(card, rarity=rarity)
     if template_level is not None:
@@ -3117,9 +3627,16 @@ def infer_known_label_rarity(text):
 
 
 def build_card_debug_report(card, matched_entry=None, detected_label=''):
-    ocr_result = extract_card_ocr_result(card)
-    rarity = normalize_rarity((matched_entry or {}).get('rarity')) or infer_known_label_rarity(detected_label or ocr_result.get('name', ''))
+    card_kind, card_rarity_hint = infer_card_kind(card)
+    ocr_result = extract_card_ocr_result(card, card_kind=card_kind)
+    rarity = (
+        normalize_rarity((matched_entry or {}).get('rarity'))
+        or card_rarity_hint
+        or normalize_ego_rarity_hint(ocr_result.get('risk'))
+        or infer_known_label_rarity(detected_label or ocr_result.get('name', ''))
+    )
     return {
+        'card_kind': card_kind,
         'ocr': ocr_result,
         'qwen_uptie': extract_card_uptie_result(card, matched_entry, detected_label or ocr_result.get('name', '')),
         'uptie_template_candidates': [
@@ -3135,7 +3652,14 @@ def build_card_debug_report(card, matched_entry=None, detected_label=''):
         'level': extract_level(card),
         'frame_scores_any': collect_frame_level_scores(card),
         'frame_scores_rarity': collect_frame_level_scores(card, rarity=rarity) if rarity else {},
-        'inferred_uptie': infer_uptie(card, matched_entry, detected_label or ocr_result.get('name', '')),
+        'inferred_uptie': infer_uptie(
+            card,
+            matched_entry,
+            detected_label or ocr_result.get('name', ''),
+            card_kind=card_kind,
+            ocr_result=ocr_result,
+            rarity_hint=card_rarity_hint,
+        ),
         'rarity_hint': rarity,
     }
 
