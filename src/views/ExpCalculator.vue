@@ -56,7 +56,7 @@
 
 <script>
 import expdata from '../components/expdata.js'
-import { PROGRESS_STORAGE_KEY } from '../utils/progressSync';
+import { PROGRESS_STORAGE_KEY, PROGRESS_UPDATED_EVENT } from '../utils/progressSync';
 import ticketIImage from '../assets/Identity_Training_Ticket_I.webp';
 import ticketIIImage from '../assets/Identity_Training_Ticket_II.webp';
 import ticketIIIImage from '../assets/Identity_Training_Ticket_III.webp';
@@ -89,6 +89,9 @@ export default {
         syncSavedProgressState() {
             const stored = localStorage.getItem(PROGRESS_STORAGE_KEY);
             this.hasSavedProgress = Boolean(stored);
+        },
+        handleProgressUpdated() {
+            this.syncSavedProgressState();
         },
         goToStatusSetting() {
             this.$router.push({ name: 'StatusSetting' });
@@ -168,6 +171,10 @@ export default {
     },
     mounted() {
         this.syncSavedProgressState();
+        window.addEventListener(PROGRESS_UPDATED_EVENT, this.handleProgressUpdated);
+    },
+    beforeUnmount() {
+        window.removeEventListener(PROGRESS_UPDATED_EVENT, this.handleProgressUpdated);
     }
 }
 </script>

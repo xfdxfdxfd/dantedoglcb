@@ -247,8 +247,8 @@
   "Wingbeat": "振翅",
   "Sanguine Desire": "血欲",
   "Navigation": "导航",
-  "LanguageEnglish": "English",
-  "LanguageTraditionalChinese": "繁体中文",
+  "LanguageEnglish": "Eng",
+  "LanguageTraditionalChinese": "繁體中文",
   "LanguageSimplifiedChinese": "简体中文",
   "OpenMenu": "打开导航",
   "CloseMenu": "关闭导航",
@@ -311,5 +311,8 @@
   "ManualFrameHintIdle": "开启手动框选模式后，在图片上拖曳框住遗漏的卡片，即可加入校对清单。",
   "ManualFrameTutorialTitle": "手动框选教学",
   "ManualFrameHintActive": "按住右键并拖曳从遗漏卡片的一角到对角，放开后就会新增这张卡片。之后再选择正确的人格或 EGO，并填入数值。",
-  "NoReviewCardsForImage": "这张图片目前没有列出任何卡片；如果辨识遗漏，可以手动新增。"
+  "NoReviewCardsForImage": "这张图片目前没有列出任何卡片；如果辨识遗漏，可以手动新增。",
+  "Account": "账号",
+  "Working": "处理中",
+  "GoogleSignInUnavailable": "Google 登录不可用"
 }

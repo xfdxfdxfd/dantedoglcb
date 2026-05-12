@@ -5,7 +5,6 @@
                 <div class="hero-grid items-start">
                     <div class="hero-card">
                         <p class="section-kicker">{{ $t(`UptieThreadPlanner`) }}</p>
-                        <div class="deco-divider mt-4 lg:mx-0 lg:justify-start">{{ $t(`UptieGrandTotals`) }}</div>
                         <h1 class="section-title mt-3">{{ $t(`UptieCalculator`) }}</h1>
                         <p class="section-copy mt-4">{{ $t(`uptieCalculatorToolPage`) }}</p>
                     </div>
@@ -32,9 +31,8 @@
 
                 <div class="mt-8 subtle-panel p-6">
                     <p class="section-kicker">{{ $t(`You need`) }}</p>
-                    <div class="deco-divider mt-4 justify-start">{{ $t(`UptieThreadLedger`) }}</div>
                     <div class="mt-4 muted-panel flex items-center gap-4 p-4">
-                        <span class="deco-diamond shrink-0" aria-hidden="true"><img class="h-6 w-6" :alt="$t('Threads')" src="../../src/assets/icon_twine.webp"></span>
+                        <span class="deco-diamond shrink-0" aria-hidden="true"><img class="h-10 w-10" :alt="$t('Threads')" src="../../src/assets/icon_twine.webp"></span>
                         <div>
                             <p class="text-sm text-stone-400">{{ $t(`Threads`) }}</p>
                             <p class="deco-stat-value text-3xl">{{ CalResult.ThreadAmount }}</p>
@@ -43,7 +41,7 @@
 
                     <div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                         <div v-for="shard in shardCards" :key="shard.key" class="muted-panel flex items-center gap-4 p-4">
-                            <span class="deco-diamond shrink-0" aria-hidden="true"><img class="h-6 w-6" :alt="shard.key" :src="shard.image"></span>
+                            <span class="deco-diamond shrink-0" aria-hidden="true"><img class="h-10 w-10" :alt="shard.key" :src="shard.image"></span>
                             <div>
                                 <p class="text-sm text-stone-400">{{ $t(shard.label) }}</p>
                                 <p class="font-accent text-2xl uppercase tracking-[0.14em] text-white">{{ CalResult[shard.key] }}</p>
@@ -58,7 +56,7 @@
 
 <script>
 import uptiethreadamount from '../components/uptiedata.js';
-import { PROGRESS_STORAGE_KEY } from '../utils/progressSync';
+import { PROGRESS_STORAGE_KEY, PROGRESS_UPDATED_EVENT } from '../utils/progressSync';
 import yiSangShardImage from '../assets/icon_piece-501YiSang.webp';
 import faustShardImage from '../assets/icon_piece-502Faust.webp';
 import donShardImage from '../assets/icon_piece-503DonQuixote.webp';
@@ -113,6 +111,9 @@ export default {
         syncSavedProgressState() {
             const stored = localStorage.getItem(PROGRESS_STORAGE_KEY);
             this.hasSavedProgress = Boolean(stored);
+        },
+        handleProgressUpdated() {
+            this.syncSavedProgressState();
         },
         goToStatusSetting() {
             this.$router.push({ name: 'StatusSetting' });
@@ -176,11 +177,24 @@ export default {
             }
         },
         calculate(mode) {
-            //store the mode in case will use it later
+            // Store the mode in case will use it later
             localStorage.setItem('calmode', mode);
             this.syncSavedProgressState();
-            var restore_data = JSON.parse(localStorage.getItem(PROGRESS_STORAGE_KEY));
-            //set the value according to the mode
+            let restore_data = null;
+            try {
+                restore_data = JSON.parse(localStorage.getItem(PROGRESS_STORAGE_KEY));
+            } catch (e) {
+                restore_data = null;
+            }
+
+            // If no account data, try to use local progress if available
+            if (!restore_data) {
+                // Try to use window.localProgress if present (legacy or fallback)
+                if (window.localProgress) {
+                    restore_data = window.localProgress;
+                }
+            }
+
             if (!restore_data) {
                 alert(this.$t('dataNullAlert'));
                 return;
@@ -191,6 +205,10 @@ export default {
     },
     mounted() {
         this.syncSavedProgressState();
+        window.addEventListener(PROGRESS_UPDATED_EVENT, this.handleProgressUpdated);
+    },
+    beforeUnmount() {
+        window.removeEventListener(PROGRESS_UPDATED_EVENT, this.handleProgressUpdated);
     },
 }
 </script>

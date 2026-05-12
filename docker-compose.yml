@@ -20,6 +20,25 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  frontend:
+    image: node:20-alpine
+    container_name: dantedoglcb-frontend
+    working_dir: /workspace
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://127.0.0.1:8000}
+      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+      CHOKIDAR_USEPOLLING: ${CHOKIDAR_USEPOLLING:-true}
+    volumes:
+      - .:/workspace
+      - dantedoglcb-node-modules:/workspace/node_modules
+    depends_on:
+      backend:
+        condition: service_started
+    restart: unless-stopped
+
   backend:
     build:
       context: ./backend
@@ -37,6 +56,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-dantedoglcb}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dantedoglcb}
       HF_HOME: ${HF_HOME:-/models/huggingface}
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
+      GOOGLE_OAUTH_CLIENT_IDS: ${GOOGLE_OAUTH_CLIENT_IDS:-}
       QWEN_VL_MODEL: ${QWEN_VL_MODEL:-Qwen/Qwen3-VL-2B-Instruct}
       QWEN_VL_DTYPE: ${QWEN_VL_DTYPE:-auto}
       QWEN_VL_MAX_NEW_TOKENS: ${QWEN_VL_MAX_NEW_TOKENS:-192}
@@ -59,3 +80,4 @@ volumes:
   dantedoglcb-postgres-data:
     external: true
   dantedoglcb-huggingface-cache:
+  dantedoglcb-node-modules:

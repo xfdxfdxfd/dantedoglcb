@@ -79,3 +79,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOW_ALL_ORIGINS = True
 FILE_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024
+
+GOOGLE_OAUTH_CLIENT_IDS = [
+    client_id.strip()
+    for client_id in os.environ.get('GOOGLE_OAUTH_CLIENT_IDS', os.environ.get('GOOGLE_OAUTH_CLIENT_ID', '')).split(',')
+    if client_id.strip()
+]

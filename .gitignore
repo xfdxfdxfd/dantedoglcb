@@ -33,3 +33,4 @@ pnpm-debug.log*
 /backend/debug_cards_qwen_choice_live_after_patch_v2
 /backend/debug_cards_qwen_choice_live_after_patch_v3
 /backend/debug_cards_testimg3_before_fix
+.env

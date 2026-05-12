@@ -264,9 +264,9 @@
     "Wingbeat":"振翅",
     "Sanguine Desire":"血欲",
     "Navigation":"導航",
-    "LanguageEnglish":"English",
+    "LanguageEnglish":"Eng",
     "LanguageTraditionalChinese":"繁體中文",
-    "LanguageSimplifiedChinese":"簡體中文",
+    "LanguageSimplifiedChinese":"简体中文",
     "OpenMenu":"開啟導航",
     "CloseMenu":"關閉導航",
     "HomePlannerLabel":"Limbus Company 規劃站",
@@ -328,5 +328,8 @@
     "ManualFrameHintIdle":"開啟手動框選模式後，在圖片上拖曳框住遺漏的卡片，即可加入校對清單。",
     "ManualFrameTutorialTitle":"手動框選教學",
     "ManualFrameHintActive":"按住右鍵並拖曳從遺漏卡片的一角到對角，放開後就會新增這張卡片。之後再選擇正確的人格或 EGO，並填入數值。",
-    "NoReviewCardsForImage":"這張圖片目前沒有列出任何卡片；若辨識遺漏，可以手動新增。"
+    "NoReviewCardsForImage":"這張圖片目前沒有列出任何卡片；若辨識遺漏，可以手動新增。",
+    "Account": "帳號",
+    "Working": "處理中",
+    "GoogleSignInUnavailable": "Google 登入不可用"
 }

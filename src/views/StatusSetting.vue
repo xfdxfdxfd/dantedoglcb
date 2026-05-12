@@ -334,13 +334,18 @@ import { nextTick } from 'vue';
 import createDefaultRosterProgress from '../components/data.js';
 import {
     PROGRESS_STORAGE_KEY,
+    PROGRESS_UPDATED_EVENT,
+    clearLocalProgress,
     cloneProgress,
     hydrateProgress,
     mergeRecognizedUpdates,
+    readLocalProgress,
+    saveAccountProgress,
     sanitizeLevel,
     sanitizeUptie,
     submitRecognitionFeedback,
     syncProgressWithScreenshots,
+    writeLocalProgress,
 } from '../utils/progressSync';
 
 const REVIEW_DB_NAME = 'dante-review-cache';
@@ -438,6 +443,7 @@ export default {
             },
             reviewCardRefs: {},
             reviewPersistenceReady: false,
+            progressSaveTimerId: null,
         };
     },
     computed: {
@@ -555,7 +561,30 @@ export default {
             };
         },
         persistProgress() {
-            localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(this.All_IDs));
+            writeLocalProgress(this.All_IDs);
+            this.scheduleAccountProgressSave();
+        },
+        scheduleAccountProgressSave() {
+            if (this.progressSaveTimerId) {
+                clearTimeout(this.progressSaveTimerId);
+            }
+
+            this.progressSaveTimerId = setTimeout(async () => {
+                try {
+                    await saveAccountProgress(this.All_IDs);
+                } catch (error) {
+                    console.error('Failed to sync account progress', error);
+                } finally {
+                    this.progressSaveTimerId = null;
+                }
+            }, 400);
+        },
+        handleExternalProgressUpdate(event) {
+            if (event?.detail?.source !== 'account') {
+                return;
+            }
+
+            this.All_IDs = hydrateProgress(this.createDefaultProgress(), event.detail.progress || {});
         },
         applyProgress(progress) {
             this.All_IDs = hydrateProgress(this.createDefaultProgress(), progress);
@@ -1173,12 +1202,12 @@ export default {
             }
         },
         restoreProgress() {
-            const storedProgress = JSON.parse(localStorage.getItem(PROGRESS_STORAGE_KEY));
+            const storedProgress = readLocalProgress();
             this.All_IDs = hydrateProgress(this.createDefaultProgress(), storedProgress || {});
-            this.persistProgress();
+            writeLocalProgress(this.All_IDs);
         },
         resetProgress() {
-            localStorage.removeItem(PROGRESS_STORAGE_KEY);
+            clearLocalProgress();
             this.All_IDs = this.createDefaultProgress();
             this.syncState = {
                 loading: false,
@@ -1195,11 +1224,17 @@ export default {
         },
     },
     async mounted() {
+        window.addEventListener(PROGRESS_UPDATED_EVENT, this.handleExternalProgressUpdate);
         this.restoreProgress();
         this.reviewPersistenceReady = true;
         await this.restorePendingReview();
     },
     async beforeUnmount() {
+        window.removeEventListener(PROGRESS_UPDATED_EVENT, this.handleExternalProgressUpdate);
+        if (this.progressSaveTimerId) {
+            clearTimeout(this.progressSaveTimerId);
+            this.progressSaveTimerId = null;
+        }
         await this.persistPendingReview();
         this.clearReviewImages();
     },

@@ -47,3 +47,9 @@
 ## License
 
 - [![DanteDogLicense](https://img.shields.io/badge/DanteDog-License-green)](https://github.com/xfdxfdxfd/dantedoglcb/blob/master/LICENSE)
+
+## Docker Compose
+
+- `docker compose up --build` starts Postgres, Django on `http://127.0.0.1:8000`, and the Vite frontend on `http://127.0.0.1:5173`.
+- Set `GOOGLE_OAUTH_CLIENT_ID` and `VITE_GOOGLE_CLIENT_ID` in `.env` to the same Google Web client ID.
+- Add `http://127.0.0.1:5173` and `http://localhost:5173` to your Google OAuth Authorized JavaScript origins.
