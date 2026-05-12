@@ -32,11 +32,6 @@ FRAME_UPTIE_MATCH_THRESHOLD = 0.58
 FRAME_UPTIE_MATCH_THRESHOLD_WITH_RARITY = 0.42
 FRAME_UPTIE_MIN_MARGIN = 0.035
 CARD_REGION_EDGE_MARGIN_RATIO = 0.05
-CARD_REGION_PADDING_X_RATIO = 0.0
-CARD_REGION_PADDING_TOP_RATIO = 0.04
-CARD_REGION_PADDING_BOTTOM_RATIO = 0.05
-CARD_REGION_MIN_ASPECT_RATIO = 0.7
-CARD_REGION_RIGHT_EXPANSION_BIAS = 0.3
 FEEDBACK_SAMPLE_MIN_SCORE = 0.72
 FEEDBACK_SAMPLE_MIN_MARGIN = 0.035
 FEEDBACK_TEXT_PROFILE_LIMIT = 48
@@ -55,15 +50,12 @@ MANIFEST_TOKEN_STOPWORDS = {
     'hong', 'lu', 'don', 'quixote', 'meursault', 'faust', 'ryoshu', 'heathcliff',
     'ishmael', 'rodion', 'sinclair', 'outis', 'gregor',
 }
-LOW_SIGNAL_OCR_TEXTS = {
-    'main', 'name', 'text', 'card', 'level', 'sinner', 'icon', 'alt',
-    'top', 'bottom', 'left', 'right', 'topright', 'bottomleft',
-}
 DEFAULT_QWEN_VL_MODEL = 'Qwen/Qwen3-VL-2B-Instruct'
 QWEN_CARD_OCR_PROMPT = (
     'Inspect the labeled panels of one game identity card. '
-    'The panel labeled NAME MAIN is a raw zoom of the lower identity title area and may also show the level digits. '
-    'The panel labeled NAME ALT is a tighter contrast-enhanced zoom of the same lower identity title area. '
+    'The panel labeled CARD is the full card. '
+    'The panel labeled NAME MAIN is a raw zoom of the identity title area. '
+    'The panel labeled NAME ALT is a contrast-enhanced zoom of the same identity title area. '
     'The panel labeled SINNER ICON is a zoom of the top-right sinner icon. '
     'The panel labeled LEVEL is a zoom of the level number. '
     'Return exactly four lines in this exact format with no markdown, no prose, and no extra keys: '
@@ -79,8 +71,7 @@ QWEN_CARD_OCR_PROMPT = (
     '5) If unreadable, leave the value empty after the colon. '
     '6) Do not invent words or numbers that are not visible in the image. '
     '7) Many titles share words like Assoc., South, and Section. Preserve the first distinctive faction or title word exactly as shown. '
-    '8) Do not repeat the identity title or the sinner name twice. '
-    '9) Ignore partial text clipped near panel edges or near the top border; prefer the centered lower title text in NAME MAIN and NAME ALT.'
+    '8) Do not repeat the identity title or the sinner name twice.'
 )
 QWEN_CARD_UPTIE_PROMPT = (
     'Inspect the labeled panels of one game identity card frame. '
@@ -98,7 +89,7 @@ QWEN_CARD_UPTIE_PROMPT = (
 )
 QWEN_CARD_NAME_CHOICE_PROMPT = (
     'Inspect the labeled panels of one game identity card. '
-    'The first panels show the lower title area, a tighter enhanced title crop, the sinner icon, and the level area. '
+    'The first panels show the real card, title area, sinner icon, and level area. '
     'The later panels labeled C1, C2, C3, and C4 are candidate identity names. '
     'Choose the candidate whose full identity name best matches the visible card title and sinner icon. '
     'Return exactly one line in this exact format with no markdown, no prose, and no extra keys: '
@@ -108,8 +99,7 @@ QWEN_CARD_NAME_CHOICE_PROMPT = (
     '2) Pay special attention to the first distinctive word in the title because many candidates share suffixes like Assoc., South, and Section. '
     '3) Use the sinner icon only as a tie-breaker. '
     '4) Ignore uptie pips, frame decorations, and level numbers except when needed to reject a bad option. '
-    '5) Ignore any clipped border text near the top edge of the crop. '
-    '6) If uncertain, still choose the closest of the listed candidates.'
+    '5) If uncertain, still choose the closest of the listed candidates.'
 )
 RARITY_TEMPLATE_REGEX = re.compile(r'_(0{1,3})$', re.IGNORECASE)
 QWEN_TAGGED_FIELD_REGEX = re.compile(
@@ -119,7 +109,6 @@ QWEN_TAGGED_FIELD_REGEX = re.compile(
 QWEN_UPTIE_CHOICE_REGEX = re.compile(r'choice\s*[:=-]\s*(c[12])', re.IGNORECASE)
 QWEN_NAME_CHOICE_REGEX = re.compile(r'choice\s*[:=-]\s*(c[1-4])', re.IGNORECASE)
 QWEN_PANEL_WIDTH = 360
-QWEN_OCR_PANEL_WIDTH = 300
 QWEN_PANEL_LABEL_HEIGHT = 34
 QWEN_PANEL_GAP = 12
 QWEN_NAME_MAIN_REGION = (0.08, 0.56, 0.94, 0.88)
@@ -213,7 +202,7 @@ SINNER_ICON_ALIASES = {
     'YiSang': ('YiSang',),
 }
 OCR_FEEDBACK_LOCK = Lock()
-DEFAULT_QWEN_OCR_MAX_NEW_TOKENS = 48
+DEFAULT_QWEN_OCR_MAX_NEW_TOKENS = 80
 DEFAULT_QWEN_CHOICE_MAX_NEW_TOKENS = 12
 
 
@@ -230,24 +219,13 @@ def canonical_feedback_entry_key(sinner_key, category, entry_key):
     return f'{sinner_key}::{category}::{entry_key}'
 
 
-def is_low_signal_ocr_text(text):
-    normalized = sanitize_name(cleanup_identity_name(text))
-    if not normalized:
-        return True
-
-    return normalized in LOW_SIGNAL_OCR_TEXTS
-
-
 def normalize_feedback_alias(text):
     cleaned = cleanup_identity_name(text)
-    if is_low_signal_ocr_text(cleaned):
-        return ''
     if cleaned:
         return cleaned
 
     normalized = normalize_ocr_text(text)
-    stripped = strip_level_prefix(normalized)
-    return '' if is_low_signal_ocr_text(stripped) else stripped
+    return strip_level_prefix(normalized)
 
 
 def trim_feedback_text(text):
@@ -280,64 +258,6 @@ def normalize_feedback_text_profile(profile):
         'ocr_sinner_hint': ocr_sinner_hint,
         'saved_at': int(profile.get('saved_at') or 0),
     }
-
-
-def detect_sinner_labels_in_text(text):
-    normalized_text = sanitize_name(text or '')
-    if not normalized_text:
-        return set()
-
-    detected = set()
-    for label, aliases in SINNER_ICON_ALIASES.items():
-        candidates = {label, *aliases}
-        for candidate in candidates:
-            normalized_candidate = sanitize_name(candidate)
-            if not normalized_candidate:
-                continue
-            if normalized_text == normalized_candidate or normalized_candidate in normalized_text:
-                detected.add(label)
-                break
-
-    return detected
-
-
-def feedback_text_conflicts_with_entry(text, sinner_key):
-    labels = detect_sinner_labels_in_text(text)
-    if not labels:
-        return False
-
-    return not match_manifest_sinner_label(sinner_key, labels)
-
-
-def feedback_record_conflicts_with_entry(record, sinner_key):
-    if not sinner_key or not isinstance(record, dict):
-        return False
-
-    sinner_hint = normalize_qwen_sinner_hint(record.get('ocr_sinner_hint', ''))
-    if sinner_hint and not match_manifest_sinner_label(sinner_key, {sinner_hint}):
-        return True
-
-    for key in ('observed_name', 'raw_ocr_name', 'ocr_support_text', 'corrected_text'):
-        if feedback_text_conflicts_with_entry(record.get(key, ''), sinner_key):
-            return True
-
-    return False
-
-
-def feedback_example_conflicts_with_entry(example, sinner_key):
-    if not sinner_key or not isinstance(example, dict):
-        return False
-
-    input_payload = example.get('input') if isinstance(example.get('input'), dict) else {}
-    target_payload = example.get('target') if isinstance(example.get('target'), dict) else {}
-    combined_record = {
-        'observed_name': input_payload.get('observed_name', ''),
-        'raw_ocr_name': input_payload.get('raw_ocr_name', ''),
-        'ocr_support_text': input_payload.get('ocr_support_text', ''),
-        'ocr_sinner_hint': input_payload.get('ocr_sinner_hint', ''),
-        'corrected_text': target_payload.get('visible_name', ''),
-    }
-    return feedback_record_conflicts_with_entry(combined_record, sinner_key)
 
 
 def feedback_text_profile_key(profile):
@@ -398,20 +318,9 @@ def normalize_manifest_entry(entry, feedback_store=None):
     feedback_entry = feedback.get(canonical_feedback_entry_key(entry.get('sinnerKey'), entry.get('category'), entry.get('entryKey')), {})
     aliases = []
     for alias in feedback_entry.get('aliases', []):
-        if feedback_text_conflicts_with_entry(alias, entry.get('sinnerKey')):
-            continue
         normalized_alias = normalize_feedback_alias(alias)
         if normalized_alias and normalized_alias not in aliases:
             aliases.append(normalized_alias)
-
-    filtered_samples = tuple(
-        sample for sample in (feedback_entry.get('samples', []) or [])
-        if not feedback_record_conflicts_with_entry(sample, entry.get('sinnerKey'))
-    )
-    filtered_text_profiles = tuple(
-        profile for profile in (feedback_entry.get('text_profiles', []) or [])
-        if not feedback_record_conflicts_with_entry(profile, entry.get('sinnerKey'))
-    )
 
     return {
         **entry,
@@ -419,8 +328,8 @@ def normalize_manifest_entry(entry, feedback_store=None):
         'name_tokens': tokenize_name(entry.get('name', '')),
         'match_aliases': tuple(aliases),
         'match_alias_tokens': tuple(tokenize_name(alias) for alias in aliases),
-        'feedback_samples': filtered_samples,
-        'feedback_text_profiles': filtered_text_profiles,
+        'feedback_samples': tuple(feedback_entry.get('samples', [])),
+        'feedback_text_profiles': tuple(feedback_entry.get('text_profiles', [])),
     }
 
 
@@ -605,18 +514,6 @@ def store_recognition_feedback(feedback_items):
             category = entry.get('category')
             entry_key = entry.get('entryKey')
             if not sinner_key or not category or not entry_key:
-                continue
-
-            if feedback_record_conflicts_with_entry(
-                {
-                    'observed_name': item.get('observed_name', ''),
-                    'raw_ocr_name': item.get('raw_ocr_name', ''),
-                    'ocr_support_text': item.get('ocr_support_text', ''),
-                    'ocr_sinner_hint': item.get('ocr_sinner_hint', ''),
-                    'corrected_text': item.get('corrected_text', ''),
-                },
-                sinner_key,
-            ):
                 continue
 
             aliases = []
@@ -878,65 +775,24 @@ def decode_image(image_bytes):
 
 
 def extract_card_regions(image):
-    regions = []
     frame_regions = extract_frame_validated_regions(image)
 
     if len(frame_regions) >= 6:
-        regions = rescue_missing_grid_regions(image, frame_regions)
-        return finalize_card_regions(regions, image.shape[:2])
+        return rescue_missing_grid_regions(image, frame_regions)
 
     template_regions = extract_card_regions_from_templates(image)
     template_regions = expand_template_anchor_regions(template_regions, image)
 
     if len(frame_regions) >= max(4, len(template_regions)):
-        regions = rescue_missing_grid_regions(image, frame_regions)
-    elif template_regions:
-        regions = rescue_missing_grid_regions(image, template_regions)
-    elif frame_regions:
-        regions = rescue_missing_grid_regions(image, frame_regions)
-    else:
-        regions = rescue_missing_grid_regions(image, fallback_grid_regions(image))
+        return rescue_missing_grid_regions(image, frame_regions)
 
-    return finalize_card_regions(regions, image.shape[:2])
+    if template_regions:
+        return rescue_missing_grid_regions(image, template_regions)
 
+    if frame_regions:
+        return rescue_missing_grid_regions(image, frame_regions)
 
-def finalize_card_regions(regions, image_shape):
-    if not regions:
-        return []
-
-    return [
-        pad_card_region(region, image_shape)
-        for region in sorted(regions, key=lambda item: (item[1], item[0]))
-    ]
-
-
-def pad_card_region(region, image_shape):
-    x, y, width, height = region
-    image_height, image_width = image_shape
-    pad_x = max(4, int(round(width * CARD_REGION_PADDING_X_RATIO)))
-    pad_top = max(4, int(round(height * CARD_REGION_PADDING_TOP_RATIO)))
-    pad_bottom = max(4, int(round(height * CARD_REGION_PADDING_BOTTOM_RATIO)))
-
-    left = max(0, x - pad_x)
-    top = max(0, y - pad_top)
-    right = min(image_width, x + width + pad_x)
-    bottom = min(image_height, y + height + pad_bottom)
-
-    padded_width = right - left
-    padded_height = bottom - top
-    target_width = max(padded_width, int(round(padded_height * CARD_REGION_MIN_ASPECT_RATIO)))
-    extra_width = max(0, target_width - padded_width)
-    if extra_width:
-        extra_left = int(round(extra_width * (1.0 - CARD_REGION_RIGHT_EXPANSION_BIAS)))
-        extra_right = extra_width - extra_left
-        left = max(0, left - extra_left)
-        right = min(image_width, right + extra_right)
-
-        remaining_width = target_width - (right - left)
-        if remaining_width > 0:
-            left = max(0, left - remaining_width)
-
-    return left, top, max(1, right - left), max(1, bottom - top)
+    return rescue_missing_grid_regions(image, fallback_grid_regions(image))
 
 
 def extract_frame_validated_regions(image):
@@ -1494,7 +1350,6 @@ def extract_name_candidates(card, ocr_result=None):
         NAME_OCR_REGIONS,
         whitelist="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-.'/ :",
         ocr_result=ocr_result,
-        include_support_text=False,
     ):
         score = score_identity_text(text)
         ranked_candidates.append((score, text))
@@ -1511,22 +1366,14 @@ def extract_name_candidates(card, ocr_result=None):
 
 def build_name_candidates_from_ocr_result(ocr_result):
     candidates = []
-    for key in ('name', 'tagged_name'):
+    for key in ('name', 'tagged_name', 'text'):
         value = normalize_ocr_text(str((ocr_result or {}).get(key, '') or ''))
         if not value:
             continue
         cleaned = cleanup_identity_name(value)
-        if is_low_signal_ocr_text(cleaned):
-            continue
         if cleaned:
             candidates.append(cleaned)
-            if cleaned != value:
-                candidates.append(value)
-
-    support_text = cleanup_identity_name(str((ocr_result or {}).get('text', '') or ''))
-    if not is_low_signal_ocr_text(support_text) and support_text and len(tokenize_name(support_text)) >= 2 and score_identity_text(support_text) >= 12.0:
-        candidates.append(support_text)
-
+        candidates.append(value)
     return [candidate for candidate in candidates if candidate]
 
 
@@ -2181,7 +2028,7 @@ def load_identity_icon_templates():
     return tuple(templates)
 
 
-def collect_card_ocr_candidates(card, normalized_regions, whitelist='', ocr_result=None, include_support_text=True):
+def collect_card_ocr_candidates(card, normalized_regions, whitelist='', ocr_result=None):
     candidates = []
     seen = set()
     if ocr_result is None:
@@ -2196,17 +2043,11 @@ def collect_card_ocr_candidates(card, normalized_regions, whitelist='', ocr_resu
         [
             ocr_result.get('name', ''),
             ocr_result.get('tagged_name', ''),
+            strip_level_prefix(ocr_result.get('text', '')),
+            ocr_result.get('text', ''),
+            ocr_result.get('raw_output', ''),
         ]
     )
-
-    if include_support_text:
-        raw_candidates.extend(
-            [
-                strip_level_prefix(ocr_result.get('text', '')),
-                ocr_result.get('text', ''),
-                ocr_result.get('raw_output', ''),
-            ]
-        )
 
     for text in raw_candidates:
         candidate = filter_ocr_text(text, whitelist)
@@ -2227,8 +2068,7 @@ def filter_ocr_text(text, whitelist=''):
 
     allowed_characters = set(whitelist)
     filtered = ''.join(character for character in normalized if character in allowed_characters or character.isspace())
-    filtered = ' '.join(filtered.split())
-    return '' if is_low_signal_ocr_text(filtered) else filtered
+    return ' '.join(filtered.split())
 
 
 def extract_card_ocr_result(card):
@@ -2241,10 +2081,11 @@ def build_qwen_card_ocr_image(card):
     name_main = crop_relative_region(card, *QWEN_NAME_MAIN_REGION)
     name_alt = enhance_identity_text_region(crop_relative_region(card, *QWEN_NAME_FOCUS_REGION))
     panels = [
-        build_qwen_labeled_panel('NAME MAIN', name_main, panel_width=QWEN_OCR_PANEL_WIDTH),
-        build_qwen_labeled_panel('NAME ALT', name_alt, panel_width=QWEN_OCR_PANEL_WIDTH),
-        build_qwen_labeled_panel('SINNER ICON', crop_relative_region(card, *QWEN_SINNER_ICON_REGION), panel_width=QWEN_OCR_PANEL_WIDTH),
-        build_qwen_labeled_panel('LEVEL', crop_relative_region(card, *QWEN_LEVEL_REGION), panel_width=QWEN_OCR_PANEL_WIDTH),
+        build_qwen_labeled_panel('CARD', card),
+        build_qwen_labeled_panel('NAME MAIN', name_main),
+        build_qwen_labeled_panel('NAME ALT', name_alt),
+        build_qwen_labeled_panel('SINNER ICON', crop_relative_region(card, *QWEN_SINNER_ICON_REGION)),
+        build_qwen_labeled_panel('LEVEL', crop_relative_region(card, *QWEN_LEVEL_REGION)),
     ]
 
     return stack_qwen_panels(panels)
@@ -2254,20 +2095,15 @@ def build_qwen_card_name_choice_image(card, candidates):
     name_main = crop_relative_region(card, *QWEN_NAME_MAIN_REGION)
     name_alt = enhance_identity_text_region(crop_relative_region(card, *QWEN_NAME_FOCUS_REGION))
     panels = [
-        build_qwen_labeled_panel('NAME MAIN', name_main, panel_width=QWEN_OCR_PANEL_WIDTH),
-        build_qwen_labeled_panel('NAME ALT', name_alt, panel_width=QWEN_OCR_PANEL_WIDTH),
-        build_qwen_labeled_panel('SINNER ICON', crop_relative_region(card, *QWEN_SINNER_ICON_REGION), panel_width=QWEN_OCR_PANEL_WIDTH),
-        build_qwen_labeled_panel('LEVEL', crop_relative_region(card, *QWEN_LEVEL_REGION), panel_width=QWEN_OCR_PANEL_WIDTH),
+        build_qwen_labeled_panel('CARD', card),
+        build_qwen_labeled_panel('NAME MAIN', name_main),
+        build_qwen_labeled_panel('NAME ALT', name_alt),
+        build_qwen_labeled_panel('SINNER ICON', crop_relative_region(card, *QWEN_SINNER_ICON_REGION)),
+        build_qwen_labeled_panel('LEVEL', crop_relative_region(card, *QWEN_LEVEL_REGION)),
     ]
 
     for index, entry in enumerate(candidates, start=1):
-        panels.append(
-            build_qwen_labeled_panel(
-                f'C{index}',
-                build_qwen_text_block(entry['entryKey'], panel_width=QWEN_OCR_PANEL_WIDTH),
-                panel_width=QWEN_OCR_PANEL_WIDTH,
-            )
-        )
+        panels.append(build_qwen_labeled_panel(f'C{index}', build_qwen_text_block(entry['entryKey'])))
 
     return stack_qwen_panels(panels)
 
@@ -2357,25 +2193,25 @@ def crop_relative_region(card, left, top, right, bottom):
     return card[y1:y2, x1:x2]
 
 
-def build_qwen_labeled_panel(label, image, panel_width=QWEN_PANEL_WIDTH):
+def build_qwen_labeled_panel(label, image):
     if image is None or not image.size:
-        image = np.full((32, panel_width, 3), 255, dtype=np.uint8)
+        image = np.full((32, QWEN_PANEL_WIDTH, 3), 255, dtype=np.uint8)
 
-    panel_height, image_width = image.shape[:2]
-    scale = panel_width / float(image_width)
+    panel_height, panel_width = image.shape[:2]
+    scale = QWEN_PANEL_WIDTH / float(panel_width)
     target_height = max(32, int(round(panel_height * scale)))
-    resized = cv2.resize(image, (panel_width, target_height), interpolation=cv2.INTER_CUBIC)
+    resized = cv2.resize(image, (QWEN_PANEL_WIDTH, target_height), interpolation=cv2.INTER_CUBIC)
 
-    panel = np.full((target_height + QWEN_PANEL_LABEL_HEIGHT, panel_width, 3), 255, dtype=np.uint8)
+    panel = np.full((target_height + QWEN_PANEL_LABEL_HEIGHT, QWEN_PANEL_WIDTH, 3), 255, dtype=np.uint8)
     panel[:QWEN_PANEL_LABEL_HEIGHT] = 235
     panel[QWEN_PANEL_LABEL_HEIGHT:] = resized
     cv2.putText(panel, label, (10, 23), cv2.FONT_HERSHEY_SIMPLEX, 0.62, (32, 32, 32), 2, cv2.LINE_AA)
     return panel
 
 
-def build_qwen_text_block(text, panel_width=QWEN_PANEL_WIDTH):
+def build_qwen_text_block(text):
     normalized = normalize_ocr_text(text or '') or ' '
-    canvas = np.full((120, panel_width, 3), 255, dtype=np.uint8)
+    canvas = np.full((120, QWEN_PANEL_WIDTH, 3), 255, dtype=np.uint8)
     words = normalized.split()
     lines = []
     current_line = ''
@@ -2383,7 +2219,7 @@ def build_qwen_text_block(text, panel_width=QWEN_PANEL_WIDTH):
     for word in words:
         proposed = f'{current_line} {word}'.strip()
         text_width = cv2.getTextSize(proposed, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)[0][0]
-        if current_line and text_width > (panel_width - 24):
+        if current_line and text_width > (QWEN_PANEL_WIDTH - 24):
             lines.append(current_line)
             current_line = word
         else:
@@ -2971,14 +2807,12 @@ def match_manifest_entry(raw_name, manifest, support_text=''):
 def build_ocr_support_text(ocr_result):
     support_chunks = []
 
-    tagged_name = cleanup_identity_name((ocr_result or {}).get('tagged_name', ''))
-    if tagged_name:
-        support_chunks.append(tagged_name)
-
-    support_text = cleanup_identity_name((ocr_result or {}).get('text', ''))
-    if support_text and len(tokenize_name(support_text)) >= 2 and score_identity_text(support_text) >= 12.0:
-        if support_text not in support_chunks:
-            support_chunks.append(support_text)
+    for key in ('tagged_name', 'text', 'raw_output'):
+        value = cleanup_identity_name((ocr_result or {}).get(key, ''))
+        if not value:
+            continue
+        if value not in support_chunks:
+            support_chunks.append(value)
 
     return ' '.join(support_chunks[:2])
 
