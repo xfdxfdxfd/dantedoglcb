@@ -1,0 +1,291 @@
+{
+  "YiSangIDs::IDs::Liu Assoc. South Section 3 Yi Sang": {
+    "aliases": [
+      "Effloresced E.G.O::Spicebush YiSang"
+    ],
+    "raw_aliases": [
+      "Effloresced E.G.O::Spicebush YiSang",
+      "Liu Assoc. South Section 3 Yi Sang"
+    ],
+    "samples": [
+      {
+        "image_path": "ocr_feedback_samples/YiSangIDs-IDs-Liu-Assoc.-South-Section-3-Yi-Sang/72c518341c388b21f879a9a6.png",
+        "corrected_text": "Effloresced E.G.O::Spicebush YiSang",
+        "observed_name": "Effloresced E.G.O::Spicebush YiSang",
+        "raw_ocr_name": "Liu Assoc. South Section 3 Yi Sang",
+        "ocr_support_text": "h",
+        "ocr_sinner_hint": "Spicebus",
+        "recognition_confidence": 0.7395,
+        "source_image": "testimg3.png",
+        "bounds": {
+          "x": 30,
+          "y": 385,
+          "width": 256,
+          "height": 373
+        },
+        "manual": false,
+        "saved_at": 1778513280
+      }
+    ],
+    "text_profiles": [
+      {
+        "observed_name": "Effloresced E.G.O::Spicebush YiSang",
+        "raw_ocr_name": "Liu Assoc. South Section 3 Yi Sang",
+        "ocr_support_text": "h",
+        "ocr_sinner_hint": "",
+        "saved_at": 1778513280
+      }
+    ],
+    "examples": [
+      {
+        "image_path": "ocr_feedback_samples/YiSangIDs-IDs-Liu-Assoc.-South-Section-3-Yi-Sang/72c518341c388b21f879a9a6.png",
+        "input": {
+          "observed_name": "Effloresced E.G.O::Spicebush YiSang",
+          "raw_ocr_name": "Liu Assoc. South Section 3 Yi Sang",
+          "ocr_support_text": "h",
+          "ocr_sinner_hint": "Spicebus",
+          "recognition_confidence": 0.7395,
+          "source_image": "testimg3.png",
+          "manual": false
+        },
+        "target": {
+          "sinner_key": "YiSangIDs",
+          "category": "IDs",
+          "entry_key": "Liu Assoc. South Section 3 Yi Sang",
+          "canonical_name": "Liu Assoc. South Section 3 Yi Sang",
+          "visible_name": "Effloresced E.G.O::Spicebush YiSang"
+        },
+        "saved_at": 1778513280
+      }
+    ]
+  },
+  "YiSangIDs::IDs::Seven Assoc. South Section 6 YiSang": {
+    "aliases": [
+      "The Ring Pointillist Student Yi Sang",
+      "Liu Assoc. South Section 3 Yi Sang"
+    ],
+    "raw_aliases": [
+      "The Ring Pointillist Student Yi Sang",
+      "Seven Assoc. South Section 6 YiSang",
+      "Liu Assoc. South Section 3 Yi Sang"
+    ],
+    "samples": [
+      {
+        "image_path": "ocr_feedback_samples/YiSangIDs-IDs-Seven-Assoc.-South-Section-6-YiSang/85bc07d83b0f31116f7cb641.png",
+        "corrected_text": "The Ring Pointillist Student Yi Sang",
+        "observed_name": "The Ring Pointillist Student Yi Sang",
+        "raw_ocr_name": "Seven Assoc. South Section 6 YiSang",
+        "ocr_support_text": "NAME: The Rin Pointillis Student SINNER: The Rin Pointillis Student LEVEL: 6 TEXT:",
+        "ocr_sinner_hint": "The Rin Pointillis Student",
+        "recognition_confidence": 0.7249,
+        "source_image": "testimg3.png",
+        "bounds": {
+          "x": 1103,
+          "y": 73,
+          "width": 207,
+          "height": 294
+        },
+        "manual": false,
+        "saved_at": 1778513312
+      },
+      {
+        "image_path": "ocr_feedback_samples/YiSangIDs-IDs-Seven-Assoc.-South-Section-6-YiSang/17452f1bc6681203828ac0d2.png",
+        "corrected_text": "Liu Assoc. South Section 3 Yi Sang",
+        "observed_name": "Liu Assoc. South Section 3 Yi Sang",
+        "raw_ocr_name": "Seven Assoc. South Section 6 YiSang",
+        "ocr_support_text": "South Section",
+        "ocr_sinner_hint": "Liu Associate",
+        "recognition_confidence": 0.7219,
+        "source_image": "testimg3.png",
+        "bounds": {
+          "x": 546,
+          "y": 25,
+          "width": 227,
+          "height": 335
+        },
+        "manual": false,
+        "saved_at": 1778513411
+      }
+    ],
+    "text_profiles": [
+      {
+        "observed_name": "The Ring Pointillist Student Yi Sang",
+        "raw_ocr_name": "Seven Assoc. South Section 6 YiSang",
+        "ocr_support_text": "The Rin Pointillis Student",
+        "ocr_sinner_hint": "",
+        "saved_at": 1778513312
+      },
+      {
+        "observed_name": "Liu Assoc. South Section 3 Yi Sang",
+        "raw_ocr_name": "Seven Assoc. South Section 6 YiSang",
+        "ocr_support_text": "South Section",
+        "ocr_sinner_hint": "",
+        "saved_at": 1778513411
+      }
+    ],
+    "examples": [
+      {
+        "image_path": "ocr_feedback_samples/YiSangIDs-IDs-Seven-Assoc.-South-Section-6-YiSang/85bc07d83b0f31116f7cb641.png",
+        "input": {
+          "observed_name": "The Ring Pointillist Student Yi Sang",
+          "raw_ocr_name": "Seven Assoc. South Section 6 YiSang",
+          "ocr_support_text": "NAME: The Rin Pointillis Student SINNER: The Rin Pointillis Student LEVEL: 6 TEXT:",
+          "ocr_sinner_hint": "The Rin Pointillis Student",
+          "recognition_confidence": 0.7249,
+          "source_image": "testimg3.png",
+          "manual": false
+        },
+        "target": {
+          "sinner_key": "YiSangIDs",
+          "category": "IDs",
+          "entry_key": "Seven Assoc. South Section 6 YiSang",
+          "canonical_name": "Seven Assoc. South Section 6 YiSang",
+          "visible_name": "The Ring Pointillist Student Yi Sang"
+        },
+        "saved_at": 1778513312
+      },
+      {
+        "image_path": "ocr_feedback_samples/YiSangIDs-IDs-Seven-Assoc.-South-Section-6-YiSang/17452f1bc6681203828ac0d2.png",
+        "input": {
+          "observed_name": "Liu Assoc. South Section 3 Yi Sang",
+          "raw_ocr_name": "Seven Assoc. South Section 6 YiSang",
+          "ocr_support_text": "South Section",
+          "ocr_sinner_hint": "Liu Associate",
+          "recognition_confidence": 0.7219,
+          "source_image": "testimg3.png",
+          "manual": false
+        },
+        "target": {
+          "sinner_key": "YiSangIDs",
+          "category": "IDs",
+          "entry_key": "Seven Assoc. South Section 6 YiSang",
+          "canonical_name": "Seven Assoc. South Section 6 YiSang",
+          "visible_name": "Liu Assoc. South Section 3 Yi Sang"
+        },
+        "saved_at": 1778513411
+      }
+    ]
+  },
+  "FaustIDs::IDs::Lobotomy Corp Remnant Faust": {
+    "aliases": [
+      "Lobotomy E.G.O::Solemn Lament Yi Sang",
+      "Lobotomy"
+    ],
+    "raw_aliases": [
+      "Lobotomy E.G.O::Solemn Lament Yi Sang",
+      "Lobotomy"
+    ],
+    "samples": [
+      {
+        "image_path": "ocr_feedback_samples/FaustIDs-IDs-Lobotomy-Corp-Remnant-Faust/202b34c293c37c30b64bbdc5.png",
+        "corrected_text": "Lobotomy E.G.O::Solemn Lament Yi Sang",
+        "observed_name": "Lobotomy E.G.O::Solemn Lament Yi Sang",
+        "raw_ocr_name": "Lobotomy",
+        "ocr_support_text": "Solemn Lament",
+        "ocr_sinner_hint": "E.G.O.:",
+        "recognition_confidence": 0.7568,
+        "source_image": "testimg3.png",
+        "bounds": {
+          "x": 842,
+          "y": 12,
+          "width": 227,
+          "height": 335
+        },
+        "manual": false,
+        "saved_at": 1778513337
+      }
+    ],
+    "text_profiles": [
+      {
+        "observed_name": "Lobotomy E.G.O::Solemn Lament Yi Sang",
+        "raw_ocr_name": "Lobotomy",
+        "ocr_support_text": "Solemn Lament",
+        "ocr_sinner_hint": "Gregor",
+        "saved_at": 1778513337
+      }
+    ],
+    "examples": [
+      {
+        "image_path": "ocr_feedback_samples/FaustIDs-IDs-Lobotomy-Corp-Remnant-Faust/202b34c293c37c30b64bbdc5.png",
+        "input": {
+          "observed_name": "Lobotomy E.G.O::Solemn Lament Yi Sang",
+          "raw_ocr_name": "Lobotomy",
+          "ocr_support_text": "Solemn Lament",
+          "ocr_sinner_hint": "E.G.O.:",
+          "recognition_confidence": 0.7568,
+          "source_image": "testimg3.png",
+          "manual": false
+        },
+        "target": {
+          "sinner_key": "FaustIDs",
+          "category": "IDs",
+          "entry_key": "Lobotomy Corp Remnant Faust",
+          "canonical_name": "Lobotomy Corp Remnant Faust",
+          "visible_name": "Lobotomy E.G.O::Solemn Lament Yi Sang"
+        },
+        "saved_at": 1778513337
+      }
+    ]
+  },
+  "GregorIDs::EGOs::Legerdemain": {
+    "aliases": [
+      "LCE E.G.O::Lantern Yi Sang",
+      "MAIN"
+    ],
+    "raw_aliases": [
+      "LCE E.G.O::Lantern Yi Sang",
+      "MAIN"
+    ],
+    "samples": [
+      {
+        "image_path": "ocr_feedback_samples/GregorIDs-EGOs-Legerdemain/c1396b8d28f8e20be1365981.png",
+        "corrected_text": "LCE E.G.O::Lantern Yi Sang",
+        "observed_name": "LCE E.G.O::Lantern Yi Sang",
+        "raw_ocr_name": "MAIN",
+        "ocr_support_text": "EGO:",
+        "ocr_sinner_hint": "SINNER",
+        "recognition_confidence": 0.528,
+        "source_image": "testimg3.png",
+        "bounds": {
+          "x": 0,
+          "y": 702,
+          "width": 351,
+          "height": 430
+        },
+        "manual": false,
+        "saved_at": 1778543489
+      }
+    ],
+    "text_profiles": [
+      {
+        "observed_name": "LCE E.G.O::Lantern Yi Sang",
+        "raw_ocr_name": "MAIN",
+        "ocr_support_text": "EGO",
+        "ocr_sinner_hint": "",
+        "saved_at": 1778543489
+      }
+    ],
+    "examples": [
+      {
+        "image_path": "ocr_feedback_samples/GregorIDs-EGOs-Legerdemain/c1396b8d28f8e20be1365981.png",
+        "input": {
+          "observed_name": "LCE E.G.O::Lantern Yi Sang",
+          "raw_ocr_name": "MAIN",
+          "ocr_support_text": "EGO:",
+          "ocr_sinner_hint": "SINNER",
+          "recognition_confidence": 0.528,
+          "source_image": "testimg3.png",
+          "manual": false
+        },
+        "target": {
+          "sinner_key": "GregorIDs",
+          "category": "EGOs",
+          "entry_key": "Legerdemain",
+          "canonical_name": "Legerdemain",
+          "visible_name": "LCE E.G.O::Lantern Yi Sang"
+        },
+        "saved_at": 1778543489
+      }
+    ]
+  }
+}
