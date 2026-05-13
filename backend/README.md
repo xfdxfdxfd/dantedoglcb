@@ -6,16 +6,16 @@ This backend provides screenshot upload and roster recognition for the Vue front
 
 - Accepts one or more roster screenshots through `POST /api/sync/recognize/`
 - Detects identity cards inside each screenshot
-- Uses a local `Qwen3-VL` model to read the identity name and level
+- Uses Google `Gemini 3 Flash` to read the identity name and level
 - Uses frame-template matching plus border-pattern heuristics to estimate uptie
 - Merges the detected values into the same roster shape used by the frontend local storage
 
 ## Requirements
 
 - Python 3.11+
-- Enough local CPU or GPU memory to run `Qwen3-VL`
+- A valid Gemini API key
 - PostgreSQL reachable from Django if you run the backend outside Docker
-- Network access the first time the model weights are downloaded from Hugging Face
+- Network access from the backend to the Gemini API
 
 ## Install
 
@@ -29,17 +29,17 @@ set POSTGRES_PORT=5432
 set POSTGRES_DB=dantedoglcb
 set POSTGRES_USER=dantedoglcb
 set POSTGRES_PASSWORD=change-me
-set QWEN_VL_MODEL=Qwen/Qwen3-VL-2B-Instruct
-set QWEN_VL_DTYPE=auto
+set GEMINI_API_KEY=your-api-key
+set GEMINI_MODEL=gemini-3-flash-preview
 python manage.py migrate
 python manage.py runserver
 ```
 
 ## Docker
 
-The Docker image installs a local `Qwen3-VL` runtime inside the backend container. You do not need any API key or OCR binary on your host machine.
+The backend now calls the Gemini API from inside the container. You do not need a local OCR model on your host machine, but you do need `GEMINI_API_KEY` set in your environment or `.env` file.
 
-`docker compose` builds the backend image with `torch` and `transformers`, mounts a persistent Hugging Face cache volume, and runs OCR through `Qwen/Qwen3-VL-2B-Instruct` by default.
+`docker compose` builds the backend image with the Google GenAI SDK and runs OCR through `gemini-3-flash-preview` by default.
 
 The backend uses PostgreSQL in Docker. The compose file also starts a `postgres` service and mounts its data directory from an external Docker volume named `dantedoglcb-postgres-data`.
 
@@ -51,15 +51,15 @@ docker volume create dantedoglcb-postgres-data
 docker compose up -d --build backend
 ```
 
-The first OCR request downloads the model weights into the Docker volume `dantedoglcb-huggingface-cache`. If you want Docker to download the model immediately on startup, set `QWEN_VL_WARM_ON_START=1` in `.env` before running compose.
+If you want the container to validate Gemini client initialization on startup, set `GEMINI_WARM_ON_START=1` in `.env` before running compose.
 
-If your Docker host exposes an NVIDIA GPU, local `Qwen3-VL` inference is much faster with GPU acceleration. This workspace includes an optional [docker-compose.gpu.yml](docker-compose.gpu.yml) override:
+If your Docker host exposes an NVIDIA GPU, this workspace still includes an optional [docker-compose.gpu.yml](docker-compose.gpu.yml) override, but Gemini OCR itself runs through the remote Gemini API rather than local GPU inference:
 
 ```powershell
 docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build backend
 ```
 
-The current container environment may still run on CPU if no GPU is exposed to Docker. You can verify that inside the container with `python -c "import torch; print(torch.cuda.is_available())"`.
+The backend container no longer depends on `torch` or `transformers` for OCR.
 
 If you change the OCR packages or Dockerfile, rebuild with:
 
@@ -70,18 +70,16 @@ docker compose up backend
 
 The container exposes the API on `http://127.0.0.1:8000`.
 
-Inside the container, OCR runs through a local `Qwen3-VL` model and the image includes:
+Inside the container, OCR runs through the Gemini API and the image includes:
 
-- `torch`
-- `transformers`
-- `accelerate`
+- `google-genai`
 - OpenCV runtime libraries
 
 Default model:
 
-- `Qwen/Qwen3-VL-2B-Instruct`
+- `gemini-3-flash-preview`
 
-This default is the smallest open `Qwen3-VL` instruct checkpoint and is the most practical option for local Docker usage. CPU inference works but is slow; a CUDA GPU is strongly recommended for responsive OCR.
+This default is Google's Gemini 3 Flash preview model. The backend sends image bytes and prompts to the Gemini API, so runtime speed depends on API latency rather than local model loading.
 
 If you want to override Django settings, copy `backend/.env.example` values into your shell environment or repository-root `.env` file before starting compose.
 

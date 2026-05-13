@@ -14,9 +14,9 @@ from threading import Lock
 
 import cv2
 import numpy as np
-import torch
+from google import genai
+from google.genai import types
 from PIL import Image
-from transformers import AutoModelForImageTextToText, AutoProcessor
 
 
 FRAME_TEMPLATES_DIR = Path(__file__).resolve().parent / 'frame_templates'
@@ -60,7 +60,7 @@ MANIFEST_TOKEN_STOPWORDS = {
     'hong', 'lu', 'don', 'quixote', 'meursault', 'faust', 'ryoshu', 'heathcliff',
     'ishmael', 'rodion', 'sinclair', 'outis', 'gregor',
 }
-DEFAULT_QWEN_VL_MODEL = 'Qwen/Qwen3-VL-2B-Instruct'
+DEFAULT_GEMINI_MODEL = 'gemini-3-flash-preview'
 QWEN_CARD_OCR_PROMPT = (
     'Inspect the labeled panels of one game identity card. '
     'The panel labeled CARD is the full card. '
@@ -2870,10 +2870,10 @@ def run_qwen_card_ocr(image_bytes, prompt_text=QWEN_CARD_OCR_PROMPT):
         output_text = generate_qwen_response(
             image_bytes,
             prompt_text,
-            max_new_tokens=int(os.environ.get('QWEN_VL_OCR_MAX_NEW_TOKENS', str(DEFAULT_QWEN_OCR_MAX_NEW_TOKENS))),
+            max_new_tokens=int(os.environ.get('GEMINI_MAX_NEW_TOKENS', str(DEFAULT_QWEN_OCR_MAX_NEW_TOKENS))),
         )
     except Exception as exc:
-        raise RuntimeError(f'Qwen3-VL OCR request failed: {exc}') from exc
+        raise RuntimeError(f'Gemini OCR request failed: {exc}') from exc
 
     log_recognition_timing('qwen_ocr', seconds=f'{time.perf_counter() - started_at:.3f}', bytes=len(image_bytes))
 
@@ -2887,10 +2887,10 @@ def run_qwen_card_uptie(image_bytes):
         output_text = generate_qwen_response(
             image_bytes,
             QWEN_CARD_UPTIE_PROMPT,
-            max_new_tokens=int(os.environ.get('QWEN_VL_CHOICE_MAX_NEW_TOKENS', str(DEFAULT_QWEN_CHOICE_MAX_NEW_TOKENS))),
+            max_new_tokens=int(os.environ.get('GEMINI_MAX_NEW_TOKENS', str(DEFAULT_QWEN_CHOICE_MAX_NEW_TOKENS))),
         )
     except Exception as exc:
-        raise RuntimeError(f'Qwen3-VL uptie request failed: {exc}') from exc
+        raise RuntimeError(f'Gemini uptie request failed: {exc}') from exc
 
     log_recognition_timing('qwen_uptie', seconds=f'{time.perf_counter() - started_at:.3f}', bytes=len(image_bytes))
 
@@ -2904,10 +2904,10 @@ def run_qwen_card_name_choice(image_bytes, prompt_text=QWEN_CARD_NAME_CHOICE_PRO
         output_text = generate_qwen_response(
             image_bytes,
             prompt_text,
-            max_new_tokens=int(os.environ.get('QWEN_VL_CHOICE_MAX_NEW_TOKENS', str(DEFAULT_QWEN_CHOICE_MAX_NEW_TOKENS))),
+            max_new_tokens=int(os.environ.get('GEMINI_MAX_NEW_TOKENS', str(DEFAULT_QWEN_CHOICE_MAX_NEW_TOKENS))),
         )
     except Exception as exc:
-        raise RuntimeError(f'Qwen3-VL name-choice request failed: {exc}') from exc
+        raise RuntimeError(f'Gemini name-choice request failed: {exc}') from exc
 
     log_recognition_timing('qwen_name_choice', seconds=f'{time.perf_counter() - started_at:.3f}', bytes=len(image_bytes))
 
@@ -2915,81 +2915,79 @@ def run_qwen_card_name_choice(image_bytes, prompt_text=QWEN_CARD_NAME_CHOICE_PRO
 
 
 def generate_qwen_response(image_bytes, prompt_text, max_new_tokens=DEFAULT_QWEN_OCR_MAX_NEW_TOKENS):
-    model, processor = get_qwen_vl_components()
-    image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
-    messages = [
-        {
-            'role': 'user',
-            'content': [
-                {'type': 'image'},
-                {'type': 'text', 'text': prompt_text},
+    client = get_gemini_client()
+    model_name = os.environ.get('GEMINI_MODEL', DEFAULT_GEMINI_MODEL)
+    mime_type = detect_image_mime_type(image_bytes)
+    config = types.GenerateContentConfig(
+        temperature=0,
+        max_output_tokens=int(max_new_tokens),
+    )
+
+    try:
+        response = client.models.generate_content(
+            model=model_name,
+            contents=[
+                types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
+                prompt_text,
             ],
-        }
-    ]
-    prompt = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-    inputs = processor(text=[prompt], images=[image], return_tensors='pt')
-    device = get_qwen_vl_device(model)
-    inputs = {key: value.to(device) if hasattr(value, 'to') else value for key, value in inputs.items()}
-    generation_config = copy.deepcopy(model.generation_config)
-    generation_config.do_sample = False
-    generation_config.temperature = None
-    generation_config.top_p = None
-    generation_config.top_k = None
-
-    with torch.inference_mode():
-        generated_ids = model.generate(
-            **inputs,
-            generation_config=generation_config,
-            max_new_tokens=int(max_new_tokens),
-            do_sample=False,
+            config=config,
         )
+    except Exception as exc:
+        raise RuntimeError(f'Failed to call Gemini model `{model_name}`: {exc}') from exc
 
-    trimmed_ids = [output_ids[len(input_ids):] for input_ids, output_ids in zip(inputs['input_ids'], generated_ids)]
-    return processor.batch_decode(trimmed_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
+    output_text = getattr(response, 'text', '') or ''
+    if output_text:
+        return output_text
+
+    candidates = []
+    for candidate in getattr(response, 'candidates', []) or []:
+        content = getattr(candidate, 'content', None)
+        for part in getattr(content, 'parts', []) or []:
+            text = getattr(part, 'text', '')
+            if text:
+                candidates.append(text)
+
+    return '\n'.join(candidates).strip()
 
 
 @lru_cache(maxsize=1)
-def get_qwen_vl_components():
-    model_name = os.environ.get('QWEN_VL_MODEL', DEFAULT_QWEN_VL_MODEL)
-    model_kwargs = {
-        'dtype': resolve_qwen_torch_dtype(),
-        'low_cpu_mem_usage': True,
-    }
-
-    if torch.cuda.is_available():
-        model_kwargs['device_map'] = 'auto'
+def get_gemini_client():
+    api_key = (os.environ.get('GEMINI_API_KEY') or '').strip()
+    if not api_key:
+        raise RuntimeError('GEMINI_API_KEY is not set.')
 
     try:
-        processor = AutoProcessor.from_pretrained(model_name)
-        model = AutoModelForImageTextToText.from_pretrained(model_name, **model_kwargs)
+        return genai.Client(api_key=api_key)
     except Exception as exc:
-        raise RuntimeError(f'Failed to load Qwen3-VL model `{model_name}`: {exc}') from exc
-
-    if not torch.cuda.is_available():
-        model = model.to('cpu')
-
-    model.eval()
-    return model, processor
+        raise RuntimeError(f'Failed to initialize Gemini client: {exc}') from exc
 
 
 def warm_qwen_model():
-    get_qwen_vl_components()
+    get_gemini_client()
 
 
-def get_qwen_vl_device(model):
-    return next(model.parameters()).device
+def detect_image_mime_type(image_bytes):
+    if image_bytes.startswith(b'\x89PNG\r\n\x1a\n'):
+        return 'image/png'
+    if image_bytes.startswith(b'RIFF') and image_bytes[8:12] == b'WEBP':
+        return 'image/webp'
+    if image_bytes.startswith(b'\xff\xd8\xff'):
+        return 'image/jpeg'
 
+    try:
+        image = Image.open(io.BytesIO(image_bytes))
+        image_format = (image.format or '').upper()
+    except Exception:
+        image_format = ''
 
-def resolve_qwen_torch_dtype():
-    configured = os.environ.get('QWEN_VL_DTYPE', 'auto').strip().lower()
-    if configured == 'float32':
-        return torch.float32
-    if configured == 'float16':
-        return torch.float16
-    if configured == 'bfloat16':
-        return torch.bfloat16
+    if image_format == 'PNG':
+        return 'image/png'
+    if image_format == 'WEBP':
+        return 'image/webp'
+    if image_format in {'JPEG', 'JPG'}:
+        return 'image/jpeg'
 
-    return torch.float16 if torch.cuda.is_available() else torch.float32
+    return 'image/png'
 
 
 def parse_qwen_card_ocr_output(output_text):
