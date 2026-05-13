@@ -32,14 +32,14 @@ set POSTGRES_PASSWORD=change-me
 set GEMINI_API_KEY=your-api-key
 set GEMINI_MODEL=gemini-3-flash-preview
 python manage.py migrate
-python manage.py runserver
+gunicorn roster_sync.wsgi:application --bind 0.0.0.0:8000
 ```
 
 ## Docker
 
 The backend now calls the Gemini API from inside the container. You do not need a local OCR model on your host machine, but you do need `GEMINI_API_KEY` set in your environment or `.env` file.
 
-`docker compose` builds the backend image with the Google GenAI SDK and runs OCR through `gemini-3-flash-preview` by default.
+`docker compose` builds the backend image with the Google GenAI SDK and serves Django through `gunicorn` on port `8000` by default while running OCR through `gemini-3-flash-preview`.
 
 The backend uses PostgreSQL in Docker. The compose file also starts a `postgres` service and mounts its data directory from an external Docker volume named `dantedoglcb-postgres-data`.
 
