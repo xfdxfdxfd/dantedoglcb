@@ -287,5 +287,126 @@
         "saved_at": 1778543489
       }
     ]
+  },
+  "HongLuIDs::IDs::K Corp. Class 3 Excision Staff Hong Lu": {
+    "aliases": [
+      "Everlasting"
+    ],
+    "raw_aliases": [
+      "Everlasting",
+      "K Corp. Class 3 Excision Staff Hong Lu"
+    ],
+    "samples": [
+      {
+        "image_path": "ocr_feedback_samples/HongLuIDs-IDs-K-Corp.-Class-3-Excision-Staff-Hong-Lu/0f9612e21d27bf0ec76e7b5a.png",
+        "corrected_text": "Everlasting",
+        "observed_name": "Everlasting",
+        "raw_ocr_name": "K Corp. Class 3 Excision Staff Hong Lu",
+        "ocr_support_text": "Adept",
+        "ocr_sinner_hint": "Everlasting",
+        "recognition_confidence": 0.7167,
+        "source_image": "testimg4.png",
+        "bounds": {
+          "x": 0,
+          "y": 401,
+          "width": 307,
+          "height": 384
+        },
+        "manual": false,
+        "saved_at": 1778604986
+      }
+    ],
+    "text_profiles": [
+      {
+        "observed_name": "Everlasting",
+        "raw_ocr_name": "K Corp. Class 3 Excision Staff Hong Lu",
+        "ocr_support_text": "Adept",
+        "ocr_sinner_hint": "",
+        "saved_at": 1778604986
+      }
+    ],
+    "examples": [
+      {
+        "image_path": "ocr_feedback_samples/HongLuIDs-IDs-K-Corp.-Class-3-Excision-Staff-Hong-Lu/0f9612e21d27bf0ec76e7b5a.png",
+        "input": {
+          "observed_name": "Everlasting",
+          "raw_ocr_name": "K Corp. Class 3 Excision Staff Hong Lu",
+          "ocr_support_text": "Adept",
+          "ocr_sinner_hint": "Everlasting",
+          "recognition_confidence": 0.7167,
+          "source_image": "testimg4.png",
+          "manual": false
+        },
+        "target": {
+          "sinner_key": "HongLuIDs",
+          "category": "IDs",
+          "entry_key": "K Corp. Class 3 Excision Staff Hong Lu",
+          "canonical_name": "K Corp. Class 3 Excision Staff Hong Lu",
+          "visible_name": "Everlasting"
+        },
+        "saved_at": 1778604986
+      }
+    ]
+  },
+  "YiSangIDs::IDs::Dieci Assoc. South Section 4 Yi Sang": {
+    "aliases": [
+      "Dieci Assoc. South Section 4 YiSang",
+      "Dieci Assoc. South Section"
+    ],
+    "raw_aliases": [
+      "Dieci Assoc. South Section 4 YiSang",
+      "Dieci Assoc. South Section"
+    ],
+    "samples": [
+      {
+        "image_path": "ocr_feedback_samples/YiSangIDs-IDs-Dieci-Assoc.-South-Section-4-Yi-Sang/86c57967052d6d4bf9a5a4f7.png",
+        "corrected_text": "Dieci Assoc. South Section 4 YiSang",
+        "observed_name": "Dieci Assoc. South Section 4 YiSang",
+        "raw_ocr_name": "Dieci Assoc. South Section",
+        "ocr_support_text": "Lv 01",
+        "ocr_sinner_hint": "Dioc",
+        "recognition_confidence": 0.912,
+        "source_image": "testimg3.png",
+        "bounds": {
+          "x": 553,
+          "y": 745,
+          "width": 242,
+          "height": 358
+        },
+        "manual": false,
+        "saved_at": 1778629974
+      }
+    ],
+    "text_profiles": [
+      {
+        "observed_name": "Dieci Assoc. South Section 4 YiSang",
+        "raw_ocr_name": "Dieci Assoc. South Section",
+        "ocr_support_text": "",
+        "ocr_sinner_hint": "",
+        "saved_at": 1778629974
+      }
+    ],
+    "examples": [
+      {
+        "image_path": "ocr_feedback_samples/YiSangIDs-IDs-Dieci-Assoc.-South-Section-4-Yi-Sang/86c57967052d6d4bf9a5a4f7.png",
+        "input": {
+          "observed_name": "Dieci Assoc. South Section 4 YiSang",
+          "raw_ocr_name": "Dieci Assoc. South Section",
+          "ocr_support_text": "Lv 01",
+          "ocr_sinner_hint": "Dioc",
+          "recognition_confidence": 0.912,
+          "source_image": "testimg3.png",
+          "manual": false
+        },
+        "target": {
+          "sinner_key": "YiSangIDs",
+          "category": "IDs",
+          "entry_key": "Dieci Assoc. South Section 4 Yi Sang",
+          "canonical_name": "Dieci Assoc. South Section 4 Yi Sang",
+          "visible_name": "Dieci Assoc. South Section 4 YiSang"
+        },
+        "saved_at": 1778629974
+      }
+    ]
   }
 }

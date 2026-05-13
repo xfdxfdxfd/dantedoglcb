@@ -41,6 +41,10 @@ ICON_MATCH_STRONG_SCORE_THRESHOLD = 0.36
 ICON_MATCH_WEAK_SCORE_THRESHOLD = 0.26
 ICON_MATCH_STRONG_MARGIN = 0.045
 ICON_MATCH_TOP_K = 3
+ICON_MATCH_ENTRY_BONUS_CAP = 0.16
+ICON_MATCH_ENTRY_PENALTY_CAP = 0.08
+QWEN_SINNER_HINT_BONUS = 0.09
+QWEN_SINNER_HINT_PENALTY = 0.05
 EGO_RARITY_STRONG_SCORE_THRESHOLD = 0.34
 EGO_RARITY_WEAK_SCORE_THRESHOLD = 0.28
 EGO_RARITY_STRONG_MARGIN = 0.035
@@ -61,7 +65,7 @@ QWEN_CARD_OCR_PROMPT = (
     'Inspect the labeled panels of one game identity card. '
     'The panel labeled CARD is the full card. '
     'The panel labeled NAME MAIN is a raw zoom of the identity title area. '
-    'The panel labeled NAME ALT is a contrast-enhanced zoom of the same identity title area. '
+    'The panel labeled NAME ALT is a contrast-enhanced zoom of the same identity title area with brighter foreground letters emphasized over dim background text. '
     'The panel labeled SINNER ICON is a zoom of the top-right sinner icon. '
     'The panel labeled LEVEL is a zoom of the level number. '
     'Return exactly four lines in this exact format with no markdown, no prose, and no extra keys: '
@@ -73,7 +77,7 @@ QWEN_CARD_OCR_PROMPT = (
     '1) NAME must contain only the identity name and must not include Lv, level numbers, NEW, rarity marks, or labels. '
     '2) SINNER must contain only the sinner name, such as Yi Sang, Faust, Don Quixote, Hong Lu, or Ryoshu. '
     '3) LEVEL must contain digits only. '
-    '4) TEXT may contain other visible card text that supports the read. '
+    '4) TEXT may contain other visible card text that supports the read, but prioritize brighter foreground words over dim decorative background words. '
     '5) If unreadable, leave the value empty after the colon. '
     '6) Do not invent words or numbers that are not visible in the image. '
     '7) Many titles share words like Assoc., South, and Section. Preserve the first distinctive faction or title word exactly as shown. '
@@ -81,17 +85,18 @@ QWEN_CARD_OCR_PROMPT = (
 )
 QWEN_CARD_UPTIE_PROMPT = (
     'Inspect the labeled panels of one game identity card frame. '
-    'The first two panels are the real card corners: CARD TOP RIGHT and CARD BOTTOM LEFT. '
+    'The first three panels are the real card frame regions: CARD TOP RIGHT, CARD RIGHT BORDER, and CARD BOTTOM LEFT. '
     'The next panels are two template candidates labeled C1 and C2. '
-    'Each candidate shows the same two corners from a possible matching template. '
+    'Each candidate shows the same three regions from a possible matching template. '
     'Choose which candidate matches the real card corners better. '
     'Return exactly one line in this exact format with no markdown, no prose, and no extra keys: '
     'CHOICE: C1 or CHOICE: C2. '
     'Rules: '
     '1) Return only C1 or C2. '
-    '2) Compare ornament shape, border style, and corner details only. '
+    '2) Compare ornament shape, border style, corner details, and the extra fence-like or lattice decoration behind the branch or vine pattern. '
     '3) Ignore rarity pips and any text. '
-    '4) If uncertain, still choose the closer of C1 or C2.'
+    '4) Uptie 4 usually keeps the uptie 3 branch or vine shape but adds more lattice or fence detail on the top-right and right border. '
+    '5) If uncertain, still choose the closer of C1 or C2.'
 )
 QWEN_CARD_NAME_CHOICE_PROMPT = (
     'Inspect the labeled panels of one game identity card. '
@@ -103,7 +108,7 @@ QWEN_CARD_NAME_CHOICE_PROMPT = (
     'Rules: '
     '1) Use the visible title text first. '
     '2) Pay special attention to the first distinctive word in the title because many candidates share suffixes like Assoc., South, and Section. '
-    '3) Use the sinner icon only as a tie-breaker. '
+    '3) Use the sinner icon as a strong check whenever title words are close; reject candidates with the wrong sinner if the icon is readable. '
     '4) Ignore uptie pips, frame decorations, and level numbers except when needed to reject a bad option. '
     '5) If uncertain, still choose the closest of the listed candidates.'
 )
@@ -111,7 +116,7 @@ QWEN_CARD_OCR_EGO_PROMPT = (
     'Inspect the labeled panels of one Limbus Company EGO card. '
     'The panel labeled CARD is the full EGO card. '
     'The panel labeled NAME MAIN is a raw zoom of the EGO title area. '
-    'The panel labeled NAME ALT is a contrast-enhanced zoom of the same EGO title area. '
+    'The panel labeled NAME ALT is a contrast-enhanced zoom of the same EGO title area with brighter foreground letters emphasized over dim background text. '
     'The panel labeled SINNER ICON is the sinner badge above the card. '
     'The panel labeled RISK is the EGO risk label area. '
     'The panel labeled UPTIE is the Roman numeral or number on the right side of the name plate. '
@@ -126,7 +131,7 @@ QWEN_CARD_OCR_EGO_PROMPT = (
     '2) SINNER must contain only the sinner name, such as Yi Sang, Faust, Don Quixote, or Rodion. '
     '3) RISK must be one of ZAYIN, TETH, HE, or WAW. '
     '4) UPTIE must be digits 1 through 4 only. '
-    '5) TEXT may contain other visible text that supports the read. '
+    '5) TEXT may contain other visible text that supports the read, but prioritize brighter foreground words over dim decorative background words. '
     '6) If unreadable, leave the value empty after the colon. '
     '7) Do not invent words or numbers that are not visible in the image. '
     '8) If the sinner icon is unclear, focus on the visible badge art and name plate before guessing.'
@@ -140,7 +145,7 @@ QWEN_CARD_NAME_CHOICE_EGO_PROMPT = (
     'CHOICE: C1 or CHOICE: C2 or CHOICE: C3 or CHOICE: C4. '
     'Rules: '
     '1) Use the visible title text first. '
-    '2) Use the sinner icon and risk label as tie-breakers. '
+    '2) Use the sinner icon and risk label as strong checks whenever title words are close. '
     '3) Ignore decorative frame details. '
     '4) If uncertain, still choose the closest of the listed candidates.'
 )
@@ -164,6 +169,7 @@ QWEN_EGO_NAME_ALT_REGION = (0.08, 0.62, 0.92, 0.98)
 QWEN_EGO_RISK_REGION = (0.18, 0.5, 0.82, 0.72)
 QWEN_EGO_UPTIE_REGION = (0.72, 0.56, 1.0, 0.98)
 QWEN_UPTIE_TOP_RIGHT_REGION = (0.62, 0.0, 1.0, 0.28)
+QWEN_UPTIE_RIGHT_BORDER_REGION = (0.78, 0.08, 1.0, 0.86)
 QWEN_UPTIE_BOTTOM_LEFT_REGION = (0.0, 0.72, 0.38, 1.0)
 LEVEL_OCR_REGIONS = (
     (0.44, 0.56, 1.0, 0.9),
@@ -245,7 +251,7 @@ IDENTITY_ICON_HOUGH_PARAM1 = 120
 IDENTITY_ICON_HOUGH_PARAM2 = 18
 IDENTITY_ICON_HOUGH_MIN_RADIUS_RATIO = 0.18
 IDENTITY_ICON_HOUGH_MAX_RADIUS_RATIO = 0.55
-IDENTITY_ICON_MAX_BADGE_CANDIDATES = 1
+IDENTITY_ICON_MAX_BADGE_CANDIDATES = 3
 IDENTITY_ICON_ORB_FEATURE_COUNT = 500
 IDENTITY_ICON_ORB_EDGE_THRESHOLD = 5
 IDENTITY_ICON_ORB_FAST_THRESHOLD = 5
@@ -1633,6 +1639,19 @@ def build_name_candidates_from_ocr_result(ocr_result):
     return [candidate for candidate in candidates if candidate]
 
 
+def build_scored_icon_labels(icon_matches):
+    scored_labels = {}
+
+    for match in icon_matches or ():
+        label = str(match.get('label') or '')
+        score = float(match.get('score') or 0.0)
+        if not label or score <= 0.0:
+            continue
+        scored_labels[label] = max(scored_labels.get(label, 0.0), score)
+
+    return scored_labels
+
+
 def filter_manifest_by_card_kind(manifest, card_kind):
     if card_kind == CARD_KIND_EGO:
         filtered = [entry for entry in manifest if entry.get('category') == 'EGOs']
@@ -1643,13 +1662,13 @@ def filter_manifest_by_card_kind(manifest, card_kind):
 
 
 def narrow_manifest_with_rarity_hint(manifest, rarity_hint):
-    normalized_hint = normalize_ego_rarity_hint(rarity_hint)
+    normalized_hint = normalize_match_rarity(rarity_hint)
     if not normalized_hint:
         return manifest
 
     narrowed = [
         entry for entry in manifest
-        if normalize_ego_rarity_hint(entry.get('normalized_rarity') or entry.get('rarity')) == normalized_hint
+        if normalize_match_rarity(entry.get('normalized_rarity') or entry.get('rarity')) == normalized_hint
     ]
     return narrowed or manifest
 
@@ -1659,18 +1678,22 @@ def match_card_name(card, manifest, ocr_result=None, card_kind=CARD_KIND_IDENTIT
         ocr_result = extract_card_ocr_result(card, card_kind=card_kind, icon_context=icon_context)
     manifest = filter_manifest_by_card_kind(manifest, card_kind)
     resolved_rarity_hint = (
-        normalize_ego_rarity_hint((ocr_result or {}).get('risk'))
-        or normalize_ego_rarity_hint(rarity_hint)
-        or normalize_ego_rarity_hint((ocr_result or {}).get('sinner'))
+        normalize_match_rarity((ocr_result or {}).get('risk'))
+        or normalize_match_rarity(rarity_hint)
+        or normalize_match_rarity((ocr_result or {}).get('sinner'))
+        or normalize_match_rarity(infer_known_label_rarity((ocr_result or {}).get('name')))
+        or normalize_match_rarity(infer_known_label_rarity((ocr_result or {}).get('tagged_name')))
+        or normalize_match_rarity(infer_known_label_rarity((ocr_result or {}).get('text')))
     )
-    if card_kind == CARD_KIND_EGO:
+    if resolved_rarity_hint:
         manifest = narrow_manifest_with_rarity_hint(manifest, resolved_rarity_hint)
     name_candidates = extract_name_candidates(card, ocr_result=ocr_result)
     support_text = build_ocr_support_text(ocr_result)
     icon_matches = rank_identity_icon_matches(card, card_kind=card_kind, icon_context=icon_context)
+    scored_icon_labels = build_scored_icon_labels(icon_matches)
     qwen_sinner_hint = normalize_qwen_sinner_hint(ocr_result.get('sinner', ''))
     icon_manifest = narrow_manifest_with_icon_hints(manifest, icon_matches, name_candidates, qwen_sinner_hint)
-    if card_kind == CARD_KIND_EGO:
+    if resolved_rarity_hint:
         icon_manifest = narrow_manifest_with_rarity_hint(icon_manifest, resolved_rarity_hint)
     best_text = ''
     best_label = ''
@@ -1678,7 +1701,13 @@ def match_card_name(card, manifest, ocr_result=None, card_kind=CARD_KIND_IDENTIT
     best_score = 0.0
 
     for candidate in name_candidates:
-        matched_entry, score = match_manifest_entry(candidate, icon_manifest, support_text=support_text)
+        matched_entry, score = match_manifest_entry(
+            candidate,
+            icon_manifest,
+            support_text=support_text,
+            icon_scores=scored_icon_labels,
+            qwen_sinner_hint=qwen_sinner_hint,
+        )
         detected_label = normalize_detected_label(candidate, matched_entry, score, icon_manifest)
 
         if score > best_score:
@@ -1692,6 +1721,8 @@ def match_card_name(card, manifest, ocr_result=None, card_kind=CARD_KIND_IDENTIT
             name_candidates,
             manifest,
             support_text=support_text,
+            icon_scores=scored_icon_labels,
+            qwen_sinner_hint=qwen_sinner_hint,
         )
         if fallback_score >= best_score:
             return fallback_text, fallback_label, fallback_entry, fallback_score
@@ -1710,6 +1741,8 @@ def match_card_name(card, manifest, ocr_result=None, card_kind=CARD_KIND_IDENTIT
         support_text=support_text,
         card_kind=card_kind,
         icon_context=icon_context,
+        icon_scores=scored_icon_labels,
+        qwen_sinner_hint=qwen_sinner_hint,
     )
     if qwen_choice_entry:
         return qwen_choice_entry['entryKey'], qwen_choice_entry['entryKey'], qwen_choice_entry, max(best_score, 0.78)
@@ -1718,18 +1751,30 @@ def match_card_name(card, manifest, ocr_result=None, card_kind=CARD_KIND_IDENTIT
         return best_text, best_label, best_entry, best_score
 
     raw_name = ocr_result.get('name') or extract_name(card)
-    matched_entry, score = match_manifest_entry(raw_name, manifest, support_text=support_text)
+    matched_entry, score = match_manifest_entry(
+        raw_name,
+        manifest,
+        support_text=support_text,
+        icon_scores=scored_icon_labels,
+        qwen_sinner_hint=qwen_sinner_hint,
+    )
     return raw_name, normalize_detected_label(raw_name, matched_entry, score, manifest), matched_entry, score
 
 
-def match_card_name_against_manifest(name_candidates, manifest, support_text=''):
+def match_card_name_against_manifest(name_candidates, manifest, support_text='', icon_scores=None, qwen_sinner_hint=''):
     best_text = ''
     best_label = ''
     best_entry = None
     best_score = 0.0
 
     for candidate in name_candidates:
-        matched_entry, score = match_manifest_entry(candidate, manifest, support_text=support_text)
+        matched_entry, score = match_manifest_entry(
+            candidate,
+            manifest,
+            support_text=support_text,
+            icon_scores=icon_scores,
+            qwen_sinner_hint=qwen_sinner_hint,
+        )
         detected_label = normalize_detected_label(candidate, matched_entry, score, manifest)
 
         if score > best_score:
@@ -1800,8 +1845,15 @@ def normalize_qwen_sinner_hint(text):
     return best_label
 
 
-def choose_manifest_entry_with_qwen(card, name_candidates, manifest, best_score, best_entry, support_text='', card_kind=CARD_KIND_IDENTITY, icon_context=None):
-    candidate_entries = get_top_manifest_entry_candidates(name_candidates, manifest, limit=4, support_text=support_text)
+def choose_manifest_entry_with_qwen(card, name_candidates, manifest, best_score, best_entry, support_text='', card_kind=CARD_KIND_IDENTITY, icon_context=None, icon_scores=None, qwen_sinner_hint=''):
+    candidate_entries = get_top_manifest_entry_candidates(
+        name_candidates,
+        manifest,
+        limit=4,
+        support_text=support_text,
+        icon_scores=icon_scores,
+        qwen_sinner_hint=qwen_sinner_hint,
+    )
     if len(candidate_entries) < 2:
         return None
 
@@ -1931,14 +1983,21 @@ def score_feedback_sample_signature(card_signature, sample_signature):
     )
 
 
-def get_top_manifest_entry_candidates(name_candidates, manifest, limit=4, support_text=''):
+def get_top_manifest_entry_candidates(name_candidates, manifest, limit=4, support_text='', icon_scores=None, qwen_sinner_hint=''):
     ranked_entries = []
     token_weights = build_manifest_token_weights(manifest)
 
     for entry in manifest:
         best_candidate_score = 0.0
         for candidate in name_candidates:
-            score = score_manifest_candidate(candidate, entry, token_weights=token_weights, support_text=support_text)
+            score = score_manifest_candidate(
+                candidate,
+                entry,
+                token_weights=token_weights,
+                support_text=support_text,
+                icon_scores=icon_scores,
+                qwen_sinner_hint=qwen_sinner_hint,
+            )
             best_candidate_score = max(best_candidate_score, score)
         ranked_entries.append({**entry, 'candidateScore': best_candidate_score})
 
@@ -1980,6 +2039,42 @@ def match_manifest_sinner_label(sinner_key, labels):
             return True
 
     return False
+
+
+def score_entry_icon_alignment(entry, icon_scores=None, qwen_sinner_hint=''):
+    entry_sinner_key = (entry or {}).get('sinnerKey')
+    if not entry_sinner_key:
+        return 0.0
+
+    bonus = 0.0
+    icon_scores = icon_scores or {}
+    ranked_icon_scores = sorted(icon_scores.items(), key=lambda item: item[1], reverse=True)
+
+    best_matching_score = 0.0
+    for label, score in ranked_icon_scores:
+        if match_manifest_sinner_label(entry_sinner_key, {label}):
+            best_matching_score = max(best_matching_score, float(score))
+
+    if best_matching_score > 0.0:
+        bonus += min(ICON_MATCH_ENTRY_BONUS_CAP, 0.03 + (best_matching_score * 0.24))
+
+    if ranked_icon_scores:
+        top_label, top_score = ranked_icon_scores[0]
+        second_score = ranked_icon_scores[1][1] if len(ranked_icon_scores) > 1 else 0.0
+        if (
+            top_score >= ICON_MATCH_STRONG_SCORE_THRESHOLD
+            and (top_score - second_score) >= ICON_MATCH_STRONG_MARGIN
+            and not match_manifest_sinner_label(entry_sinner_key, {top_label})
+        ):
+            bonus -= min(ICON_MATCH_ENTRY_PENALTY_CAP, 0.02 + (float(top_score) * 0.14))
+
+    if qwen_sinner_hint:
+        if match_manifest_sinner_label(entry_sinner_key, {qwen_sinner_hint}):
+            bonus += QWEN_SINNER_HINT_BONUS
+        else:
+            bonus -= QWEN_SINNER_HINT_PENALTY
+
+    return bonus
 
 
 def normalize_manifest_sinner_key(sinner_key):
@@ -2149,13 +2244,15 @@ def extract_identity_icon_badge_regions(card, card_kind=CARD_KIND_IDENTITY):
 
 
 def extract_identity_icon_badge_signatures(card, card_kind=CARD_KIND_IDENTITY):
+    signatures = []
+
     for crop in extract_identity_icon_badge_regions(card, card_kind=card_kind):
         for badge in extract_identity_icon_badges_from_crop(crop):
             signature = build_identity_icon_badge_signature(badge)
             if signature is not None:
-                return (signature,)
+                signatures.append(signature)
 
-    return tuple()
+    return tuple(signatures)
 
 
 def score_identity_icon_badge_signature(signature, template):
@@ -2198,18 +2295,22 @@ def rank_identity_icon_matches(card, card_kind=CARD_KIND_IDENTITY, icon_context=
             if best_score > 0.0:
                 scores[template['label']] = max(scores.get(template['label'], 0.0), best_score)
 
-    if not scores:
-        top_band_variants = extract_identity_icon_regions(source, card_kind=card_kind)
-        if not top_band_variants:
-            return []
-
+    top_band_variants = extract_identity_icon_regions(source, card_kind=card_kind)
+    if top_band_variants:
         for template in load_identity_icon_templates():
             best_score = 0.0
             for crop in top_band_variants:
                 best_score = max(best_score, score_identity_icon_template_legacy(crop, template))
 
             if best_score > 0.0:
-                scores[template['label']] = max(scores.get(template['label'], 0.0), best_score)
+                existing_score = scores.get(template['label'], 0.0)
+                if existing_score > 0.0:
+                    scores[template['label']] = max(existing_score, (existing_score * 0.62) + (best_score * 0.38))
+                else:
+                    scores[template['label']] = best_score * 0.92
+
+    if not scores:
+        return []
 
     return [
         {'label': label, 'score': score}
@@ -2607,6 +2708,7 @@ def extract_card_uptie_result(card, matched_entry=None, detected_label=''):
 def build_qwen_card_uptie_image(card):
     panels = [
         build_qwen_labeled_panel('TOP RIGHT FRAME', crop_relative_region(card, *QWEN_UPTIE_TOP_RIGHT_REGION)),
+        build_qwen_labeled_panel('RIGHT BORDER FRAME', crop_relative_region(card, *QWEN_UPTIE_RIGHT_BORDER_REGION)),
         build_qwen_labeled_panel('BOTTOM LEFT FRAME', crop_relative_region(card, *QWEN_UPTIE_BOTTOM_LEFT_REGION)),
     ]
 
@@ -2618,6 +2720,7 @@ def build_qwen_uptie_choice_image(card, matched_entry=None, detected_label=''):
     candidates = get_top_frame_template_candidates(card, rarity=rarity, limit=2)
     panels = [
         build_qwen_labeled_panel('CARD TOP RIGHT', crop_relative_region(card, *QWEN_UPTIE_TOP_RIGHT_REGION)),
+        build_qwen_labeled_panel('CARD RIGHT BORDER', crop_relative_region(card, *QWEN_UPTIE_RIGHT_BORDER_REGION)),
         build_qwen_labeled_panel('CARD BOTTOM LEFT', crop_relative_region(card, *QWEN_UPTIE_BOTTOM_LEFT_REGION)),
     ]
 
@@ -2627,6 +2730,12 @@ def build_qwen_uptie_choice_image(card, matched_entry=None, detected_label=''):
             build_qwen_labeled_panel(
                 f'C{index} U{candidate["uptie_level"]} TR {candidate["score"]:.3f}',
                 crop_relative_region(template_signature, *QWEN_UPTIE_TOP_RIGHT_REGION),
+            )
+        )
+        panels.append(
+            build_qwen_labeled_panel(
+                f'C{index} U{candidate["uptie_level"]} RB {candidate["score"]:.3f}',
+                crop_relative_region(template_signature, *QWEN_UPTIE_RIGHT_BORDER_REGION),
             )
         )
         panels.append(
@@ -2725,17 +2834,22 @@ def enhance_identity_text_region(image):
 
     scale = 2.0 if max(image.shape[:2]) < 220 else 1.5
     resized = cv2.resize(image, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
+    hsv = cv2.cvtColor(resized, cv2.COLOR_BGR2HSV)
     grayscale = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
     normalized = cv2.normalize(grayscale, None, 0, 255, cv2.NORM_MINMAX)
     blurred = cv2.GaussianBlur(normalized, (0, 0), 1.1)
     sharpened = cv2.addWeighted(normalized, 1.45, blurred, -0.45, 0)
+    warm_mask = cv2.inRange(hsv, (5, 35, 150), (48, 255, 255))
+    white_mask = cv2.inRange(hsv, (0, 0, 165), (180, 70, 255))
+    bright_mask = cv2.bitwise_or(warm_mask, white_mask)
+    emphasized = cv2.max(sharpened, cv2.bitwise_and(normalized, normalized, mask=bright_mask))
     thresholded = cv2.adaptiveThreshold(
-        sharpened,
+        emphasized,
         255,
         cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
         cv2.THRESH_BINARY,
         31,
-        7,
+        5,
     )
     cleaned = cv2.medianBlur(thresholded, 3)
     return cv2.cvtColor(cleaned, cv2.COLOR_GRAY2BGR)
@@ -3224,7 +3338,7 @@ def score_feedback_text_profiles(raw_name, support_text, text_profiles, token_we
     return best_score
 
 
-def score_manifest_candidate(raw_name, entry, token_weights=None, support_text=''):
+def score_manifest_candidate(raw_name, entry, token_weights=None, support_text='', icon_scores=None, qwen_sinner_hint=''):
     token_weights = token_weights or {}
     best_score = score_manifest_text_variant(raw_name, entry.get('entryKey', ''), entry.get('name_tokens') or (), token_weights)
     best_support_score = 0.0
@@ -3254,10 +3368,14 @@ def score_manifest_candidate(raw_name, entry, token_weights=None, support_text='
     if feedback_profile_score:
         best_score = max(best_score, (best_score * 0.76) + (feedback_profile_score * 0.24))
 
+    icon_alignment = score_entry_icon_alignment(entry, icon_scores=icon_scores, qwen_sinner_hint=qwen_sinner_hint)
+    if icon_alignment:
+        best_score = float(np.clip(best_score + icon_alignment, 0.0, 1.0))
+
     return min(best_score, 1.0)
 
 
-def match_manifest_entry(raw_name, manifest, support_text=''):
+def match_manifest_entry(raw_name, manifest, support_text='', icon_scores=None, qwen_sinner_hint=''):
     normalized_input = sanitize_name(raw_name)
     best_entry = None
     best_score = 0.0
@@ -3272,7 +3390,14 @@ def match_manifest_entry(raw_name, manifest, support_text=''):
         if not entry.get('normalized_name'):
             continue
 
-        score = score_manifest_candidate(raw_name, entry, token_weights=token_weights, support_text=support_text)
+        score = score_manifest_candidate(
+            raw_name,
+            entry,
+            token_weights=token_weights,
+            support_text=support_text,
+            icon_scores=icon_scores,
+            qwen_sinner_hint=qwen_sinner_hint,
+        )
 
         if score > best_score:
             second_best_score = best_score
@@ -3299,14 +3424,25 @@ def match_manifest_entry(raw_name, manifest, support_text=''):
 def build_ocr_support_text(ocr_result):
     support_chunks = []
 
-    for key in ('tagged_name', 'text', 'raw_output'):
+    for key in ('name', 'tagged_name', 'text'):
         value = cleanup_identity_name((ocr_result or {}).get(key, ''))
+        if not value:
+            continue
+        words = []
+        for word in value.split():
+            normalized_word = sanitize_name(word)
+            if not normalized_word or normalized_word in {'name', 'sinner', 'level', 'risk', 'uptie', 'text', 'lv'}:
+                continue
+            if words and sanitize_name(words[-1]) == normalized_word:
+                continue
+            words.append(word)
+        value = ' '.join(words)
         if not value:
             continue
         if value not in support_chunks:
             support_chunks.append(value)
 
-    return ' '.join(support_chunks[:2])
+    return ' '.join(support_chunks[:3])
 
 
 def build_feedback_export_records():
@@ -3446,6 +3582,11 @@ def match_frame_templates(card, rarity=None):
     if best_score < threshold:
         return None, 0.0
 
+    if best_level == 3:
+        uptie4_score = level_scores.get(4, 0.0)
+        if uptie4_score >= max(threshold - 0.04, best_score - 0.03):
+            return 4, uptie4_score
+
     if best_score - second_score < FRAME_UPTIE_MIN_MARGIN and best_level in (2, 3):
         higher_level_score = level_scores.get(best_level + 1, 0.0)
         if higher_level_score >= max(threshold - 0.03, best_score - 0.02):
@@ -3470,6 +3611,9 @@ def collect_frame_level_scores(card, rarity=None):
     saturation = hsv[:, :, 1]
     value = hsv[:, :, 2]
     edges = cv2.Canny(grayscale, 50, 150)
+    detail_signature = extract_frame_detail_signature(signature)
+    detail_grayscale = cv2.cvtColor(detail_signature, cv2.COLOR_BGR2GRAY)
+    detail_edges = cv2.Canny(detail_grayscale, 50, 150)
     level_scores = {}
 
     for template in load_scaled_frame_templates(grayscale.shape[0], grayscale.shape[1]):
@@ -3480,11 +3624,15 @@ def collect_frame_level_scores(card, rarity=None):
         edge_score = cv2.matchTemplate(edges, template['edges'], cv2.TM_CCORR_NORMED).max()
         saturation_score = cv2.matchTemplate(saturation, template['saturation'], cv2.TM_CCOEFF_NORMED).max()
         value_score = cv2.matchTemplate(value, template['value'], cv2.TM_CCOEFF_NORMED).max()
+        detail_grayscale_score = cv2.matchTemplate(detail_grayscale, template['detail_grayscale'], cv2.TM_CCOEFF_NORMED).max()
+        detail_edge_score = cv2.matchTemplate(detail_edges, template['detail_edges'], cv2.TM_CCORR_NORMED).max()
+        detail_score = (float(detail_grayscale_score) * 0.35) + (float(detail_edge_score) * 0.65)
         score = (
-            (float(grayscale_score) * 0.45)
-            + (float(edge_score) * 0.3)
-            + (float(saturation_score) * 0.15)
-            + (float(value_score) * 0.1)
+            (float(grayscale_score) * 0.36)
+            + (float(edge_score) * 0.22)
+            + (float(saturation_score) * 0.12)
+            + (float(value_score) * 0.08)
+            + (detail_score * 0.22)
         )
         level_scores[template['uptie_level']] = max(level_scores.get(template['uptie_level'], 0.0), score)
 
@@ -3498,6 +3646,9 @@ def get_top_frame_template_candidates(card, rarity=None, limit=2):
     saturation = hsv[:, :, 1]
     value = hsv[:, :, 2]
     edges = cv2.Canny(grayscale, 50, 150)
+    detail_signature = extract_frame_detail_signature(signature)
+    detail_grayscale = cv2.cvtColor(detail_signature, cv2.COLOR_BGR2GRAY)
+    detail_edges = cv2.Canny(detail_grayscale, 50, 150)
     candidates = []
 
     for template in load_scaled_frame_templates(grayscale.shape[0], grayscale.shape[1]):
@@ -3508,11 +3659,15 @@ def get_top_frame_template_candidates(card, rarity=None, limit=2):
         edge_score = cv2.matchTemplate(edges, template['edges'], cv2.TM_CCORR_NORMED).max()
         saturation_score = cv2.matchTemplate(saturation, template['saturation'], cv2.TM_CCOEFF_NORMED).max()
         value_score = cv2.matchTemplate(value, template['value'], cv2.TM_CCOEFF_NORMED).max()
+        detail_grayscale_score = cv2.matchTemplate(detail_grayscale, template['detail_grayscale'], cv2.TM_CCOEFF_NORMED).max()
+        detail_edge_score = cv2.matchTemplate(detail_edges, template['detail_edges'], cv2.TM_CCORR_NORMED).max()
+        detail_score = (float(detail_grayscale_score) * 0.35) + (float(detail_edge_score) * 0.65)
         score = (
-            (float(grayscale_score) * 0.45)
-            + (float(edge_score) * 0.3)
-            + (float(saturation_score) * 0.15)
-            + (float(value_score) * 0.1)
+            (float(grayscale_score) * 0.36)
+            + (float(edge_score) * 0.22)
+            + (float(saturation_score) * 0.12)
+            + (float(value_score) * 0.08)
+            + (detail_score * 0.22)
         )
         candidates.append(
             {
@@ -3533,6 +3688,9 @@ def load_scaled_frame_templates(target_height, target_width):
     scaled_templates = []
 
     for template in load_frame_templates():
+        scaled_signature_color = cv2.resize(template['signature_color'], (target_width, target_height))
+        scaled_detail_signature = extract_frame_detail_signature(scaled_signature_color)
+        scaled_detail_grayscale = cv2.cvtColor(scaled_detail_signature, cv2.COLOR_BGR2GRAY)
         scaled_templates.append(
             {
                 'uptie_level': template['uptie_level'],
@@ -3542,7 +3700,9 @@ def load_scaled_frame_templates(target_height, target_width):
                 'edges': cv2.resize(template['edges'], (target_width, target_height), interpolation=cv2.INTER_NEAREST),
                 'saturation': cv2.resize(template['saturation'], (target_width, target_height)),
                 'value': cv2.resize(template['value'], (target_width, target_height)),
-                'signature_color': cv2.resize(template['signature_color'], (target_width, target_height)),
+                'detail_grayscale': scaled_detail_grayscale,
+                'detail_edges': cv2.Canny(scaled_detail_grayscale, 50, 150),
+                'signature_color': scaled_signature_color,
             }
         )
 
@@ -3567,9 +3727,12 @@ def load_frame_templates():
                 continue
 
             signature = extract_frame_signature(template)
+            detail_signature = extract_frame_detail_signature(signature)
             grayscale = cv2.cvtColor(signature, cv2.COLOR_BGR2GRAY)
+            detail_grayscale = cv2.cvtColor(detail_signature, cv2.COLOR_BGR2GRAY)
             hsv = cv2.cvtColor(signature, cv2.COLOR_BGR2HSV)
             edges = cv2.Canny(grayscale, 50, 150)
+            detail_edges = cv2.Canny(detail_grayscale, 50, 150)
             mask = np.where(grayscale > 0, 255, 0).astype(np.uint8)
 
             if not np.count_nonzero(edges):
@@ -3582,6 +3745,8 @@ def load_frame_templates():
                     'rarity': parse_template_rarity(template_path),
                     'grayscale': grayscale,
                     'edges': edges,
+                    'detail_grayscale': detail_grayscale,
+                    'detail_edges': detail_edges,
                     'saturation': hsv[:, :, 1],
                     'value': hsv[:, :, 2],
                     'signature_color': signature,
@@ -3608,6 +3773,38 @@ def extract_frame_signature(card):
     signature[border:height - border, border:width - border] = 0
     mask_frame_overlays(signature)
     return signature
+
+
+def extract_frame_detail_signature(signature):
+    if signature is None or not getattr(signature, 'size', 0):
+        return np.zeros((8, 8, 3), dtype=np.uint8)
+
+    detail_crops = []
+    for region in (QWEN_UPTIE_TOP_RIGHT_REGION, QWEN_UPTIE_RIGHT_BORDER_REGION):
+        crop = crop_relative_region(signature, *region)
+        if crop is not None and getattr(crop, 'size', 0):
+            detail_crops.append(crop)
+
+    if not detail_crops:
+        return np.zeros((8, 8, 3), dtype=np.uint8)
+
+    target_width = max(crop.shape[1] for crop in detail_crops)
+    resized_crops = []
+    for crop in detail_crops:
+        crop_height, crop_width = crop.shape[:2]
+        scaled_height = max(8, int(round(crop_height * (target_width / float(max(1, crop_width))))))
+        resized_crops.append(cv2.resize(crop, (target_width, scaled_height), interpolation=cv2.INTER_CUBIC))
+
+    gap = 4
+    total_height = sum(crop.shape[0] for crop in resized_crops) + (gap * (len(resized_crops) - 1))
+    canvas = np.zeros((total_height, target_width, 3), dtype=np.uint8)
+    offset_y = 0
+    for crop in resized_crops:
+        crop_height = crop.shape[0]
+        canvas[offset_y:offset_y + crop_height, :target_width] = crop
+        offset_y += crop_height + gap
+
+    return canvas
 
 
 def mask_frame_overlays(signature):
