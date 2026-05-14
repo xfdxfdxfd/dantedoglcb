@@ -87,27 +87,18 @@ If you want to override Django settings, copy `backend/.env.example` values into
 
 The Docker Compose default `POSTGRES_HOST=postgres` only works inside the local Compose network. On Cloud Run, configure the database explicitly so Django does not fall back to that hostname.
 
-Use one of these approaches:
-
-- Set `DATABASE_URL` to your PostgreSQL connection string.
-- Or set `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `INSTANCE_CONNECTION_NAME` so Django connects through the Cloud SQL Unix socket at `/cloudsql/<instance-connection-name>`.
+Set `POSTGRES_HOST` to the Cloud SQL Unix socket path and keep the regular PostgreSQL credentials in the other variables.
 
 Example Cloud Run environment variables for Cloud SQL PostgreSQL:
 
 ```text
+POSTGRES_HOST=/cloudsql/your-project:your-region:your-instance
 POSTGRES_DB=dantedoglcb
 POSTGRES_USER=dantedoglcb
 POSTGRES_PASSWORD=change-me
-INSTANCE_CONNECTION_NAME=your-project:your-region:your-instance
 DJANGO_ALLOWED_HOSTS=your-service-xxxx.a.run.app
 DJANGO_DEBUG=false
 GEMINI_API_KEY=your-api-key
-```
-
-If you prefer a single variable, you can use:
-
-```text
-DATABASE_URL=postgresql://USER:PASSWORD@/DB_NAME?host=/cloudsql/your-project:your-region:your-instance
 ```
 
 Required runtime environment variables for Cloud Run:
@@ -116,10 +107,10 @@ Required runtime environment variables for Cloud Run:
 DJANGO_DEBUG=false
 DJANGO_SECRET_KEY=replace-with-a-secret-manager-value
 DJANGO_ALLOWED_HOSTS=your-service-xxxx.a.run.app
+POSTGRES_HOST=/cloudsql/your-project:your-region:your-instance
 POSTGRES_DB=dantedoglcb
 POSTGRES_USER=dantedoglcb
 POSTGRES_PASSWORD=replace-with-a-secret-manager-value
-INSTANCE_CONNECTION_NAME=your-project:your-region:your-instance
 GEMINI_API_KEY=replace-with-a-secret-manager-value
 GEMINI_MODEL=gemini-3-flash-preview
 GEMINI_MAX_NEW_TOKENS=192
@@ -130,7 +121,6 @@ GOOGLE_OAUTH_CLIENT_IDS=your-google-web-client-id
 Optional runtime environment variables:
 
 ```text
-DATABASE_URL=postgresql://USER:PASSWORD@/DB_NAME?host=/cloudsql/your-project:your-region:your-instance
 GOOGLE_OAUTH_CLIENT_ID=your-google-web-client-id
 GUNICORN_WORKERS=1
 GUNICORN_TIMEOUT=120
