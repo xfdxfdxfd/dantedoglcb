@@ -53,3 +53,9 @@
 - `docker compose up --build` starts Postgres, Django on `http://127.0.0.1:8000`, and the Vite frontend on `http://127.0.0.1:5173`.
 - Set `GOOGLE_OAUTH_CLIENT_ID` and `VITE_GOOGLE_CLIENT_ID` in `.env` to the same Google Web client ID.
 - Add `http://127.0.0.1:5173` and `http://localhost:5173` to your Google OAuth Authorized JavaScript origins.
+
+## Google Cloud Run
+
+- The backend container now supports Cloud Run's `PORT` environment variable and Cloud SQL socket connections.
+- Use [backend/.env.cloudrun.example](backend/.env.cloudrun.example) as the source of truth for backend runtime variables.
+- Use [cloudbuild.yaml](cloudbuild.yaml) to build the backend image and deploy it to Cloud Run with a Cloud SQL PostgreSQL instance attached.

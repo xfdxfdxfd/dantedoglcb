@@ -83,6 +83,99 @@ This default is Google's Gemini 3 Flash preview model. The backend sends image b
 
 If you want to override Django settings, copy `backend/.env.example` values into your shell environment or repository-root `.env` file before starting compose.
 
+## Cloud Run
+
+The Docker Compose default `POSTGRES_HOST=postgres` only works inside the local Compose network. On Cloud Run, configure the database explicitly so Django does not fall back to that hostname.
+
+Use one of these approaches:
+
+- Set `DATABASE_URL` to your PostgreSQL connection string.
+- Or set `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `INSTANCE_CONNECTION_NAME` so Django connects through the Cloud SQL Unix socket at `/cloudsql/<instance-connection-name>`.
+
+Example Cloud Run environment variables for Cloud SQL PostgreSQL:
+
+```text
+POSTGRES_DB=dantedoglcb
+POSTGRES_USER=dantedoglcb
+POSTGRES_PASSWORD=change-me
+INSTANCE_CONNECTION_NAME=your-project:your-region:your-instance
+DJANGO_ALLOWED_HOSTS=your-service-xxxx.a.run.app
+DJANGO_DEBUG=false
+GEMINI_API_KEY=your-api-key
+```
+
+If you prefer a single variable, you can use:
+
+```text
+DATABASE_URL=postgresql://USER:PASSWORD@/DB_NAME?host=/cloudsql/your-project:your-region:your-instance
+```
+
+Required runtime environment variables for Cloud Run:
+
+```text
+DJANGO_DEBUG=false
+DJANGO_SECRET_KEY=replace-with-a-secret-manager-value
+DJANGO_ALLOWED_HOSTS=your-service-xxxx.a.run.app
+POSTGRES_DB=dantedoglcb
+POSTGRES_USER=dantedoglcb
+POSTGRES_PASSWORD=replace-with-a-secret-manager-value
+INSTANCE_CONNECTION_NAME=your-project:your-region:your-instance
+GEMINI_API_KEY=replace-with-a-secret-manager-value
+GEMINI_MODEL=gemini-3-flash-preview
+GEMINI_MAX_NEW_TOKENS=192
+GEMINI_WARM_ON_START=0
+GOOGLE_OAUTH_CLIENT_IDS=your-google-web-client-id
+```
+
+Optional runtime environment variables:
+
+```text
+DATABASE_URL=postgresql://USER:PASSWORD@/DB_NAME?host=/cloudsql/your-project:your-region:your-instance
+GOOGLE_OAUTH_CLIENT_ID=your-google-web-client-id
+GUNICORN_WORKERS=1
+GUNICORN_TIMEOUT=120
+```
+
+Cloud Run sets `PORT` automatically. The container entrypoint now binds Gunicorn to that port.
+
+If your frontend is deployed separately, build it with:
+
+```text
+VITE_API_BASE_URL=https://your-backend-service-xxxx.a.run.app
+VITE_GOOGLE_CLIENT_ID=your-google-web-client-id
+```
+
+If you deploy through Cloud Build, the repository root now includes `cloudbuild.yaml` for building the backend image and deploying it to Cloud Run with Cloud SQL attached.
+
+Cloud Build expects these Secret Manager secrets to exist:
+
+```text
+django-secret-key
+postgres-password
+gemini-api-key
+```
+
+Cloud Build substitutions you should update before the first deploy:
+
+```text
+_SERVICE_NAME
+_REGION
+_ARTIFACT_REPOSITORY
+_CLOUD_SQL_INSTANCE
+_POSTGRES_DB
+_POSTGRES_USER
+_DJANGO_ALLOWED_HOSTS
+_GOOGLE_OAUTH_CLIENT_ID
+_GOOGLE_OAUTH_CLIENT_IDS
+```
+
+Example deploy command:
+
+```powershell
+gcloud builds submit --config cloudbuild.yaml \
+	--substitutions=_SERVICE_NAME=dantedoglcb-backend,_REGION=us-central1,_ARTIFACT_REPOSITORY=dantedoglcb,_CLOUD_SQL_INSTANCE=your-project:your-region:your-instance,_POSTGRES_DB=dantedoglcb,_POSTGRES_USER=dantedoglcb,_DJANGO_ALLOWED_HOSTS=your-service-xxxx.a.run.app,_GOOGLE_OAUTH_CLIENT_ID=your-google-web-client-id,_GOOGLE_OAUTH_CLIENT_IDS=your-google-web-client-id
+```
+
 ## Debugging OCR
 
 For faster OCR tuning on real screenshots, use the Django management command below. It prints one detected card at a time and can optionally write each crop plus a JSON report to disk.

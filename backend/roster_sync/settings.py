@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from urllib.parse import parse_qs, unquote, urlparse
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -50,21 +51,68 @@ TEMPLATES = [
 WSGI_APPLICATION = 'roster_sync.wsgi.application'
 ASGI_APPLICATION = 'roster_sync.asgi.application'
 
-DATABASE_HOST = os.environ.get('POSTGRES_HOST', 'postgres')
-DATABASE_PORT = os.environ.get('POSTGRES_PORT', '5432')
-DATABASE_NAME = os.environ.get('POSTGRES_DB', 'dantedoglcb')
-DATABASE_USER = os.environ.get('POSTGRES_USER', 'dantedoglcb')
-DATABASE_PASSWORD = os.environ.get('POSTGRES_PASSWORD', 'dantedoglcb')
+def _database_settings_from_url(database_url: str) -> dict:
+    parsed = urlparse(database_url)
+    query = parse_qs(parsed.query)
+
+    if parsed.scheme in {'postgres', 'postgresql', 'pgsql'}:
+        host = parsed.hostname or query.get('host', [''])[0]
+        port = parsed.port or query.get('port', [''])[0]
+        options = {}
+
+        for option_name in ('sslmode', 'target_session_attrs'):
+            option_value = query.get(option_name, [''])[-1]
+            if option_value:
+                options[option_name] = option_value
+
+        database_settings = {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': unquote((parsed.path or '').lstrip('/')),
+            'USER': unquote(parsed.username or ''),
+            'PASSWORD': unquote(parsed.password or ''),
+            'HOST': unquote(host or ''),
+            'PORT': str(port or ''),
+        }
+
+        if options:
+            database_settings['OPTIONS'] = options
+
+        return database_settings
+
+    if parsed.scheme == 'sqlite':
+        sqlite_path = unquote(parsed.path or '')
+        if not sqlite_path:
+            sqlite_path = BASE_DIR / 'db.sqlite3'
+
+        return {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': sqlite_path,
+        }
+
+    raise ValueError(f'Unsupported database scheme: {parsed.scheme}')
+
+
+def _default_database_settings() -> dict:
+    cloud_sql_connection_name = os.environ.get('INSTANCE_CONNECTION_NAME') or os.environ.get('CLOUD_SQL_CONNECTION_NAME')
+    database_host = os.environ.get('POSTGRES_HOST')
+
+    if not database_host and cloud_sql_connection_name:
+        database_host = f'/cloudsql/{cloud_sql_connection_name}'
+
+    return {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('POSTGRES_DB', 'dantedoglcb'),
+        'USER': os.environ.get('POSTGRES_USER', 'dantedoglcb'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'dantedoglcb'),
+        'HOST': database_host or 'postgres',
+        'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+    }
+
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': DATABASE_NAME,
-        'USER': DATABASE_USER,
-        'PASSWORD': DATABASE_PASSWORD,
-        'HOST': DATABASE_HOST,
-        'PORT': DATABASE_PORT,
-    }
+    'default': _database_settings_from_url(os.environ['DATABASE_URL'])
+    if os.environ.get('DATABASE_URL')
+    else _default_database_settings()
 }
 
 AUTH_PASSWORD_VALIDATORS = []
