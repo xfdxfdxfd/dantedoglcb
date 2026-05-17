@@ -62,7 +62,7 @@ class Command(BaseCommand):
                     uptie_choice_path = image_output_dir / f'card_{index:02d}_uptie_choice.png'
                     report_path = image_output_dir / f'card_{index:02d}.json'
                     cv2.imwrite(str(crop_path), card)
-                    cv2.imwrite(str(uptie_choice_path), services.build_qwen_uptie_choice_image(card))
+                    cv2.imwrite(str(uptie_choice_path), services.build_gemini_uptie_choice_image(card))
                     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
 
             if image_output_dir:

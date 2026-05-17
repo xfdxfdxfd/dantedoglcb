@@ -4,6 +4,26 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+def load_env_file(env_path):
+    if not env_path.exists():
+        return
+
+    for raw_line in env_path.read_text(encoding='utf-8').splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith('#') or '=' not in line:
+            continue
+
+        key, value = line.split('=', 1)
+        key = key.strip()
+        if not key or key in os.environ:
+            continue
+
+        os.environ[key] = value.strip().strip('"').strip("'")
+
+
+load_env_file(BASE_DIR / '.env')
+
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'dev-only-secret-key')
 DEBUG = os.environ.get('DJANGO_DEBUG', 'true').lower() == 'true'
 ALLOWED_HOSTS = [host for host in os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',') if host]
@@ -73,6 +93,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOW_ALL_ORIGINS = True
 FILE_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '').strip()
+GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-3-flash-preview').strip()
 
 GOOGLE_OAUTH_CLIENT_IDS = [
     client_id.strip()

@@ -1,4 +1,4 @@
-import base64
+﻿import base64
 import ast
 import copy
 import difflib
@@ -8,6 +8,7 @@ import json
 import os
 import re
 import time
+from contextvars import ContextVar
 from functools import lru_cache
 from pathlib import Path
 from threading import Lock
@@ -43,13 +44,16 @@ ICON_MATCH_STRONG_MARGIN = 0.045
 ICON_MATCH_TOP_K = 3
 ICON_MATCH_ENTRY_BONUS_CAP = 0.16
 ICON_MATCH_ENTRY_PENALTY_CAP = 0.08
-QWEN_SINNER_HINT_BONUS = 0.09
-QWEN_SINNER_HINT_PENALTY = 0.05
+GEMINI_SINNER_HINT_BONUS = 0.09
+GEMINI_SINNER_HINT_PENALTY = 0.05
 EGO_RARITY_STRONG_SCORE_THRESHOLD = 0.34
 EGO_RARITY_WEAK_SCORE_THRESHOLD = 0.28
 EGO_RARITY_STRONG_MARGIN = 0.035
 ALIAS_MATCH_EXACT_BONUS = 0.08
 AMBIGUOUS_MATCH_SCORE_MARGIN = 0.035
+GEMINI_NAME_CHOICE_STRONG_LOCAL_MATCH = 0.72
+GEMINI_NAME_CHOICE_HIGH_CANDIDATE_SCORE = 0.74
+GEMINI_NAME_CHOICE_LOW_CONFIDENCE_SCORE = 0.64
 CARD_KIND_IDENTITY = 'identity'
 CARD_KIND_EGO = 'ego'
 MANIFEST_TOKEN_STOPWORDS = {
@@ -61,7 +65,7 @@ MANIFEST_TOKEN_STOPWORDS = {
     'ishmael', 'rodion', 'sinclair', 'outis', 'gregor',
 }
 DEFAULT_GEMINI_MODEL = 'gemini-3-flash-preview'
-QWEN_CARD_OCR_PROMPT = (
+GEMINI_CARD_OCR_PROMPT = (
     'Inspect the labeled panels of one game identity card. '
     'The panel labeled CARD is the full card. '
     'The panel labeled NAME MAIN is a raw zoom of the identity title area. '
@@ -83,7 +87,7 @@ QWEN_CARD_OCR_PROMPT = (
     '7) Many titles share words like Assoc., South, and Section. Preserve the first distinctive faction or title word exactly as shown. '
     '8) Do not repeat the identity title or the sinner name twice.'
 )
-QWEN_CARD_UPTIE_PROMPT = (
+GEMINI_CARD_UPTIE_PROMPT = (
     'Inspect the labeled panels of one game identity card frame. '
     'The first three panels are the real card frame regions: CARD TOP RIGHT, CARD RIGHT BORDER, and CARD BOTTOM LEFT. '
     'The next panels are two template candidates labeled C1 and C2. '
@@ -98,7 +102,7 @@ QWEN_CARD_UPTIE_PROMPT = (
     '4) Uptie 4 usually keeps the uptie 3 branch or vine shape but adds more lattice or fence detail on the top-right and right border. '
     '5) If uncertain, still choose the closer of C1 or C2.'
 )
-QWEN_CARD_NAME_CHOICE_PROMPT = (
+GEMINI_CARD_NAME_CHOICE_PROMPT = (
     'Inspect the labeled panels of one game identity card. '
     'The first panels show the real card, title area, sinner icon, and level area. '
     'The later panels labeled C1, C2, C3, and C4 are candidate identity names. '
@@ -112,7 +116,7 @@ QWEN_CARD_NAME_CHOICE_PROMPT = (
     '4) Ignore uptie pips, frame decorations, and level numbers except when needed to reject a bad option. '
     '5) If uncertain, still choose the closest of the listed candidates.'
 )
-QWEN_CARD_OCR_EGO_PROMPT = (
+GEMINI_CARD_OCR_EGO_PROMPT = (
     'Inspect the labeled panels of one Limbus Company EGO card. '
     'The panel labeled CARD is the full EGO card. '
     'The panel labeled NAME MAIN is a raw zoom of the EGO title area. '
@@ -136,7 +140,7 @@ QWEN_CARD_OCR_EGO_PROMPT = (
     '7) Do not invent words or numbers that are not visible in the image. '
     '8) If the sinner icon is unclear, focus on the visible badge art and name plate before guessing.'
 )
-QWEN_CARD_NAME_CHOICE_EGO_PROMPT = (
+GEMINI_CARD_NAME_CHOICE_EGO_PROMPT = (
     'Inspect the labeled panels of one game EGO card. '
     'The first panels show the real card, title area, sinner icon, risk area, and uptie area. '
     'The later panels labeled C1, C2, C3, and C4 are candidate EGO names. '
@@ -150,27 +154,27 @@ QWEN_CARD_NAME_CHOICE_EGO_PROMPT = (
     '4) If uncertain, still choose the closest of the listed candidates.'
 )
 RARITY_TEMPLATE_REGEX = re.compile(r'_(0{1,3})$', re.IGNORECASE)
-QWEN_TAGGED_FIELD_REGEX = re.compile(
+GEMINI_TAGGED_FIELD_REGEX = re.compile(
     r'(name|sinner|level|risk|uptie|text)\s*[:=-]\s*(.*?)\s*(?=(?:name|sinner|level|risk|uptie|text)\s*[:=-]|$)',
     re.IGNORECASE | re.DOTALL,
 )
-QWEN_UPTIE_CHOICE_REGEX = re.compile(r'choice\s*[:=-]\s*(c[12])', re.IGNORECASE)
-QWEN_NAME_CHOICE_REGEX = re.compile(r'choice\s*[:=-]\s*(c[1-4])', re.IGNORECASE)
-QWEN_PANEL_WIDTH = 360
-QWEN_PANEL_LABEL_HEIGHT = 34
-QWEN_PANEL_GAP = 12
-QWEN_NAME_MAIN_REGION = (0.08, 0.56, 0.94, 0.88)
-QWEN_NAME_ALT_REGION = (0.06, 0.48, 0.95, 0.9)
-QWEN_NAME_FOCUS_REGION = (0.14, 0.58, 0.94, 0.84)
-QWEN_SINNER_ICON_REGION = (0.54, 0.0, 0.98, 0.26)
-QWEN_LEVEL_REGION = (0.4, 0.5, 1.0, 0.9)
-QWEN_EGO_NAME_MAIN_REGION = (0.12, 0.68, 0.9, 0.98)
-QWEN_EGO_NAME_ALT_REGION = (0.08, 0.62, 0.92, 0.98)
-QWEN_EGO_RISK_REGION = (0.18, 0.5, 0.82, 0.72)
-QWEN_EGO_UPTIE_REGION = (0.72, 0.56, 1.0, 0.98)
-QWEN_UPTIE_TOP_RIGHT_REGION = (0.62, 0.0, 1.0, 0.28)
-QWEN_UPTIE_RIGHT_BORDER_REGION = (0.78, 0.08, 1.0, 0.86)
-QWEN_UPTIE_BOTTOM_LEFT_REGION = (0.0, 0.72, 0.38, 1.0)
+GEMINI_UPTIE_CHOICE_REGEX = re.compile(r'choice\s*[:=-]\s*(c[12])', re.IGNORECASE)
+GEMINI_NAME_CHOICE_REGEX = re.compile(r'choice\s*[:=-]\s*(c[1-4])', re.IGNORECASE)
+GEMINI_PANEL_WIDTH = 360
+GEMINI_PANEL_LABEL_HEIGHT = 34
+GEMINI_PANEL_GAP = 12
+GEMINI_NAME_MAIN_REGION = (0.08, 0.56, 0.94, 0.88)
+GEMINI_NAME_ALT_REGION = (0.06, 0.48, 0.95, 0.9)
+GEMINI_NAME_FOCUS_REGION = (0.14, 0.58, 0.94, 0.84)
+GEMINI_SINNER_ICON_REGION = (0.54, 0.0, 0.98, 0.26)
+GEMINI_LEVEL_REGION = (0.4, 0.5, 1.0, 0.9)
+GEMINI_EGO_NAME_MAIN_REGION = (0.12, 0.68, 0.9, 0.98)
+GEMINI_EGO_NAME_ALT_REGION = (0.08, 0.62, 0.92, 0.98)
+GEMINI_EGO_RISK_REGION = (0.18, 0.5, 0.82, 0.72)
+GEMINI_EGO_UPTIE_REGION = (0.72, 0.56, 1.0, 0.98)
+GEMINI_UPTIE_TOP_RIGHT_REGION = (0.62, 0.0, 1.0, 0.28)
+GEMINI_UPTIE_RIGHT_BORDER_REGION = (0.78, 0.08, 1.0, 0.86)
+GEMINI_UPTIE_BOTTOM_LEFT_REGION = (0.0, 0.72, 0.38, 1.0)
 LEVEL_OCR_REGIONS = (
     (0.44, 0.56, 1.0, 0.9),
     (0.4, 0.52, 1.0, 0.88),
@@ -263,6 +267,7 @@ UPTIE_ROMAN_VALUES = {
     'III': '3',
     'IV': '4',
 }
+GEMINI_NAME_CHOICE_BUDGET = ContextVar('gemini_name_choice_budget', default=None)
 EGO_RARITY_NORMALIZATION_MAP = {
     'Z': 'Z',
     'ZAYIN': 'Z',
@@ -290,8 +295,8 @@ SINNER_ICON_ALIASES = {
     'YiSang': ('YiSang',),
 }
 OCR_FEEDBACK_LOCK = Lock()
-DEFAULT_QWEN_OCR_MAX_NEW_TOKENS = 80
-DEFAULT_QWEN_CHOICE_MAX_NEW_TOKENS = 12
+DEFAULT_GEMINI_OCR_MAX_NEW_TOKENS = 80
+DEFAULT_GEMINI_CHOICE_MAX_NEW_TOKENS = 12
 
 
 def sanitize_name(text):
@@ -334,7 +339,7 @@ def normalize_feedback_text_profile(profile):
     observed_name = normalize_feedback_alias(profile.get('observed_name', ''))
     raw_ocr_name = normalize_feedback_alias(profile.get('raw_ocr_name', ''))
     ocr_support_text = cleanup_identity_name(profile.get('ocr_support_text') or profile.get('support_text', ''))
-    ocr_sinner_hint = normalize_qwen_sinner_hint(profile.get('ocr_sinner_hint') or profile.get('sinner_hint', ''))
+    ocr_sinner_hint = normalize_gemini_sinner_hint(profile.get('ocr_sinner_hint') or profile.get('sinner_hint', ''))
 
     if not any((observed_name, raw_ocr_name, ocr_support_text, ocr_sinner_hint)):
         return None
@@ -940,71 +945,75 @@ def recognize_single_screenshot(image_bytes, source_name, manifest):
     regions = extract_card_regions(image)
     region_elapsed = time.perf_counter() - region_started_at
     results = []
+    gemini_name_choice_budget_token = GEMINI_NAME_CHOICE_BUDGET.set(get_gemini_name_choice_budget_limit())
 
-    for index, bounds in enumerate(regions, start=1):
-        card_started_at = time.perf_counter()
-        x, y, width, height = bounds
-        card = image[y:y + height, x:x + width]
-        card_kind, rarity_hint = infer_card_kind(card)
-        icon_context = build_card_icon_context(image, bounds, card_kind=card_kind)
-        ocr_started_at = time.perf_counter()
-        ocr_result = extract_card_ocr_result(card, card_kind=card_kind, icon_context=icon_context)
-        if card_kind != CARD_KIND_EGO and is_probable_ego_ocr_result(ocr_result):
-            card_kind = CARD_KIND_EGO
-            rarity_hint = rarity_hint or normalize_ego_rarity_hint(ocr_result.get('risk')) or normalize_ego_rarity_hint(ocr_result.get('sinner'))
+    try:
+        for index, bounds in enumerate(regions, start=1):
+            card_started_at = time.perf_counter()
+            x, y, width, height = bounds
+            card = image[y:y + height, x:x + width]
+            card_kind, rarity_hint = infer_card_kind(card)
             icon_context = build_card_icon_context(image, bounds, card_kind=card_kind)
+            ocr_started_at = time.perf_counter()
             ocr_result = extract_card_ocr_result(card, card_kind=card_kind, icon_context=icon_context)
-        ocr_elapsed = time.perf_counter() - ocr_started_at
-        match_started_at = time.perf_counter()
-        raw_name, detected_label, matched_entry, name_confidence = match_card_name(
-            card,
-            manifest,
-            ocr_result=ocr_result,
-            card_kind=card_kind,
-            icon_context=icon_context,
-            rarity_hint=rarity_hint,
-        )
-        match_elapsed = time.perf_counter() - match_started_at
-        level_started_at = time.perf_counter()
-        level = extract_level(card, ocr_result=ocr_result) if card_kind == CARD_KIND_IDENTITY else 1
-        level_elapsed = time.perf_counter() - level_started_at
-        uptie_started_at = time.perf_counter()
-        uptie, uptie_confidence = infer_uptie(
-            card,
-            matched_entry,
-            detected_label or raw_name,
-            card_kind=card_kind,
-            ocr_result=ocr_result,
-            rarity_hint=rarity_hint,
-        )
-        uptie_elapsed = time.perf_counter() - uptie_started_at
-        combined_confidence = round((name_confidence * 0.8) + (uptie_confidence * 0.2), 4)
-        log_recognition_timing(
-            'card',
-            image=source_name,
-            index=index,
-            ocr_seconds=f'{ocr_elapsed:.3f}',
-            match_seconds=f'{match_elapsed:.3f}',
-            level_seconds=f'{level_elapsed:.3f}',
-            uptie_seconds=f'{uptie_elapsed:.3f}',
-            total_seconds=f'{time.perf_counter() - card_started_at:.3f}',
-            matched=bool(matched_entry),
-        )
+            if card_kind != CARD_KIND_EGO and is_probable_ego_ocr_result(ocr_result):
+                card_kind = CARD_KIND_EGO
+                rarity_hint = rarity_hint or normalize_ego_rarity_hint(ocr_result.get('risk')) or normalize_ego_rarity_hint(ocr_result.get('sinner'))
+                icon_context = build_card_icon_context(image, bounds, card_kind=card_kind)
+                ocr_result = extract_card_ocr_result(card, card_kind=card_kind, icon_context=icon_context)
+            ocr_elapsed = time.perf_counter() - ocr_started_at
+            match_started_at = time.perf_counter()
+            raw_name, detected_label, matched_entry, name_confidence = match_card_name(
+                card,
+                manifest,
+                ocr_result=ocr_result,
+                card_kind=card_kind,
+                icon_context=icon_context,
+                rarity_hint=rarity_hint,
+            )
+            match_elapsed = time.perf_counter() - match_started_at
+            level_started_at = time.perf_counter()
+            level = extract_level(card, ocr_result=ocr_result) if card_kind == CARD_KIND_IDENTITY else 1
+            level_elapsed = time.perf_counter() - level_started_at
+            uptie_started_at = time.perf_counter()
+            uptie, uptie_confidence = infer_uptie(
+                card,
+                matched_entry,
+                detected_label or raw_name,
+                card_kind=card_kind,
+                ocr_result=ocr_result,
+                rarity_hint=rarity_hint,
+            )
+            uptie_elapsed = time.perf_counter() - uptie_started_at
+            combined_confidence = round((name_confidence * 0.8) + (uptie_confidence * 0.2), 4)
+            log_recognition_timing(
+                'card',
+                image=source_name,
+                index=index,
+                ocr_seconds=f'{ocr_elapsed:.3f}',
+                match_seconds=f'{match_elapsed:.3f}',
+                level_seconds=f'{level_elapsed:.3f}',
+                uptie_seconds=f'{uptie_elapsed:.3f}',
+                total_seconds=f'{time.perf_counter() - card_started_at:.3f}',
+                matched=bool(matched_entry),
+            )
 
-        results.append(
-            {
-                'source_image': source_name,
-                'bounds': {'x': int(x), 'y': int(y), 'width': int(width), 'height': int(height)},
-                'ocr_name': detected_label or raw_name,
-                'raw_ocr_name': raw_name,
-                'ocr_support_text': ocr_result.get('text', ''),
-                'ocr_sinner_hint': ocr_result.get('sinner', ''),
-                'level': level,
-                'uptie': uptie,
-                'confidence': combined_confidence,
-                'matched_entry': matched_entry,
-            }
-        )
+            results.append(
+                {
+                    'source_image': source_name,
+                    'bounds': {'x': int(x), 'y': int(y), 'width': int(width), 'height': int(height)},
+                    'ocr_name': detected_label or raw_name,
+                    'raw_ocr_name': raw_name,
+                    'ocr_support_text': ocr_result.get('text', ''),
+                    'ocr_sinner_hint': ocr_result.get('sinner', ''),
+                    'level': level,
+                    'uptie': uptie,
+                    'confidence': combined_confidence,
+                    'matched_entry': matched_entry,
+                }
+            )
+    finally:
+        GEMINI_NAME_CHOICE_BUDGET.reset(gemini_name_choice_budget_token)
 
     log_recognition_timing(
         'regions',
@@ -1545,7 +1554,7 @@ def rescue_missing_grid_regions(image, regions):
         if confidence < 0.22 or not is_visually_dense_card(card):
             continue
 
-        if qwen_card_looks_like_identity(card):
+        if gemini_card_looks_like_identity(card):
             rescued.append(candidate)
 
     return sorted(rescued, key=lambda item: (item[1], item[0]))
@@ -1564,7 +1573,7 @@ def is_visually_dense_card(card):
     return edge_density >= 0.055 or (saturation_mean >= 0.16 and value_std >= 18.0)
 
 
-def qwen_card_looks_like_identity(card):
+def gemini_card_looks_like_identity(card):
     ocr_result = extract_card_ocr_result(card)
     if is_probable_ego_ocr_result(ocr_result):
         return False
@@ -1691,8 +1700,8 @@ def match_card_name(card, manifest, ocr_result=None, card_kind=CARD_KIND_IDENTIT
     support_text = build_ocr_support_text(ocr_result)
     icon_matches = rank_identity_icon_matches(card, card_kind=card_kind, icon_context=icon_context)
     scored_icon_labels = build_scored_icon_labels(icon_matches)
-    qwen_sinner_hint = normalize_qwen_sinner_hint(ocr_result.get('sinner', ''))
-    icon_manifest = narrow_manifest_with_icon_hints(manifest, icon_matches, name_candidates, qwen_sinner_hint)
+    gemini_sinner_hint = normalize_gemini_sinner_hint(ocr_result.get('sinner', ''))
+    icon_manifest = narrow_manifest_with_icon_hints(manifest, icon_matches, name_candidates, gemini_sinner_hint)
     if resolved_rarity_hint:
         icon_manifest = narrow_manifest_with_rarity_hint(icon_manifest, resolved_rarity_hint)
     best_text = ''
@@ -1706,7 +1715,7 @@ def match_card_name(card, manifest, ocr_result=None, card_kind=CARD_KIND_IDENTIT
             icon_manifest,
             support_text=support_text,
             icon_scores=scored_icon_labels,
-            qwen_sinner_hint=qwen_sinner_hint,
+            gemini_sinner_hint=gemini_sinner_hint,
         )
         detected_label = normalize_detected_label(candidate, matched_entry, score, icon_manifest)
 
@@ -1722,7 +1731,7 @@ def match_card_name(card, manifest, ocr_result=None, card_kind=CARD_KIND_IDENTIT
             manifest,
             support_text=support_text,
             icon_scores=scored_icon_labels,
-            qwen_sinner_hint=qwen_sinner_hint,
+            gemini_sinner_hint=gemini_sinner_hint,
         )
         if fallback_score >= best_score:
             return fallback_text, fallback_label, fallback_entry, fallback_score
@@ -1732,7 +1741,7 @@ def match_card_name(card, manifest, ocr_result=None, card_kind=CARD_KIND_IDENTIT
         chosen_text = sample_choice_entry['entryKey']
         return chosen_text, chosen_text, sample_choice_entry, max(best_score, sample_choice_score)
 
-    qwen_choice_entry = choose_manifest_entry_with_qwen(
+    gemini_choice_entry = choose_manifest_entry_with_gemini(
         card,
         name_candidates,
         icon_manifest,
@@ -1742,10 +1751,10 @@ def match_card_name(card, manifest, ocr_result=None, card_kind=CARD_KIND_IDENTIT
         card_kind=card_kind,
         icon_context=icon_context,
         icon_scores=scored_icon_labels,
-        qwen_sinner_hint=qwen_sinner_hint,
+        gemini_sinner_hint=gemini_sinner_hint,
     )
-    if qwen_choice_entry:
-        return qwen_choice_entry['entryKey'], qwen_choice_entry['entryKey'], qwen_choice_entry, max(best_score, 0.78)
+    if gemini_choice_entry:
+        return gemini_choice_entry['entryKey'], gemini_choice_entry['entryKey'], gemini_choice_entry, max(best_score, 0.78)
 
     if best_text:
         return best_text, best_label, best_entry, best_score
@@ -1756,12 +1765,12 @@ def match_card_name(card, manifest, ocr_result=None, card_kind=CARD_KIND_IDENTIT
         manifest,
         support_text=support_text,
         icon_scores=scored_icon_labels,
-        qwen_sinner_hint=qwen_sinner_hint,
+        gemini_sinner_hint=gemini_sinner_hint,
     )
     return raw_name, normalize_detected_label(raw_name, matched_entry, score, manifest), matched_entry, score
 
 
-def match_card_name_against_manifest(name_candidates, manifest, support_text='', icon_scores=None, qwen_sinner_hint=''):
+def match_card_name_against_manifest(name_candidates, manifest, support_text='', icon_scores=None, gemini_sinner_hint=''):
     best_text = ''
     best_label = ''
     best_entry = None
@@ -1773,7 +1782,7 @@ def match_card_name_against_manifest(name_candidates, manifest, support_text='',
             manifest,
             support_text=support_text,
             icon_scores=icon_scores,
-            qwen_sinner_hint=qwen_sinner_hint,
+            gemini_sinner_hint=gemini_sinner_hint,
         )
         detected_label = normalize_detected_label(candidate, matched_entry, score, manifest)
 
@@ -1786,17 +1795,17 @@ def match_card_name_against_manifest(name_candidates, manifest, support_text='',
     return best_text, best_label, best_entry, best_score
 
 
-def narrow_manifest_with_icon_hints(manifest, icon_matches, name_candidates, qwen_sinner_hint=''):
+def narrow_manifest_with_icon_hints(manifest, icon_matches, name_candidates, gemini_sinner_hint=''):
     if not manifest:
         return manifest
 
-    if qwen_sinner_hint:
-        qwen_narrowed = [
+    if gemini_sinner_hint:
+        gemini_narrowed = [
             entry for entry in manifest
-            if match_manifest_sinner_label(entry.get('sinnerKey'), {qwen_sinner_hint})
+            if match_manifest_sinner_label(entry.get('sinnerKey'), {gemini_sinner_hint})
         ]
-        if qwen_narrowed:
-            manifest = qwen_narrowed
+        if gemini_narrowed:
+            manifest = gemini_narrowed
 
     if not icon_matches:
         return manifest
@@ -1824,7 +1833,7 @@ def narrow_manifest_with_icon_hints(manifest, icon_matches, name_candidates, qwe
     return narrowed or manifest
 
 
-def normalize_qwen_sinner_hint(text):
+def normalize_gemini_sinner_hint(text):
     normalized_text = sanitize_name(text or '')
     if not normalized_text:
         return ''
@@ -1845,14 +1854,14 @@ def normalize_qwen_sinner_hint(text):
     return best_label
 
 
-def choose_manifest_entry_with_qwen(card, name_candidates, manifest, best_score, best_entry, support_text='', card_kind=CARD_KIND_IDENTITY, icon_context=None, icon_scores=None, qwen_sinner_hint=''):
+def choose_manifest_entry_with_gemini(card, name_candidates, manifest, best_score, best_entry, support_text='', card_kind=CARD_KIND_IDENTITY, icon_context=None, icon_scores=None, gemini_sinner_hint=''):
     candidate_entries = get_top_manifest_entry_candidates(
         name_candidates,
         manifest,
         limit=4,
         support_text=support_text,
         icon_scores=icon_scores,
-        qwen_sinner_hint=qwen_sinner_hint,
+        gemini_sinner_hint=gemini_sinner_hint,
     )
     if len(candidate_entries) < 2:
         return None
@@ -1860,14 +1869,16 @@ def choose_manifest_entry_with_qwen(card, name_candidates, manifest, best_score,
     top_candidate_score = candidate_entries[0]['candidateScore']
     second_candidate_score = candidate_entries[1]['candidateScore'] if len(candidate_entries) > 1 else 0.0
     score_margin = top_candidate_score - second_candidate_score
-    has_clear_text_winner = best_entry is not None and best_score >= 0.7 and score_margin >= 0.08
-    needs_qwen = best_entry is None or ((best_score < 0.86 or top_candidate_score < 0.78) and not has_clear_text_winner and score_margin < 0.08)
-    if not needs_qwen:
+    if not should_use_gemini_name_choice(name_candidates, best_score, best_entry, top_candidate_score, score_margin):
         return None
 
-    choice = run_qwen_card_name_choice(
-        encode_png_bytes(build_qwen_card_name_choice_image(card, candidate_entries, card_kind=card_kind, icon_context=icon_context)),
-        prompt_text=QWEN_CARD_NAME_CHOICE_EGO_PROMPT if card_kind == CARD_KIND_EGO else QWEN_CARD_NAME_CHOICE_PROMPT,
+    if not reserve_gemini_name_choice_budget():
+        log_recognition_timing('gemini_name_choice_skip', reason='budget')
+        return None
+
+    choice = run_gemini_card_name_choice(
+        encode_png_bytes(build_gemini_card_name_choice_image(card, candidate_entries, card_kind=card_kind, icon_context=icon_context)),
+        prompt_text=GEMINI_CARD_NAME_CHOICE_EGO_PROMPT if card_kind == CARD_KIND_EGO else GEMINI_CARD_NAME_CHOICE_PROMPT,
     )
     if not choice:
         return None
@@ -1883,6 +1894,43 @@ def choose_manifest_entry_with_qwen(card, name_candidates, manifest, best_score,
             }
 
     return None
+
+
+def get_gemini_name_choice_budget_limit():
+    try:
+        return max(0, int(os.environ.get('GEMINI_NAME_CHOICE_MAX_CALLS_PER_SCREENSHOT', '1')))
+    except (TypeError, ValueError):
+        return 1
+
+
+def reserve_gemini_name_choice_budget():
+    remaining = GEMINI_NAME_CHOICE_BUDGET.get()
+    if remaining is None:
+        remaining = get_gemini_name_choice_budget_limit()
+
+    if remaining <= 0:
+        return False
+
+    GEMINI_NAME_CHOICE_BUDGET.set(remaining - 1)
+    return True
+
+
+def should_use_gemini_name_choice(name_candidates, best_score, best_entry, top_candidate_score, score_margin):
+    ambiguous_name = is_ambiguous_name_candidate_set(name_candidates)
+
+    if score_margin >= AMBIGUOUS_MATCH_SCORE_MARGIN:
+        return False
+
+    if best_entry is not None and best_score >= GEMINI_NAME_CHOICE_STRONG_LOCAL_MATCH:
+        return False
+
+    if best_entry is not None and not ambiguous_name:
+        if top_candidate_score >= GEMINI_NAME_CHOICE_HIGH_CANDIDATE_SCORE:
+            return False
+        if best_score >= GEMINI_NAME_CHOICE_LOW_CONFIDENCE_SCORE:
+            return False
+
+    return ambiguous_name or best_entry is None or best_score < GEMINI_NAME_CHOICE_LOW_CONFIDENCE_SCORE or top_candidate_score < GEMINI_NAME_CHOICE_HIGH_CANDIDATE_SCORE
 
 
 def choose_manifest_entry_with_feedback_samples(card, manifest, best_score, best_entry):
@@ -1936,8 +1984,8 @@ def choose_manifest_entry_with_feedback_samples(card, manifest, best_score, best
 def build_feedback_sample_signature(card):
     grayscale = cv2.cvtColor(card, cv2.COLOR_BGR2GRAY)
     edges = cv2.Canny(grayscale, 50, 150)
-    name_main = cv2.cvtColor(crop_relative_region(card, *QWEN_NAME_MAIN_REGION), cv2.COLOR_BGR2GRAY)
-    name_alt = cv2.cvtColor(crop_relative_region(card, *QWEN_NAME_ALT_REGION), cv2.COLOR_BGR2GRAY)
+    name_main = cv2.cvtColor(crop_relative_region(card, *GEMINI_NAME_MAIN_REGION), cv2.COLOR_BGR2GRAY)
+    name_alt = cv2.cvtColor(crop_relative_region(card, *GEMINI_NAME_ALT_REGION), cv2.COLOR_BGR2GRAY)
     frame = cv2.cvtColor(extract_frame_signature(card), cv2.COLOR_BGR2GRAY)
 
     return {
@@ -1983,7 +2031,7 @@ def score_feedback_sample_signature(card_signature, sample_signature):
     )
 
 
-def get_top_manifest_entry_candidates(name_candidates, manifest, limit=4, support_text='', icon_scores=None, qwen_sinner_hint=''):
+def get_top_manifest_entry_candidates(name_candidates, manifest, limit=4, support_text='', icon_scores=None, gemini_sinner_hint=''):
     ranked_entries = []
     token_weights = build_manifest_token_weights(manifest)
 
@@ -1996,7 +2044,7 @@ def get_top_manifest_entry_candidates(name_candidates, manifest, limit=4, suppor
                 token_weights=token_weights,
                 support_text=support_text,
                 icon_scores=icon_scores,
-                qwen_sinner_hint=qwen_sinner_hint,
+                gemini_sinner_hint=gemini_sinner_hint,
             )
             best_candidate_score = max(best_candidate_score, score)
         ranked_entries.append({**entry, 'candidateScore': best_candidate_score})
@@ -2041,7 +2089,7 @@ def match_manifest_sinner_label(sinner_key, labels):
     return False
 
 
-def score_entry_icon_alignment(entry, icon_scores=None, qwen_sinner_hint=''):
+def score_entry_icon_alignment(entry, icon_scores=None, gemini_sinner_hint=''):
     entry_sinner_key = (entry or {}).get('sinnerKey')
     if not entry_sinner_key:
         return 0.0
@@ -2068,11 +2116,11 @@ def score_entry_icon_alignment(entry, icon_scores=None, qwen_sinner_hint=''):
         ):
             bonus -= min(ICON_MATCH_ENTRY_PENALTY_CAP, 0.02 + (float(top_score) * 0.14))
 
-    if qwen_sinner_hint:
-        if match_manifest_sinner_label(entry_sinner_key, {qwen_sinner_hint}):
-            bonus += QWEN_SINNER_HINT_BONUS
+    if gemini_sinner_hint:
+        if match_manifest_sinner_label(entry_sinner_key, {gemini_sinner_hint}):
+            bonus += GEMINI_SINNER_HINT_BONUS
         else:
-            bonus -= QWEN_SINNER_HINT_PENALTY
+            bonus -= GEMINI_SINNER_HINT_PENALTY
 
     return bonus
 
@@ -2600,10 +2648,10 @@ def filter_ocr_text(text, whitelist=''):
 
 
 def extract_card_ocr_result(card, card_kind=CARD_KIND_IDENTITY, icon_context=None):
-    analysis_image = build_qwen_card_ocr_image(card, card_kind=card_kind, icon_context=icon_context)
+    analysis_image = build_gemini_card_ocr_image(card, card_kind=card_kind, icon_context=icon_context)
     image_bytes = encode_png_bytes(analysis_image)
-    prompt_text = QWEN_CARD_OCR_EGO_PROMPT if card_kind == CARD_KIND_EGO else QWEN_CARD_OCR_PROMPT
-    return run_qwen_card_ocr(image_bytes, prompt_text=prompt_text)
+    prompt_text = GEMINI_CARD_OCR_EGO_PROMPT if card_kind == CARD_KIND_EGO else GEMINI_CARD_OCR_PROMPT
+    return run_gemini_card_ocr(image_bytes, prompt_text=prompt_text)
 
 
 def extract_primary_sinner_icon_crop(card, card_kind=CARD_KIND_IDENTITY, icon_context=None):
@@ -2625,60 +2673,60 @@ def extract_primary_sinner_icon_crop(card, card_kind=CARD_KIND_IDENTITY, icon_co
     return crop_relative_region(source, *fallback_regions[0])
 
 
-def build_qwen_card_ocr_image(card, card_kind=CARD_KIND_IDENTITY, icon_context=None):
+def build_gemini_card_ocr_image(card, card_kind=CARD_KIND_IDENTITY, icon_context=None):
     if card_kind == CARD_KIND_EGO:
-        name_main = crop_relative_region(card, *QWEN_EGO_NAME_MAIN_REGION)
-        name_alt = enhance_identity_text_region(crop_relative_region(card, *QWEN_EGO_NAME_ALT_REGION))
+        name_main = crop_relative_region(card, *GEMINI_EGO_NAME_MAIN_REGION)
+        name_alt = enhance_identity_text_region(crop_relative_region(card, *GEMINI_EGO_NAME_ALT_REGION))
         panels = [
-            build_qwen_labeled_panel('CARD', card),
-            build_qwen_labeled_panel('NAME MAIN', name_main),
-            build_qwen_labeled_panel('NAME ALT', name_alt),
-            build_qwen_labeled_panel('SINNER ICON', extract_primary_sinner_icon_crop(card, card_kind=card_kind, icon_context=icon_context)),
-            build_qwen_labeled_panel('RISK', crop_relative_region(card, *QWEN_EGO_RISK_REGION)),
-            build_qwen_labeled_panel('UPTIE', crop_relative_region(card, *QWEN_EGO_UPTIE_REGION)),
+            build_gemini_labeled_panel('CARD', card),
+            build_gemini_labeled_panel('NAME MAIN', name_main),
+            build_gemini_labeled_panel('NAME ALT', name_alt),
+            build_gemini_labeled_panel('SINNER ICON', extract_primary_sinner_icon_crop(card, card_kind=card_kind, icon_context=icon_context)),
+            build_gemini_labeled_panel('RISK', crop_relative_region(card, *GEMINI_EGO_RISK_REGION)),
+            build_gemini_labeled_panel('UPTIE', crop_relative_region(card, *GEMINI_EGO_UPTIE_REGION)),
         ]
-        return stack_qwen_panels(panels)
+        return stack_gemini_panels(panels)
 
-    name_main = crop_relative_region(card, *QWEN_NAME_MAIN_REGION)
-    name_alt = enhance_identity_text_region(crop_relative_region(card, *QWEN_NAME_FOCUS_REGION))
+    name_main = crop_relative_region(card, *GEMINI_NAME_MAIN_REGION)
+    name_alt = enhance_identity_text_region(crop_relative_region(card, *GEMINI_NAME_FOCUS_REGION))
     panels = [
-        build_qwen_labeled_panel('CARD', card),
-        build_qwen_labeled_panel('NAME MAIN', name_main),
-        build_qwen_labeled_panel('NAME ALT', name_alt),
-        build_qwen_labeled_panel('SINNER ICON', extract_primary_sinner_icon_crop(card, card_kind=card_kind, icon_context=icon_context)),
-        build_qwen_labeled_panel('LEVEL', crop_relative_region(card, *QWEN_LEVEL_REGION)),
+        build_gemini_labeled_panel('CARD', card),
+        build_gemini_labeled_panel('NAME MAIN', name_main),
+        build_gemini_labeled_panel('NAME ALT', name_alt),
+        build_gemini_labeled_panel('SINNER ICON', extract_primary_sinner_icon_crop(card, card_kind=card_kind, icon_context=icon_context)),
+        build_gemini_labeled_panel('LEVEL', crop_relative_region(card, *GEMINI_LEVEL_REGION)),
     ]
 
-    return stack_qwen_panels(panels)
+    return stack_gemini_panels(panels)
 
 
-def build_qwen_card_name_choice_image(card, candidates, card_kind=CARD_KIND_IDENTITY, icon_context=None):
+def build_gemini_card_name_choice_image(card, candidates, card_kind=CARD_KIND_IDENTITY, icon_context=None):
     if card_kind == CARD_KIND_EGO:
-        name_main = crop_relative_region(card, *QWEN_EGO_NAME_MAIN_REGION)
-        name_alt = enhance_identity_text_region(crop_relative_region(card, *QWEN_EGO_NAME_ALT_REGION))
+        name_main = crop_relative_region(card, *GEMINI_EGO_NAME_MAIN_REGION)
+        name_alt = enhance_identity_text_region(crop_relative_region(card, *GEMINI_EGO_NAME_ALT_REGION))
         panels = [
-            build_qwen_labeled_panel('CARD', card),
-            build_qwen_labeled_panel('NAME MAIN', name_main),
-            build_qwen_labeled_panel('NAME ALT', name_alt),
-            build_qwen_labeled_panel('SINNER ICON', extract_primary_sinner_icon_crop(card, card_kind=card_kind, icon_context=icon_context)),
-            build_qwen_labeled_panel('RISK', crop_relative_region(card, *QWEN_EGO_RISK_REGION)),
-            build_qwen_labeled_panel('UPTIE', crop_relative_region(card, *QWEN_EGO_UPTIE_REGION)),
+            build_gemini_labeled_panel('CARD', card),
+            build_gemini_labeled_panel('NAME MAIN', name_main),
+            build_gemini_labeled_panel('NAME ALT', name_alt),
+            build_gemini_labeled_panel('SINNER ICON', extract_primary_sinner_icon_crop(card, card_kind=card_kind, icon_context=icon_context)),
+            build_gemini_labeled_panel('RISK', crop_relative_region(card, *GEMINI_EGO_RISK_REGION)),
+            build_gemini_labeled_panel('UPTIE', crop_relative_region(card, *GEMINI_EGO_UPTIE_REGION)),
         ]
     else:
-        name_main = crop_relative_region(card, *QWEN_NAME_MAIN_REGION)
-        name_alt = enhance_identity_text_region(crop_relative_region(card, *QWEN_NAME_FOCUS_REGION))
+        name_main = crop_relative_region(card, *GEMINI_NAME_MAIN_REGION)
+        name_alt = enhance_identity_text_region(crop_relative_region(card, *GEMINI_NAME_FOCUS_REGION))
         panels = [
-            build_qwen_labeled_panel('CARD', card),
-            build_qwen_labeled_panel('NAME MAIN', name_main),
-            build_qwen_labeled_panel('NAME ALT', name_alt),
-            build_qwen_labeled_panel('SINNER ICON', extract_primary_sinner_icon_crop(card, card_kind=card_kind, icon_context=icon_context)),
-            build_qwen_labeled_panel('LEVEL', crop_relative_region(card, *QWEN_LEVEL_REGION)),
+            build_gemini_labeled_panel('CARD', card),
+            build_gemini_labeled_panel('NAME MAIN', name_main),
+            build_gemini_labeled_panel('NAME ALT', name_alt),
+            build_gemini_labeled_panel('SINNER ICON', extract_primary_sinner_icon_crop(card, card_kind=card_kind, icon_context=icon_context)),
+            build_gemini_labeled_panel('LEVEL', crop_relative_region(card, *GEMINI_LEVEL_REGION)),
         ]
 
     for index, entry in enumerate(candidates, start=1):
-        panels.append(build_qwen_labeled_panel(f'C{index}', build_qwen_text_block(build_manifest_candidate_display_label(entry))))
+        panels.append(build_gemini_labeled_panel(f'C{index}', build_gemini_text_block(build_manifest_candidate_display_label(entry))))
 
-    return stack_qwen_panels(panels)
+    return stack_gemini_panels(panels)
 
 
 def extract_card_uptie_result(card, matched_entry=None, detected_label=''):
@@ -2694,9 +2742,9 @@ def extract_card_uptie_result(card, matched_entry=None, detected_label=''):
     if candidates[0]['uptie_level'] == candidates[1]['uptie_level']:
         return str(candidates[0]['uptie_level'])
 
-    analysis_image = build_qwen_uptie_choice_image(card, matched_entry, detected_label)
+    analysis_image = build_gemini_uptie_choice_image(card, matched_entry, detected_label)
     image_bytes = encode_png_bytes(analysis_image)
-    choice = run_qwen_card_uptie(image_bytes)
+    choice = run_gemini_card_uptie(image_bytes)
     if choice == 'C1':
         return str(candidates[0]['uptie_level'])
     if choice == 'C2':
@@ -2705,62 +2753,62 @@ def extract_card_uptie_result(card, matched_entry=None, detected_label=''):
     return ''
 
 
-def build_qwen_card_uptie_image(card):
+def build_gemini_card_uptie_image(card):
     panels = [
-        build_qwen_labeled_panel('TOP RIGHT FRAME', crop_relative_region(card, *QWEN_UPTIE_TOP_RIGHT_REGION)),
-        build_qwen_labeled_panel('RIGHT BORDER FRAME', crop_relative_region(card, *QWEN_UPTIE_RIGHT_BORDER_REGION)),
-        build_qwen_labeled_panel('BOTTOM LEFT FRAME', crop_relative_region(card, *QWEN_UPTIE_BOTTOM_LEFT_REGION)),
+        build_gemini_labeled_panel('TOP RIGHT FRAME', crop_relative_region(card, *GEMINI_UPTIE_TOP_RIGHT_REGION)),
+        build_gemini_labeled_panel('RIGHT BORDER FRAME', crop_relative_region(card, *GEMINI_UPTIE_RIGHT_BORDER_REGION)),
+        build_gemini_labeled_panel('BOTTOM LEFT FRAME', crop_relative_region(card, *GEMINI_UPTIE_BOTTOM_LEFT_REGION)),
     ]
 
-    return stack_qwen_panels(panels)
+    return stack_gemini_panels(panels)
 
 
-def build_qwen_uptie_choice_image(card, matched_entry=None, detected_label=''):
+def build_gemini_uptie_choice_image(card, matched_entry=None, detected_label=''):
     rarity = normalize_rarity((matched_entry or {}).get('rarity')) or infer_known_label_rarity(detected_label)
     candidates = get_top_frame_template_candidates(card, rarity=rarity, limit=2)
     panels = [
-        build_qwen_labeled_panel('CARD TOP RIGHT', crop_relative_region(card, *QWEN_UPTIE_TOP_RIGHT_REGION)),
-        build_qwen_labeled_panel('CARD RIGHT BORDER', crop_relative_region(card, *QWEN_UPTIE_RIGHT_BORDER_REGION)),
-        build_qwen_labeled_panel('CARD BOTTOM LEFT', crop_relative_region(card, *QWEN_UPTIE_BOTTOM_LEFT_REGION)),
+        build_gemini_labeled_panel('CARD TOP RIGHT', crop_relative_region(card, *GEMINI_UPTIE_TOP_RIGHT_REGION)),
+        build_gemini_labeled_panel('CARD RIGHT BORDER', crop_relative_region(card, *GEMINI_UPTIE_RIGHT_BORDER_REGION)),
+        build_gemini_labeled_panel('CARD BOTTOM LEFT', crop_relative_region(card, *GEMINI_UPTIE_BOTTOM_LEFT_REGION)),
     ]
 
     for index, candidate in enumerate(candidates, start=1):
         template_signature = candidate['signature_color']
         panels.append(
-            build_qwen_labeled_panel(
+            build_gemini_labeled_panel(
                 f'C{index} U{candidate["uptie_level"]} TR {candidate["score"]:.3f}',
-                crop_relative_region(template_signature, *QWEN_UPTIE_TOP_RIGHT_REGION),
+                crop_relative_region(template_signature, *GEMINI_UPTIE_TOP_RIGHT_REGION),
             )
         )
         panels.append(
-            build_qwen_labeled_panel(
+            build_gemini_labeled_panel(
                 f'C{index} U{candidate["uptie_level"]} RB {candidate["score"]:.3f}',
-                crop_relative_region(template_signature, *QWEN_UPTIE_RIGHT_BORDER_REGION),
+                crop_relative_region(template_signature, *GEMINI_UPTIE_RIGHT_BORDER_REGION),
             )
         )
         panels.append(
-            build_qwen_labeled_panel(
+            build_gemini_labeled_panel(
                 f'C{index} U{candidate["uptie_level"]} BL {candidate["score"]:.3f}',
-                crop_relative_region(template_signature, *QWEN_UPTIE_BOTTOM_LEFT_REGION),
+                crop_relative_region(template_signature, *GEMINI_UPTIE_BOTTOM_LEFT_REGION),
             )
         )
 
-    return stack_qwen_panels(panels)
+    return stack_gemini_panels(panels)
 
 
-def stack_qwen_panels(panels):
+def stack_gemini_panels(panels):
     if not panels:
-        return np.full((QWEN_PANEL_LABEL_HEIGHT, QWEN_PANEL_WIDTH, 3), 255, dtype=np.uint8)
+        return np.full((GEMINI_PANEL_LABEL_HEIGHT, GEMINI_PANEL_WIDTH, 3), 255, dtype=np.uint8)
 
     canvas_width = max(panel.shape[1] for panel in panels)
-    canvas_height = sum(panel.shape[0] for panel in panels) + (QWEN_PANEL_GAP * (len(panels) - 1))
+    canvas_height = sum(panel.shape[0] for panel in panels) + (GEMINI_PANEL_GAP * (len(panels) - 1))
     canvas = np.full((canvas_height, canvas_width, 3), 255, dtype=np.uint8)
 
     offset_y = 0
     for panel in panels:
         panel_height, panel_width = panel.shape[:2]
         canvas[offset_y:offset_y + panel_height, 0:panel_width] = panel
-        offset_y += panel_height + QWEN_PANEL_GAP
+        offset_y += panel_height + GEMINI_PANEL_GAP
 
     return canvas
 
@@ -2774,25 +2822,25 @@ def crop_relative_region(card, left, top, right, bottom):
     return card[y1:y2, x1:x2]
 
 
-def build_qwen_labeled_panel(label, image):
+def build_gemini_labeled_panel(label, image):
     if image is None or not image.size:
-        image = np.full((32, QWEN_PANEL_WIDTH, 3), 255, dtype=np.uint8)
+        image = np.full((32, GEMINI_PANEL_WIDTH, 3), 255, dtype=np.uint8)
 
     panel_height, panel_width = image.shape[:2]
-    scale = QWEN_PANEL_WIDTH / float(panel_width)
+    scale = GEMINI_PANEL_WIDTH / float(panel_width)
     target_height = max(32, int(round(panel_height * scale)))
-    resized = cv2.resize(image, (QWEN_PANEL_WIDTH, target_height), interpolation=cv2.INTER_CUBIC)
+    resized = cv2.resize(image, (GEMINI_PANEL_WIDTH, target_height), interpolation=cv2.INTER_CUBIC)
 
-    panel = np.full((target_height + QWEN_PANEL_LABEL_HEIGHT, QWEN_PANEL_WIDTH, 3), 255, dtype=np.uint8)
-    panel[:QWEN_PANEL_LABEL_HEIGHT] = 235
-    panel[QWEN_PANEL_LABEL_HEIGHT:] = resized
+    panel = np.full((target_height + GEMINI_PANEL_LABEL_HEIGHT, GEMINI_PANEL_WIDTH, 3), 255, dtype=np.uint8)
+    panel[:GEMINI_PANEL_LABEL_HEIGHT] = 235
+    panel[GEMINI_PANEL_LABEL_HEIGHT:] = resized
     cv2.putText(panel, label, (10, 23), cv2.FONT_HERSHEY_SIMPLEX, 0.62, (32, 32, 32), 2, cv2.LINE_AA)
     return panel
 
 
-def build_qwen_text_block(text):
+def build_gemini_text_block(text):
     normalized = normalize_ocr_text(text or '') or ' '
-    canvas = np.full((120, QWEN_PANEL_WIDTH, 3), 255, dtype=np.uint8)
+    canvas = np.full((120, GEMINI_PANEL_WIDTH, 3), 255, dtype=np.uint8)
     words = normalized.split()
     lines = []
     current_line = ''
@@ -2800,7 +2848,7 @@ def build_qwen_text_block(text):
     for word in words:
         proposed = f'{current_line} {word}'.strip()
         text_width = cv2.getTextSize(proposed, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)[0][0]
-        if current_line and text_width > (QWEN_PANEL_WIDTH - 24):
+        if current_line and text_width > (GEMINI_PANEL_WIDTH - 24):
             lines.append(current_line)
             current_line = word
         else:
@@ -2863,58 +2911,55 @@ def encode_png_bytes(image):
     return encoded.tobytes()
 
 
-@lru_cache(maxsize=96)
-def run_qwen_card_ocr(image_bytes, prompt_text=QWEN_CARD_OCR_PROMPT):
+def run_gemini_card_ocr(image_bytes, prompt_text=GEMINI_CARD_OCR_PROMPT):
     started_at = time.perf_counter()
     try:
-        output_text = generate_qwen_response(
+        output_text = generate_gemini_response(
             image_bytes,
             prompt_text,
-            max_new_tokens=int(os.environ.get('GEMINI_MAX_NEW_TOKENS', str(DEFAULT_QWEN_OCR_MAX_NEW_TOKENS))),
+            max_new_tokens=int(os.environ.get('GEMINI_MAX_NEW_TOKENS', str(DEFAULT_GEMINI_OCR_MAX_NEW_TOKENS))),
         )
     except Exception as exc:
         raise RuntimeError(f'Gemini OCR request failed: {exc}') from exc
 
-    log_recognition_timing('qwen_ocr', seconds=f'{time.perf_counter() - started_at:.3f}', bytes=len(image_bytes))
+    log_recognition_timing('gemini_ocr', seconds=f'{time.perf_counter() - started_at:.3f}', bytes=len(image_bytes))
 
-    return parse_qwen_card_ocr_output(output_text)
+    return parse_gemini_card_ocr_output(output_text)
 
 
-@lru_cache(maxsize=96)
-def run_qwen_card_uptie(image_bytes):
+def run_gemini_card_uptie(image_bytes):
     started_at = time.perf_counter()
     try:
-        output_text = generate_qwen_response(
+        output_text = generate_gemini_response(
             image_bytes,
-            QWEN_CARD_UPTIE_PROMPT,
-            max_new_tokens=int(os.environ.get('GEMINI_MAX_NEW_TOKENS', str(DEFAULT_QWEN_CHOICE_MAX_NEW_TOKENS))),
+            GEMINI_CARD_UPTIE_PROMPT,
+            max_new_tokens=int(os.environ.get('GEMINI_MAX_NEW_TOKENS', str(DEFAULT_GEMINI_CHOICE_MAX_NEW_TOKENS))),
         )
     except Exception as exc:
         raise RuntimeError(f'Gemini uptie request failed: {exc}') from exc
 
-    log_recognition_timing('qwen_uptie', seconds=f'{time.perf_counter() - started_at:.3f}', bytes=len(image_bytes))
+    log_recognition_timing('gemini_uptie', seconds=f'{time.perf_counter() - started_at:.3f}', bytes=len(image_bytes))
 
-    return parse_qwen_card_uptie_output(output_text)
+    return parse_gemini_card_uptie_output(output_text)
 
 
-@lru_cache(maxsize=96)
-def run_qwen_card_name_choice(image_bytes, prompt_text=QWEN_CARD_NAME_CHOICE_PROMPT):
+def run_gemini_card_name_choice(image_bytes, prompt_text=GEMINI_CARD_NAME_CHOICE_PROMPT):
     started_at = time.perf_counter()
     try:
-        output_text = generate_qwen_response(
+        output_text = generate_gemini_response(
             image_bytes,
             prompt_text,
-            max_new_tokens=int(os.environ.get('GEMINI_MAX_NEW_TOKENS', str(DEFAULT_QWEN_CHOICE_MAX_NEW_TOKENS))),
+            max_new_tokens=int(os.environ.get('GEMINI_MAX_NEW_TOKENS', str(DEFAULT_GEMINI_CHOICE_MAX_NEW_TOKENS))),
         )
     except Exception as exc:
         raise RuntimeError(f'Gemini name-choice request failed: {exc}') from exc
 
-    log_recognition_timing('qwen_name_choice', seconds=f'{time.perf_counter() - started_at:.3f}', bytes=len(image_bytes))
+    log_recognition_timing('gemini_name_choice', seconds=f'{time.perf_counter() - started_at:.3f}', bytes=len(image_bytes))
 
-    return parse_qwen_card_name_choice_output(output_text)
+    return parse_gemini_card_name_choice_output(output_text)
 
 
-def generate_qwen_response(image_bytes, prompt_text, max_new_tokens=DEFAULT_QWEN_OCR_MAX_NEW_TOKENS):
+def generate_gemini_response(image_bytes, prompt_text, max_new_tokens=DEFAULT_GEMINI_OCR_MAX_NEW_TOKENS):
     client = get_gemini_client()
     model_name = os.environ.get('GEMINI_MODEL', DEFAULT_GEMINI_MODEL)
     mime_type = detect_image_mime_type(image_bytes)
@@ -2962,7 +3007,7 @@ def get_gemini_client():
         raise RuntimeError(f'Failed to initialize Gemini client: {exc}') from exc
 
 
-def warm_qwen_model():
+def warm_gemini_model():
     get_gemini_client()
 
 
@@ -2990,7 +3035,7 @@ def detect_image_mime_type(image_bytes):
     return 'image/png'
 
 
-def parse_qwen_card_ocr_output(output_text):
+def parse_gemini_card_ocr_output(output_text):
     normalized_output = normalize_ocr_text(output_text)
     payload = extract_json_object(output_text)
     tagged_fields = extract_tagged_fields(output_text)
@@ -3031,13 +3076,13 @@ def parse_qwen_card_ocr_output(output_text):
     }
 
 
-def parse_qwen_card_uptie_output(output_text):
-    match = QWEN_UPTIE_CHOICE_REGEX.search(str(output_text)) or re.search(r'\b(C[12])\b', str(output_text), flags=re.IGNORECASE)
+def parse_gemini_card_uptie_output(output_text):
+    match = GEMINI_UPTIE_CHOICE_REGEX.search(str(output_text)) or re.search(r'\b(C[12])\b', str(output_text), flags=re.IGNORECASE)
     return match.group(1).upper() if match else ''
 
 
-def parse_qwen_card_name_choice_output(output_text):
-    match = QWEN_NAME_CHOICE_REGEX.search(str(output_text)) or re.search(r'\b(C[1-4])\b', str(output_text), flags=re.IGNORECASE)
+def parse_gemini_card_name_choice_output(output_text):
+    match = GEMINI_NAME_CHOICE_REGEX.search(str(output_text)) or re.search(r'\b(C[1-4])\b', str(output_text), flags=re.IGNORECASE)
     return match.group(1).upper() if match else ''
 
 
@@ -3061,7 +3106,7 @@ def extract_json_object(text):
 def extract_tagged_fields(text):
     fields = {}
 
-    for match in QWEN_TAGGED_FIELD_REGEX.finditer(str(text)):
+    for match in GEMINI_TAGGED_FIELD_REGEX.finditer(str(text)):
         key = match.group(1).lower()
         value = normalize_ocr_text(match.group(2))
         if value:
@@ -3094,12 +3139,12 @@ def normalize_ocr_text(text):
         ('\r', ' '),
         ('\n', ' '),
         ('|', 'I'),
-        ('—', '-'),
-        ('–', '-'),
-        ('’', "'"),
-        ('‘', "'"),
-        ('“', '"'),
-        ('”', '"'),
+        ('�', '-'),
+        ('�', '-'),
+        ('�', "'"),
+        ('�', "'"),
+        ('�', '"'),
+        ('�', '"'),
     ):
         normalized = normalized.replace(source, target)
 
@@ -3336,7 +3381,7 @@ def score_feedback_text_profiles(raw_name, support_text, text_profiles, token_we
     return best_score
 
 
-def score_manifest_candidate(raw_name, entry, token_weights=None, support_text='', icon_scores=None, qwen_sinner_hint=''):
+def score_manifest_candidate(raw_name, entry, token_weights=None, support_text='', icon_scores=None, gemini_sinner_hint=''):
     token_weights = token_weights or {}
     best_score = score_manifest_text_variant(raw_name, entry.get('entryKey', ''), entry.get('name_tokens') or (), token_weights)
     best_support_score = 0.0
@@ -3366,14 +3411,14 @@ def score_manifest_candidate(raw_name, entry, token_weights=None, support_text='
     if feedback_profile_score:
         best_score = max(best_score, (best_score * 0.76) + (feedback_profile_score * 0.24))
 
-    icon_alignment = score_entry_icon_alignment(entry, icon_scores=icon_scores, qwen_sinner_hint=qwen_sinner_hint)
+    icon_alignment = score_entry_icon_alignment(entry, icon_scores=icon_scores, gemini_sinner_hint=gemini_sinner_hint)
     if icon_alignment:
         best_score = float(np.clip(best_score + icon_alignment, 0.0, 1.0))
 
     return min(best_score, 1.0)
 
 
-def match_manifest_entry(raw_name, manifest, support_text='', icon_scores=None, qwen_sinner_hint=''):
+def match_manifest_entry(raw_name, manifest, support_text='', icon_scores=None, gemini_sinner_hint=''):
     normalized_input = sanitize_name(raw_name)
     best_entry = None
     best_score = 0.0
@@ -3394,7 +3439,7 @@ def match_manifest_entry(raw_name, manifest, support_text='', icon_scores=None, 
             token_weights=token_weights,
             support_text=support_text,
             icon_scores=icon_scores,
-            qwen_sinner_hint=qwen_sinner_hint,
+            gemini_sinner_hint=gemini_sinner_hint,
         )
 
         if score > best_score:
@@ -3543,9 +3588,9 @@ def infer_uptie(card, matched_entry=None, detected_label='', card_kind=CARD_KIND
     if template_level is not None:
         return template_level, template_confidence
 
-    qwen_uptie = extract_card_uptie_result(card, matched_entry, detected_label)
-    if qwen_uptie in {'1', '2', '3', '4'}:
-        return int(qwen_uptie), 0.56
+    gemini_uptie = extract_card_uptie_result(card, matched_entry, detected_label)
+    if gemini_uptie in {'1', '2', '3', '4'}:
+        return int(gemini_uptie), 0.56
 
     border_signature = extract_frame_signature(card)
     grayscale = cv2.cvtColor(border_signature, cv2.COLOR_BGR2GRAY)
@@ -3778,7 +3823,7 @@ def extract_frame_detail_signature(signature):
         return np.zeros((8, 8, 3), dtype=np.uint8)
 
     detail_crops = []
-    for region in (QWEN_UPTIE_TOP_RIGHT_REGION, QWEN_UPTIE_RIGHT_BORDER_REGION):
+    for region in (GEMINI_UPTIE_TOP_RIGHT_REGION, GEMINI_UPTIE_RIGHT_BORDER_REGION):
         crop = crop_relative_region(signature, *region)
         if crop is not None and getattr(crop, 'size', 0):
             detail_crops.append(crop)
@@ -3833,7 +3878,7 @@ def build_card_debug_report(card, matched_entry=None, detected_label=''):
     return {
         'card_kind': card_kind,
         'ocr': ocr_result,
-        'qwen_uptie': extract_card_uptie_result(card, matched_entry, detected_label or ocr_result.get('name', '')),
+        'gemini_uptie': extract_card_uptie_result(card, matched_entry, detected_label or ocr_result.get('name', '')),
         'uptie_template_candidates': [
             {
                 'uptie_level': candidate['uptie_level'],

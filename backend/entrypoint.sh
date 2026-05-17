@@ -5,13 +5,13 @@ set -eu
 : "${GEMINI_WARM_ON_START:=0}"
 : "${PORT:=8000}"
 : "${GUNICORN_WORKERS:=1}"
-: "${GUNICORN_TIMEOUT:=120}"
+: "${GUNICORN_TIMEOUT:=300}"
 export GEMINI_MODEL
 export GEMINI_WARM_ON_START
 export PORT
 
 if [ "$GEMINI_WARM_ON_START" = "1" ]; then
-	python -c "from sync_api.services import warm_qwen_model; warm_qwen_model()"
+	python -c "from sync_api.services import warm_gemini_model; warm_gemini_model()"
 fi
 
 python manage.py migrate --noinput
