@@ -21,6 +21,7 @@ steps:
       - ${_SERVICE_NAME}
       - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPOSITORY}/backend:${SHORT_SHA}
       - --region=${_REGION}
+      - --port=8000
       - --platform=managed
       - --allow-unauthenticated
       - --command=/app/entrypoint.sh
