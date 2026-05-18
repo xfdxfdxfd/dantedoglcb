@@ -294,6 +294,7 @@ UPTIE_ROMAN_VALUES = {
     'IV': '4',
 }
 GEMINI_NAME_CHOICE_BUDGET = ContextVar('gemini_name_choice_budget', default=None)
+GEMINI_UPTIE_BUDGET = ContextVar('gemini_uptie_budget', default=None)
 EGO_RARITY_NORMALIZATION_MAP = {
     'Z': 'Z',
     'ZAYIN': 'Z',
@@ -326,6 +327,7 @@ DEFAULT_GEMINI_CHOICE_MAX_NEW_TOKENS = 12
 DEFAULT_GEMINI_BATCH_OCR_MAX_CARDS_PER_CALL = 6
 DEFAULT_GEMINI_BATCH_OCR_MAX_NEW_TOKENS = 640
 DEFAULT_GEMINI_BATCH_OCR_THINKING_BUDGET = 0
+DEFAULT_GEMINI_UPTIE_MAX_CALLS_PER_SCREENSHOT = 0
 DEFAULT_GEMINI_REQUEST_MAX_ATTEMPTS = 3
 DEFAULT_GEMINI_RETRY_BACKOFF_SECONDS = 1.5
 
@@ -979,6 +981,7 @@ def recognize_single_screenshot(image_bytes, source_name, manifest):
     cards = [image[y:y + height, x:x + width] for x, y, width, height in regions]
     batched_ocr_results = extract_screenshot_card_ocr_results(cards)
     gemini_name_choice_budget_token = GEMINI_NAME_CHOICE_BUDGET.set(get_gemini_name_choice_budget_limit())
+    gemini_uptie_budget_token = GEMINI_UPTIE_BUDGET.set(get_gemini_uptie_budget_limit())
 
     try:
         for index, bounds in enumerate(regions, start=1):
@@ -1050,6 +1053,7 @@ def recognize_single_screenshot(image_bytes, source_name, manifest):
             )
     finally:
         GEMINI_NAME_CHOICE_BUDGET.reset(gemini_name_choice_budget_token)
+        GEMINI_UPTIE_BUDGET.reset(gemini_uptie_budget_token)
 
     log_recognition_timing(
         'regions',
@@ -1939,6 +1943,13 @@ def get_gemini_name_choice_budget_limit():
         return 1
 
 
+def get_gemini_uptie_budget_limit():
+    try:
+        return max(0, int(os.environ.get('GEMINI_UPTIE_MAX_CALLS_PER_SCREENSHOT', str(DEFAULT_GEMINI_UPTIE_MAX_CALLS_PER_SCREENSHOT))))
+    except (TypeError, ValueError):
+        return DEFAULT_GEMINI_UPTIE_MAX_CALLS_PER_SCREENSHOT
+
+
 def reserve_gemini_name_choice_budget():
     remaining = GEMINI_NAME_CHOICE_BUDGET.get()
     if remaining is None:
@@ -1948,6 +1959,18 @@ def reserve_gemini_name_choice_budget():
         return False
 
     GEMINI_NAME_CHOICE_BUDGET.set(remaining - 1)
+    return True
+
+
+def reserve_gemini_uptie_budget():
+    remaining = GEMINI_UPTIE_BUDGET.get()
+    if remaining is None:
+        remaining = get_gemini_uptie_budget_limit()
+
+    if remaining <= 0:
+        return False
+
+    GEMINI_UPTIE_BUDGET.set(remaining - 1)
     return True
 
 
@@ -2777,6 +2800,10 @@ def extract_card_uptie_result(card, matched_entry=None, detected_label=''):
 
     if candidates[0]['uptie_level'] == candidates[1]['uptie_level']:
         return str(candidates[0]['uptie_level'])
+
+    if not reserve_gemini_uptie_budget():
+        log_recognition_timing('gemini_uptie_skip', reason='budget')
+        return ''
 
     analysis_image = build_gemini_uptie_choice_image(card, matched_entry, detected_label)
     image_bytes = encode_png_bytes(analysis_image)

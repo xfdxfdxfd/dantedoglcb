@@ -22,7 +22,7 @@ This backend provides screenshot upload and roster recognition for the Vue front
 - GPU is not required. Gemini OCR runs against the remote Gemini API, so the optional GPU compose override is not needed for recognition quality or throughput.
 - Local Docker baseline: 2 vCPU and 4 GB RAM is enough to run one backend worker plus PostgreSQL for single-user testing.
 - Local recommended headroom: 4 vCPU and 8 GB RAM if you want faster screenshot turnaround, rebuilds, or multiple screenshots queued back to back.
-- Cloud Run starting point: 2 vCPU, 2 GiB RAM, concurrency 1, `GUNICORN_WORKERS=1`, and `GUNICORN_TIMEOUT=300`.
+- Cloud Run production default in this repo: 4 vCPU, 8 GiB RAM, concurrency 1, Cloud Run request timeout `300s`, `GUNICORN_WORKERS=1`, and `GUNICORN_TIMEOUT=300`.
 - Network stability matters more than GPU. The heavy OCR work is remote API latency, while local CPU/RAM mainly cover OpenCV preprocessing, image assembly, and Django.
 
 ## Install
@@ -50,6 +50,8 @@ The backend now calls the Gemini API from inside the container. You do not need 
 `docker compose` builds the backend image with the Google GenAI SDK and serves Django through `gunicorn` on port `8000` by default while running OCR through `gemini-3-flash-preview`.
 
 To reduce Gemini OCR call count per screenshot, the backend batches multiple detected cards into one OCR request by default. Set `GEMINI_BATCH_OCR_MAX_CARDS_PER_CALL=6` to control how many cards are grouped into one Gemini call. The batch OCR path also defaults `GEMINI_BATCH_OCR_THINKING_BUDGET=0` so Gemini spends output tokens on the returned card blocks instead of hidden reasoning. For example, a 12-card screenshot now targets about 2 Gemini OCR calls instead of 12, while `GEMINI_NAME_CHOICE_MAX_CALLS_PER_SCREENSHOT=1` still caps the more expensive ambiguity fallback.
+
+The backend now defaults `GEMINI_UPTIE_MAX_CALLS_PER_SCREENSHOT=0`, which disables the last Gemini uptie fallback by default. That keeps recognition on the batched OCR path plus local frame heuristics, which is materially faster on Cloud Run and avoids slipping over a 30-second worker timeout.
 
 The backend uses PostgreSQL in Docker. The compose file also starts a `postgres` service and mounts its data directory from an external Docker volume named `dantedoglcb-postgres-data`.
 
@@ -124,22 +126,31 @@ POSTGRES_PASSWORD=replace-with-a-secret-manager-value
 GEMINI_API_KEY=replace-with-a-secret-manager-value
 GEMINI_MODEL=gemini-3-flash-preview
 GEMINI_MAX_NEW_TOKENS=192
+GEMINI_BATCH_OCR_MAX_CARDS_PER_CALL=6
+GEMINI_BATCH_OCR_MAX_NEW_TOKENS=640
+GEMINI_BATCH_OCR_THINKING_BUDGET=0
 GEMINI_WARM_ON_START=0
+GEMINI_NAME_CHOICE_MAX_CALLS_PER_SCREENSHOT=1
+GEMINI_UPTIE_MAX_CALLS_PER_SCREENSHOT=0
+GUNICORN_WORKERS=1
+GUNICORN_TIMEOUT=300
 GOOGLE_OAUTH_CLIENT_IDS=your-google-web-client-id
 ```
+
+Backend-relevant Cloud Run environment variables from your current service setup are the Django, PostgreSQL, Google OAuth, Gemini, and Gunicorn settings above. The backend does not currently read `VITE_API_BASE_URL`, `VITE_GOOGLE_CLIENT_ID`, `CHOKIDAR_USEPOLLING`, `SCREENSHOT_REGION_MAX_PREVIEW_DIMENSION`, `SCREENSHOT_REGION_BOX_PADDING`, or `LOCAL_SCREENSHOT_REGION_FALLBACK`, so keeping those in the Cloud Run UI is harmless but they are not part of the backend deploy contract.
 
 Optional runtime environment variables:
 
 ```text
 GOOGLE_OAUTH_CLIENT_ID=your-google-web-client-id
-GUNICORN_WORKERS=1
-GUNICORN_TIMEOUT=120
-GEMINI_BATCH_OCR_MAX_CARDS_PER_CALL=6
-GEMINI_BATCH_OCR_MAX_NEW_TOKENS=640
-GEMINI_BATCH_OCR_THINKING_BUDGET=0
+GEMINI_UPTIE_MAX_CALLS_PER_SCREENSHOT=1
 ```
 
 Cloud Run sets `PORT` automatically. The container entrypoint now binds Gunicorn to that port.
+
+`cloudbuild.yaml` now deploys Cloud Run with explicit `--command=/app/entrypoint.sh`, `--cpu`, `--memory`, `--concurrency`, and `--timeout` flags so the production service uses the repository entrypoint and matches the documented runtime spec instead of inheriting older service defaults.
+
+`cloudbuild.yaml` also now sets `POSTGRES_HOST=/cloudsql/${_CLOUD_SQL_INSTANCE}` during deploy, which matches the Cloud Run environment value you listed for the Cloud SQL Unix socket path.
 
 If your frontend is deployed separately, build it with:
 
@@ -170,6 +181,18 @@ _POSTGRES_USER
 _DJANGO_ALLOWED_HOSTS
 _GOOGLE_OAUTH_CLIENT_ID
 _GOOGLE_OAUTH_CLIENT_IDS
+_CPU
+_MEMORY
+_CONCURRENCY
+_REQUEST_TIMEOUT
+_GEMINI_MODEL
+_GEMINI_BATCH_OCR_MAX_CARDS_PER_CALL
+_GEMINI_BATCH_OCR_MAX_NEW_TOKENS
+_GEMINI_BATCH_OCR_THINKING_BUDGET
+_GEMINI_NAME_CHOICE_MAX_CALLS_PER_SCREENSHOT
+_GEMINI_UPTIE_MAX_CALLS_PER_SCREENSHOT
+_GUNICORN_WORKERS
+_GUNICORN_TIMEOUT
 ```
 
 Example deploy command:
