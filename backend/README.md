@@ -31,8 +31,10 @@ set POSTGRES_USER=dantedoglcb
 set POSTGRES_PASSWORD=change-me
 set QWEN_VL_MODEL=Qwen/Qwen3-VL-2B-Instruct
 set QWEN_VL_DTYPE=auto
+set QWEN_VL_OCR_MAX_NEW_TOKENS=80
+set QWEN_VL_CHOICE_MAX_NEW_TOKENS=12
 python manage.py migrate
-python manage.py runserver
+gunicorn roster_sync.wsgi:application --bind 0.0.0.0:8000 --workers 1 --threads 2 --timeout 300
 ```
 
 ## Docker
@@ -52,6 +54,10 @@ docker compose up -d --build backend
 ```
 
 The first OCR request downloads the model weights into the Docker volume `dantedoglcb-huggingface-cache`. If you want Docker to download the model immediately on startup, set `QWEN_VL_WARM_ON_START=1` in `.env` before running compose.
+
+The backend entrypoint now starts Gunicorn by default. You can tune its concurrency with `GUNICORN_WORKERS`, `GUNICORN_THREADS`, and `GUNICORN_TIMEOUT` in the repository-root `.env` used by Docker Compose.
+
+If the Hugging Face cache stalls before `model.safetensors` starts downloading, keep `HF_HUB_DISABLE_XET=1` so the backend falls back to the standard HTTP download path.
 
 If your Docker host exposes an NVIDIA GPU, local `Qwen3-VL` inference is much faster with GPU acceleration. This workspace includes an optional [docker-compose.gpu.yml](docker-compose.gpu.yml) override:
 
@@ -103,3 +109,10 @@ For more accurate uptie detection, add sample frame crops into:
 - `sync_api/frame_templates/uptie4/`
 
 PNG or JPG files are supported. The recognizer falls back to heuristics when no templates are present.
+
+## Spec
+
+1. GPU: NVIDIA CUDA GPU is effectively required. Target 12 GB VRAM minimum, with 16 GB preferred for headroom. 6 GB works, but measured too slow.
+2. CPU: 8+ strong cores is enough.
+3. RAM: 32 GB is a reasonable minimum. 64 GB is safer if you want more workers or concurrent requests.
+4. CPU-only: not recommended for <30s.

@@ -2974,6 +2974,10 @@ def get_qwen_vl_components():
 
 def warm_qwen_model():
     get_qwen_vl_components()
+    warm_image = Image.new('RGB', (64, 64), color=(255, 255, 255))
+    buffer = io.BytesIO()
+    warm_image.save(buffer, format='PNG')
+    generate_qwen_response(buffer.getvalue(), QWEN_CARD_OCR_PROMPT, max_new_tokens=8)
 
 
 def get_qwen_vl_device(model):
