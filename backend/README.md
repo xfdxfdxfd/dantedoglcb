@@ -17,6 +17,14 @@ This backend provides screenshot upload and roster recognition for the Vue front
 - PostgreSQL reachable from Django if you run the backend outside Docker
 - Network access from the backend to the Gemini API
 
+## Runtime spec
+
+- GPU is not required. Gemini OCR runs against the remote Gemini API, so the optional GPU compose override is not needed for recognition quality or throughput.
+- Local Docker baseline: 2 vCPU and 4 GB RAM is enough to run one backend worker plus PostgreSQL for single-user testing.
+- Local recommended headroom: 4 vCPU and 8 GB RAM if you want faster screenshot turnaround, rebuilds, or multiple screenshots queued back to back.
+- Cloud Run starting point: 2 vCPU, 2 GiB RAM, concurrency 1, `GUNICORN_WORKERS=1`, and `GUNICORN_TIMEOUT=300`.
+- Network stability matters more than GPU. The heavy OCR work is remote API latency, while local CPU/RAM mainly cover OpenCV preprocessing, image assembly, and Django.
+
 ## Install
 
 ```powershell
@@ -40,6 +48,8 @@ gunicorn roster_sync.wsgi:application --bind 0.0.0.0:8000
 The backend now calls the Gemini API from inside the container. You do not need a local OCR model on your host machine, but you do need `GEMINI_API_KEY` set in your environment or `.env` file.
 
 `docker compose` builds the backend image with the Google GenAI SDK and serves Django through `gunicorn` on port `8000` by default while running OCR through `gemini-3-flash-preview`.
+
+To reduce Gemini OCR call count per screenshot, the backend batches multiple detected cards into one OCR request by default. Set `GEMINI_BATCH_OCR_MAX_CARDS_PER_CALL=6` to control how many cards are grouped into one Gemini call. The batch OCR path also defaults `GEMINI_BATCH_OCR_THINKING_BUDGET=0` so Gemini spends output tokens on the returned card blocks instead of hidden reasoning. For example, a 12-card screenshot now targets about 2 Gemini OCR calls instead of 12, while `GEMINI_NAME_CHOICE_MAX_CALLS_PER_SCREENSHOT=1` still caps the more expensive ambiguity fallback.
 
 The backend uses PostgreSQL in Docker. The compose file also starts a `postgres` service and mounts its data directory from an external Docker volume named `dantedoglcb-postgres-data`.
 
@@ -124,6 +134,9 @@ Optional runtime environment variables:
 GOOGLE_OAUTH_CLIENT_ID=your-google-web-client-id
 GUNICORN_WORKERS=1
 GUNICORN_TIMEOUT=120
+GEMINI_BATCH_OCR_MAX_CARDS_PER_CALL=6
+GEMINI_BATCH_OCR_MAX_NEW_TOKENS=640
+GEMINI_BATCH_OCR_THINKING_BUDGET=0
 ```
 
 Cloud Run sets `PORT` automatically. The container entrypoint now binds Gunicorn to that port.

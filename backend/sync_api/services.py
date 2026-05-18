@@ -15,6 +15,7 @@ from threading import Lock
 
 import cv2
 import numpy as np
+from django.conf import settings
 from google import genai
 from google.genai import types
 from PIL import Image
@@ -86,6 +87,28 @@ GEMINI_CARD_OCR_PROMPT = (
     '6) Do not invent words or numbers that are not visible in the image. '
     '7) Many titles share words like Assoc., South, and Section. Preserve the first distinctive faction or title word exactly as shown. '
     '8) Do not repeat the identity title or the sinner name twice.'
+)
+GEMINI_BATCH_CARD_OCR_PROMPT = (
+    'Inspect the labeled panels for multiple game cards. '
+    'Every panel label starts with a card number such as "1 CARD", "2 NAME ALT", or "3 UPTIE". '
+    'Panels with the same leading number belong to the same card. '
+    'Return exactly one block per card in ascending numeric order with no markdown and no extra keys. '
+    'Use this exact block format for every card: '
+    'CARD <number>\n'
+    'NAME: <card name only>\n'
+    'SINNER: <sinner name only>\n'
+    'LEVEL: <identity level digits only>\n'
+    'RISK: <ZAYIN or TETH or HE or WAW>\n'
+    'UPTIE: <1 or 2 or 3 or 4 only>\n'
+    'TEXT: <short supporting OCR text>. '
+    'Rules: '
+    '1) Return one block for every card number shown in the image, even if some values are blank. '
+    '2) NAME must contain only the visible card title and must not include Lv, NEW, risk labels, sinner names, or uptie marks. '
+    '3) For identity cards, fill LEVEL when visible and leave RISK blank. '
+    '4) For EGO cards, fill RISK and UPTIE when visible and leave LEVEL blank if no level is shown. '
+    '5) If a value is unreadable, leave the value empty after the colon. '
+    '6) Use the NAME ALT, ICON, LEVEL, RISK, and UPTIE panels as support, but do not merge details from different card numbers. '
+    '7) Do not invent words or numbers that are not visible.'
 )
 GEMINI_CARD_UPTIE_PROMPT = (
     'Inspect the labeled panels of one game identity card frame. '
@@ -160,6 +183,7 @@ GEMINI_TAGGED_FIELD_REGEX = re.compile(
 )
 GEMINI_UPTIE_CHOICE_REGEX = re.compile(r'choice\s*[:=-]\s*(c[12])', re.IGNORECASE)
 GEMINI_NAME_CHOICE_REGEX = re.compile(r'choice\s*[:=-]\s*(c[1-4])', re.IGNORECASE)
+GEMINI_BATCH_CARD_HEADER_REGEX = re.compile(r'^\s*CARD\s+(\d+)\s*:?\s*$', re.IGNORECASE | re.MULTILINE)
 GEMINI_PANEL_WIDTH = 360
 GEMINI_PANEL_LABEL_HEIGHT = 34
 GEMINI_PANEL_GAP = 12
@@ -172,6 +196,8 @@ GEMINI_EGO_NAME_MAIN_REGION = (0.12, 0.68, 0.9, 0.98)
 GEMINI_EGO_NAME_ALT_REGION = (0.08, 0.62, 0.92, 0.98)
 GEMINI_EGO_RISK_REGION = (0.18, 0.5, 0.82, 0.72)
 GEMINI_EGO_UPTIE_REGION = (0.72, 0.56, 1.0, 0.98)
+GEMINI_BATCH_NAME_MAIN_REGION = (0.08, 0.52, 0.95, 0.98)
+GEMINI_BATCH_NAME_ALT_REGION = (0.06, 0.48, 0.95, 0.98)
 GEMINI_UPTIE_TOP_RIGHT_REGION = (0.62, 0.0, 1.0, 0.28)
 GEMINI_UPTIE_RIGHT_BORDER_REGION = (0.78, 0.08, 1.0, 0.86)
 GEMINI_UPTIE_BOTTOM_LEFT_REGION = (0.0, 0.72, 0.38, 1.0)
@@ -297,6 +323,11 @@ SINNER_ICON_ALIASES = {
 OCR_FEEDBACK_LOCK = Lock()
 DEFAULT_GEMINI_OCR_MAX_NEW_TOKENS = 80
 DEFAULT_GEMINI_CHOICE_MAX_NEW_TOKENS = 12
+DEFAULT_GEMINI_BATCH_OCR_MAX_CARDS_PER_CALL = 6
+DEFAULT_GEMINI_BATCH_OCR_MAX_NEW_TOKENS = 640
+DEFAULT_GEMINI_BATCH_OCR_THINKING_BUDGET = 0
+DEFAULT_GEMINI_REQUEST_MAX_ATTEMPTS = 3
+DEFAULT_GEMINI_RETRY_BACKOFF_SECONDS = 1.5
 
 
 def sanitize_name(text):
@@ -945,22 +976,27 @@ def recognize_single_screenshot(image_bytes, source_name, manifest):
     regions = extract_card_regions(image)
     region_elapsed = time.perf_counter() - region_started_at
     results = []
+    cards = [image[y:y + height, x:x + width] for x, y, width, height in regions]
+    batched_ocr_results = extract_screenshot_card_ocr_results(cards)
     gemini_name_choice_budget_token = GEMINI_NAME_CHOICE_BUDGET.set(get_gemini_name_choice_budget_limit())
 
     try:
         for index, bounds in enumerate(regions, start=1):
             card_started_at = time.perf_counter()
             x, y, width, height = bounds
-            card = image[y:y + height, x:x + width]
+            card = cards[index - 1]
             card_kind, rarity_hint = infer_card_kind(card)
             icon_context = build_card_icon_context(image, bounds, card_kind=card_kind)
             ocr_started_at = time.perf_counter()
-            ocr_result = extract_card_ocr_result(card, card_kind=card_kind, icon_context=icon_context)
+            ocr_result = batched_ocr_results[index - 1] if index - 1 < len(batched_ocr_results) else build_empty_ocr_result(batched=True)
+            if should_fallback_to_single_card_ocr(ocr_result):
+                ocr_result = extract_card_ocr_result(card, card_kind=card_kind, icon_context=icon_context)
             if card_kind != CARD_KIND_EGO and is_probable_ego_ocr_result(ocr_result):
                 card_kind = CARD_KIND_EGO
                 rarity_hint = rarity_hint or normalize_ego_rarity_hint(ocr_result.get('risk')) or normalize_ego_rarity_hint(ocr_result.get('sinner'))
                 icon_context = build_card_icon_context(image, bounds, card_kind=card_kind)
-                ocr_result = extract_card_ocr_result(card, card_kind=card_kind, icon_context=icon_context)
+                if not ocr_result.get('batched'):
+                    ocr_result = extract_card_ocr_result(card, card_kind=card_kind, icon_context=icon_context)
             ocr_elapsed = time.perf_counter() - ocr_started_at
             match_started_at = time.perf_counter()
             raw_name, detected_label, matched_entry, name_confidence = match_card_name(
@@ -2876,6 +2912,30 @@ def build_manifest_candidate_display_label(entry):
     return f'{sinner_label} {entry_key}'
 
 
+def build_empty_ocr_result(raw_output='', batched=False):
+    return {
+        'name': '',
+        'sinner': '',
+        'tagged_name': '',
+        'level': '',
+        'risk': '',
+        'uptie': '',
+        'text': '',
+        'raw_output': normalize_ocr_text(raw_output),
+        'batched': bool(batched),
+    }
+
+
+def should_fallback_to_single_card_ocr(ocr_result):
+    if not isinstance(ocr_result, dict):
+        return True
+
+    if any(ocr_result.get(key) for key in ('name', 'sinner', 'level', 'risk', 'uptie')):
+        return False
+
+    return len(normalize_ocr_text(ocr_result.get('text', ''))) < 4
+
+
 def enhance_identity_text_region(image):
     if image is None or not image.size:
         return image
@@ -2927,6 +2987,102 @@ def run_gemini_card_ocr(image_bytes, prompt_text=GEMINI_CARD_OCR_PROMPT):
     return parse_gemini_card_ocr_output(output_text)
 
 
+def get_gemini_batch_ocr_card_limit():
+    try:
+        return max(1, int(os.environ.get('GEMINI_BATCH_OCR_MAX_CARDS_PER_CALL', str(DEFAULT_GEMINI_BATCH_OCR_MAX_CARDS_PER_CALL))))
+    except (TypeError, ValueError):
+        return DEFAULT_GEMINI_BATCH_OCR_MAX_CARDS_PER_CALL
+
+
+def get_gemini_batch_ocr_max_new_tokens():
+    try:
+        return max(64, int(os.environ.get('GEMINI_BATCH_OCR_MAX_NEW_TOKENS', str(DEFAULT_GEMINI_BATCH_OCR_MAX_NEW_TOKENS))))
+    except (TypeError, ValueError):
+        return DEFAULT_GEMINI_BATCH_OCR_MAX_NEW_TOKENS
+
+
+def get_gemini_batch_ocr_thinking_budget():
+    try:
+        return max(0, int(os.environ.get('GEMINI_BATCH_OCR_THINKING_BUDGET', str(DEFAULT_GEMINI_BATCH_OCR_THINKING_BUDGET))))
+    except (TypeError, ValueError):
+        return DEFAULT_GEMINI_BATCH_OCR_THINKING_BUDGET
+
+
+def build_gemini_batch_card_panels(card, card_number):
+    number = int(card_number)
+    name_main = crop_relative_region(card, *GEMINI_BATCH_NAME_MAIN_REGION)
+    name_alt = enhance_identity_text_region(crop_relative_region(card, *GEMINI_BATCH_NAME_ALT_REGION))
+    return [
+        build_gemini_labeled_panel(f'{number} CARD', card),
+        build_gemini_labeled_panel(f'{number} NAME', name_main),
+        build_gemini_labeled_panel(f'{number} NAME ALT', name_alt),
+        build_gemini_labeled_panel(f'{number} ICON ID', extract_primary_sinner_icon_crop(card, card_kind=CARD_KIND_IDENTITY)),
+        build_gemini_labeled_panel(f'{number} ICON EGO', extract_primary_sinner_icon_crop(card, card_kind=CARD_KIND_EGO)),
+        build_gemini_labeled_panel(f'{number} LEVEL', crop_relative_region(card, *GEMINI_LEVEL_REGION)),
+        build_gemini_labeled_panel(f'{number} RISK', crop_relative_region(card, *GEMINI_EGO_RISK_REGION)),
+        build_gemini_labeled_panel(f'{number} UPTIE', crop_relative_region(card, *GEMINI_EGO_UPTIE_REGION)),
+    ]
+
+
+def build_gemini_batched_card_ocr_image(cards):
+    panels = []
+
+    for index, card in enumerate(cards, start=1):
+        panels.extend(build_gemini_batch_card_panels(card, index))
+
+    return stack_gemini_panels(panels)
+
+
+def run_gemini_batched_card_ocr(image_bytes, expected_count):
+    started_at = time.perf_counter()
+    try:
+        output_text = generate_gemini_response(
+            image_bytes,
+            GEMINI_BATCH_CARD_OCR_PROMPT,
+            max_new_tokens=get_gemini_batch_ocr_max_new_tokens(),
+            thinking_budget=get_gemini_batch_ocr_thinking_budget(),
+        )
+    except Exception as exc:
+        raise RuntimeError(f'Gemini batch OCR request failed: {exc}') from exc
+
+    log_recognition_timing(
+        'gemini_batch_ocr',
+        cards=expected_count,
+        seconds=f'{time.perf_counter() - started_at:.3f}',
+        bytes=len(image_bytes),
+    )
+
+    return parse_gemini_batched_card_ocr_output(output_text, expected_count)
+
+
+def extract_screenshot_card_ocr_results(cards):
+    if not cards:
+        return []
+
+    batch_limit = get_gemini_batch_ocr_card_limit()
+    if batch_limit <= 1:
+        return [build_empty_ocr_result(batched=True) for _card in cards]
+
+    results = []
+
+    for start_index in range(0, len(cards), batch_limit):
+        batch_cards = cards[start_index:start_index + batch_limit]
+        image_bytes = encode_png_bytes(build_gemini_batched_card_ocr_image(batch_cards))
+
+        try:
+            batch_results = run_gemini_batched_card_ocr(image_bytes, expected_count=len(batch_cards))
+        except Exception as exc:
+            log_recognition_timing('gemini_batch_ocr_fallback', cards=len(batch_cards), reason=type(exc).__name__)
+            batch_results = [build_empty_ocr_result(batched=True) for _card in batch_cards]
+
+        results.extend(batch_results)
+
+    if len(results) < len(cards):
+        results.extend(build_empty_ocr_result(batched=True) for _card in cards[len(results):])
+
+    return results[:len(cards)]
+
+
 def run_gemini_card_uptie(image_bytes):
     started_at = time.perf_counter()
     try:
@@ -2959,26 +3115,69 @@ def run_gemini_card_name_choice(image_bytes, prompt_text=GEMINI_CARD_NAME_CHOICE
     return parse_gemini_card_name_choice_output(output_text)
 
 
-def generate_gemini_response(image_bytes, prompt_text, max_new_tokens=DEFAULT_GEMINI_OCR_MAX_NEW_TOKENS):
+def get_gemini_request_attempt_limit():
+    try:
+        return max(1, int(os.environ.get('GEMINI_REQUEST_MAX_ATTEMPTS', str(DEFAULT_GEMINI_REQUEST_MAX_ATTEMPTS))))
+    except (TypeError, ValueError):
+        return DEFAULT_GEMINI_REQUEST_MAX_ATTEMPTS
+
+
+def get_gemini_retry_backoff_seconds():
+    try:
+        return max(0.0, float(os.environ.get('GEMINI_RETRY_BACKOFF_SECONDS', str(DEFAULT_GEMINI_RETRY_BACKOFF_SECONDS))))
+    except (TypeError, ValueError):
+        return DEFAULT_GEMINI_RETRY_BACKOFF_SECONDS
+
+
+def is_retryable_gemini_error(error):
+    status_code = getattr(error, 'status_code', None)
+    if status_code in {429, 500, 502, 503, 504}:
+        return True
+
+    message = str(error).upper()
+    return any(token in message for token in ('429', '500', '502', '503', '504', 'RESOURCE_EXHAUSTED', 'UNAVAILABLE', 'TOO MANY REQUESTS'))
+
+
+def generate_gemini_response(image_bytes, prompt_text, max_new_tokens=DEFAULT_GEMINI_OCR_MAX_NEW_TOKENS, thinking_budget=None):
     client = get_gemini_client()
-    model_name = os.environ.get('GEMINI_MODEL', DEFAULT_GEMINI_MODEL)
+    model_name = (getattr(settings, 'GEMINI_MODEL', '') or os.environ.get('GEMINI_MODEL') or DEFAULT_GEMINI_MODEL).strip()
     mime_type = detect_image_mime_type(image_bytes)
     config = types.GenerateContentConfig(
         temperature=0,
         max_output_tokens=int(max_new_tokens),
     )
+    if thinking_budget is not None:
+        config.thinking_config = types.ThinkingConfig(thinking_budget=int(thinking_budget))
+    attempt_limit = get_gemini_request_attempt_limit()
+    retry_backoff_seconds = get_gemini_retry_backoff_seconds()
 
-    try:
-        response = client.models.generate_content(
-            model=model_name,
-            contents=[
-                types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
-                prompt_text,
-            ],
-            config=config,
-        )
-    except Exception as exc:
-        raise RuntimeError(f'Failed to call Gemini model `{model_name}`: {exc}') from exc
+    last_error = None
+    for attempt in range(1, attempt_limit + 1):
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=[
+                    types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
+                    prompt_text,
+                ],
+                config=config,
+            )
+            break
+        except Exception as exc:
+            last_error = exc
+            if attempt >= attempt_limit or not is_retryable_gemini_error(exc):
+                raise RuntimeError(f'Failed to call Gemini model `{model_name}`: {exc}') from exc
+
+            log_recognition_timing(
+                'gemini_retry',
+                attempt=attempt,
+                max_attempts=attempt_limit,
+                status=getattr(exc, 'status_code', 'unknown'),
+            )
+            time.sleep(retry_backoff_seconds * attempt)
+
+    if last_error is not None and 'response' not in locals():
+        raise RuntimeError(f'Failed to call Gemini model `{model_name}`: {last_error}') from last_error
 
     output_text = getattr(response, 'text', '') or ''
     if output_text:
@@ -2997,7 +3196,7 @@ def generate_gemini_response(image_bytes, prompt_text, max_new_tokens=DEFAULT_GE
 
 @lru_cache(maxsize=1)
 def get_gemini_client():
-    api_key = (os.environ.get('GEMINI_API_KEY') or '').strip()
+    api_key = (getattr(settings, 'GEMINI_API_KEY', '') or os.environ.get('GEMINI_API_KEY') or '').strip()
     if not api_key:
         raise RuntimeError('GEMINI_API_KEY is not set.')
 
@@ -3073,7 +3272,34 @@ def parse_gemini_card_ocr_output(output_text):
         'uptie': uptie,
         'text': text,
         'raw_output': normalized_output,
+        'batched': False,
     }
+
+
+def parse_gemini_batched_card_ocr_output(output_text, expected_count):
+    text = str(output_text or '')
+    matches = list(GEMINI_BATCH_CARD_HEADER_REGEX.finditer(text))
+    if not matches:
+        if expected_count == 1:
+            parsed = parse_gemini_card_ocr_output(text)
+            parsed['batched'] = True
+            return [parsed]
+        return [build_empty_ocr_result(raw_output=text, batched=True) for _index in range(expected_count)]
+
+    parsed_by_index = {}
+    for match_index, match in enumerate(matches):
+        card_index = int(match.group(1))
+        start = match.end()
+        end = matches[match_index + 1].start() if match_index + 1 < len(matches) else len(text)
+        chunk = text[start:end].strip()
+        parsed = parse_gemini_card_ocr_output(chunk)
+        parsed['batched'] = True
+        parsed_by_index[card_index] = parsed
+
+    return [
+        parsed_by_index.get(card_index, build_empty_ocr_result(raw_output=text, batched=True))
+        for card_index in range(1, expected_count + 1)
+    ]
 
 
 def parse_gemini_card_uptie_output(output_text):

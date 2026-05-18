@@ -16,7 +16,8 @@ def load_env_file(env_path):
 
         key, value = line.split('=', 1)
         key = key.strip()
-        if not key or key in os.environ:
+        existing_value = os.environ.get(key)
+        if not key or (existing_value is not None and existing_value.strip()):
             continue
 
         os.environ[key] = value.strip().strip('"').strip("'")
