@@ -27,7 +27,8 @@ load_env_file(BASE_DIR / '.env')
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'dev-only-secret-key')
 DEBUG = os.environ.get('DJANGO_DEBUG', 'true').lower() == 'true'
-ALLOWED_HOSTS = [host for host in os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',') if host]
+import re
+ALLOWED_HOSTS = [host for host in re.split(r'[\s,]+', os.environ.get('DJANGO_ALLOWED_HOSTS', '*')) if host]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
