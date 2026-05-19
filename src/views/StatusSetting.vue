@@ -6,7 +6,7 @@
                     <div class="hero-grid items-start">
                         <div class="hero-card">
                             <p class="section-kicker">{{ $t(`BulkSyncLabel`) }}</p>
-                            <div class="deco-divider mt-4 lg:mx-0 lg:justify-start">{{ $t(`StatusRecognitionSuite`) }}</div>
+                            <!-- <div class="deco-divider mt-4 lg:mx-0 lg:justify-start">{{ $t(`StatusRecognitionSuite`) }}</div> -->
                             <h1 class="section-title mt-3">{{ $t(`StatusSetting`) }}</h1>
                             <p class="section-copy mt-4">{{ $t(`statusSettingToolPage`) }}</p>
                             <p class="mt-4 text-sm text-stone-400">{{ $t(`BulkSyncHint`) }}</p>

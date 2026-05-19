@@ -11,7 +11,6 @@
 
                     <div class="hero-card">
                         <p class="section-kicker">{{ $t(`UptieModes`) }}</p>
-                        <div class="deco-divider mt-4">{{ $t(`UptieSelection`) }}</div>
                         <div class="mt-4 grid gap-3 sm:grid-cols-2">
                             <button type="button" class="action-button action-button--accent" :disabled="!hasSavedProgress" :class="!hasSavedProgress ? 'cursor-not-allowed opacity-45' : ''" @click="calculate('uptie3')">{{ $t(`All Uptie 3`) }}</button>
                             <button type="button" class="action-button action-button--accent" :disabled="!hasSavedProgress" :class="!hasSavedProgress ? 'cursor-not-allowed opacity-45' : ''" @click="calculate('uptie4')">{{ $t(`All Uptie 4`) }}</button>
@@ -32,7 +31,7 @@
                 <div class="mt-8 subtle-panel p-6">
                     <p class="section-kicker">{{ $t(`You need`) }}</p>
                     <div class="mt-4 muted-panel flex items-center gap-4 p-4">
-                        <span class="deco-diamond shrink-0" aria-hidden="true"><img class="h-10 w-10" :alt="$t('Threads')" src="../../src/assets/icon_twine.webp"></span>
+                        <span class="deco-diamond shrink-0" aria-hidden="true"><img class="h-14 w-10" :alt="$t('Threads')" src="../../src/assets/icon_twine.webp"></span>
                         <div>
                             <p class="text-sm text-stone-400">{{ $t(`Threads`) }}</p>
                             <p class="deco-stat-value text-3xl">{{ CalResult.ThreadAmount }}</p>
@@ -41,7 +40,7 @@
 
                     <div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                         <div v-for="shard in shardCards" :key="shard.key" class="muted-panel flex items-center gap-4 p-4">
-                            <span class="deco-diamond shrink-0" aria-hidden="true"><img class="h-10 w-10" :alt="shard.key" :src="shard.image"></span>
+                            <span class="deco-diamond shrink-0" aria-hidden="true"><img class="h-16 w-24" :alt="shard.key" :src="shard.image"></span>
                             <div>
                                 <p class="text-sm text-stone-400">{{ $t(shard.label) }}</p>
                                 <p class="font-accent text-2xl uppercase tracking-[0.14em] text-white">{{ CalResult[shard.key] }}</p>
@@ -212,3 +211,12 @@ export default {
     },
 }
 </script>
+
+<style scoped>
+.deco-diamond img {
+    height: 4rem !important; /* 64px */
+    width: 6rem !important;  /* 96px */
+    max-width: none;
+    max-height: none;
+}
+</style>

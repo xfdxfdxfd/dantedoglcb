@@ -5,7 +5,7 @@
                 <div class="hero-grid items-start">
                     <div class="hero-card">
                         <p class="section-kicker">{{ $t(`ExpPlanner`) }}</p>
-                        <div class="deco-divider mt-4 lg:mx-0 lg:justify-start">{{ $t(`ExpTrainingBureau`) }}</div>
+                        <!-- <div class="deco-divider mt-4 lg:mx-0 lg:justify-start">{{ $t(`ExpTrainingBureau`) }}</div> -->
                         <h1 class="section-title mt-3">{{ $t(`ExpCalculator`) }}</h1>
                         <p class="section-copy mt-4">{{ $t(`ExpCalculatorToolPage`) }}</p>
                     </div>
@@ -30,14 +30,14 @@
                 <div class="mt-8 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
                     <div class="subtle-panel p-6">
                         <p class="section-kicker">{{ $t(`You need`) }}</p>
-                        <div class="deco-divider mt-4 justify-start">{{ $t(`ExpReserve`) }}</div>
+                        <!-- <div class="deco-divider mt-4 justify-start">{{ $t(`ExpReserve`) }}</div> -->
                         <p class="deco-stat-value mt-4">{{ calExpResult }}</p>
                         <p class="mt-2 text-sm text-stone-400">{{ $t(`Exp`) }}</p>
                     </div>
 
                     <div class="subtle-panel p-6">
                         <p class="section-kicker">{{ $t(`Which is about`) }}</p>
-                        <div class="deco-divider mt-4 justify-start">{{ $t(`ExpTicketStack`) }}</div>
+                        <!-- <div class="deco-divider mt-4 justify-start">{{ $t(`ExpTicketStack`) }}</div> -->
                         <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                             <div v-for="ticket in ticketCards" :key="ticket.key" class="muted-panel p-4">
                                 <div class="deco-image-frame inline-block">
