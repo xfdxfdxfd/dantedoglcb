@@ -3,7 +3,6 @@
         <section class="mx-auto max-w-5xl px-4 py-8 md:px-6 lg:px-8">
             <div class="content-card overflow-hidden px-6 py-8 md:px-8">
                 <p class="section-kicker">{{ $t(`ChangelogReleaseNotes`) }}</p>
-                <div class="deco-divider mt-4">{{ $t(`ChangelogArchive`) }}</div>
                 <h1 class="section-title mt-3">{{ $t(`Changelog`) }}</h1>
                 <div class="mt-8 space-y-4">
                     <article v-for="entry in timelineEntries" :key="entry.date" class="rounded-[1.75rem] border p-5 backdrop-blur" :class="entry.tone === 'dark' ? 'border-white/10 bg-black/20' : 'border-gold/20 bg-amber-300/10'">
@@ -32,10 +31,11 @@ export default {
     },
     computed: {
         timelineEntries() {
-            return [
-                ...this.UpdateDate2024.map((date) => ({ date, tone: 'dark' })),
-                ...this.UpdateDate2023.map((date) => ({ date, tone: 'warm' })),
-            ];
+            const allDates = [...this.UpdateDate2024, ...this.UpdateDate2023];
+            return allDates.map((date, idx) => ({
+                date,
+                tone: idx === 0 ? 'warm' : 'dark',
+            }));
         },
     }
 }
