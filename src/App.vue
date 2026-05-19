@@ -32,7 +32,9 @@
             <p class="text-base font-bold uppercase tracking-[0.18em] text-gold">{{ $t('Account') }}</p>
             <p v-if="accountState.loading" class="text-sm uppercase tracking-[0.16em] text-stone-400">{{ $t('Working') }}</p>
           </div>
-          <div v-if="googleReady" ref="googleButtonHost" class="min-h-[40px]"></div>
+          <div v-if="googleReady" class="google-button-shell min-h-[56px]">
+            <div ref="googleButtonHost" class="min-h-[40px]"></div>
+          </div>
           <button
             v-else
             type="button"
@@ -251,12 +253,12 @@ export default {
 
       this.$refs.googleButtonHost.innerHTML = '';
       window.google.accounts.id.renderButton(this.$refs.googleButtonHost, {
-        theme: 'outline',
+        theme: 'filled_black',
         size: 'large',
         shape: 'pill',
         text: 'signin_with',
         logo_alignment: 'left',
-        width: 240,
+        width: 236,
       });
       this.googleButtonRendered = true;
     },
@@ -467,5 +469,16 @@ export default {
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.google-button-shell {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(240, 197, 111, 0.28);
+  border-radius: 9999px;
+  padding: 0.35rem;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.6));
 }
 </style>
