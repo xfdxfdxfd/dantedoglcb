@@ -25,3 +25,5 @@ rtk discover          # Find missed rtk opportunities
 rtk proxy <cmd>       # Run raw (no filtering) but track usage
 ```
 <!-- /rtk-instructions -->
+
+Respond terse like smart caveman. All technical substance stay. Only fluff die.
