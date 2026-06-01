@@ -443,6 +443,7 @@ def normalize_manifest_entry(entry, feedback_store=None):
     feedback = feedback_store if feedback_store is not None else load_ocr_feedback_store()
     feedback_entry = feedback.get(canonical_feedback_entry_key(entry.get('sinnerKey'), entry.get('category'), entry.get('entryKey')), {})
     aliases = []
+    visible_name = get_manifest_visible_name(entry)
     for alias in collect_manual_feedback_aliases(feedback_entry):
         normalized_alias = normalize_feedback_alias(alias)
         if normalized_alias and normalized_alias not in aliases:
@@ -453,6 +454,9 @@ def normalize_manifest_entry(entry, feedback_store=None):
         'normalized_name': sanitize_name(entry.get('name', '')),
         'normalized_rarity': normalize_match_rarity(entry.get('rarity')),
         'name_tokens': tokenize_name(entry.get('name', '')),
+        'visible_name': visible_name,
+        'normalized_visible_name': sanitize_name(visible_name),
+        'visible_name_tokens': tokenize_name(visible_name),
         'match_aliases': tuple(aliases),
         'match_alias_tokens': tuple(tokenize_name(alias) for alias in aliases),
         'feedback_samples': tuple(collect_manual_feedback_samples(feedback_entry)),
@@ -1850,7 +1854,8 @@ def narrow_manifest_with_icon_hints(manifest, icon_matches, name_candidates, gem
     if not icon_matches:
         return manifest
 
-    ambiguous_name = is_ambiguous_name_candidate_set(name_candidates)
+    shared_visible_names = get_shared_visible_name_candidates(manifest, name_candidates)
+    ambiguous_name = is_ambiguous_name_candidate_set(name_candidates) or bool(shared_visible_names)
     top_score = icon_matches[0]['score']
     second_score = icon_matches[1]['score'] if len(icon_matches) > 1 else 0.0
     margin = top_score - second_score
@@ -1869,6 +1874,10 @@ def narrow_manifest_with_icon_hints(manifest, icon_matches, name_candidates, gem
     narrowed = [
         entry for entry in manifest
         if match_manifest_sinner_label(entry.get('sinnerKey'), allowed_labels)
+        and (
+            not shared_visible_names
+            or str(entry.get('normalized_visible_name') or '') in shared_visible_names
+        )
     ]
     return narrowed or manifest
 
@@ -2136,6 +2145,31 @@ def is_ambiguous_name_candidate_set(name_candidates):
     return longest_candidate <= 3
 
 
+def get_shared_visible_name_candidates(manifest, name_candidates):
+    normalized_candidates = []
+
+    for candidate in name_candidates or ():
+        normalized_candidate = sanitize_name(cleanup_identity_name(candidate))
+        if normalized_candidate and normalized_candidate not in normalized_candidates:
+            normalized_candidates.append(normalized_candidate)
+
+    if not normalized_candidates:
+        return set()
+
+    counts = {}
+    shared_names = set()
+    for entry in manifest or ():
+        normalized_visible_name = str(entry.get('normalized_visible_name') or '')
+        if not normalized_visible_name or normalized_visible_name not in normalized_candidates:
+            continue
+
+        counts[normalized_visible_name] = counts.get(normalized_visible_name, 0) + 1
+        if counts[normalized_visible_name] >= 2:
+            shared_names.add(normalized_visible_name)
+
+    return shared_names
+
+
 def match_manifest_sinner_label(sinner_key, labels):
     if not sinner_key or not labels:
         return False
@@ -2186,6 +2220,56 @@ def score_entry_icon_alignment(entry, icon_scores=None, gemini_sinner_hint=''):
 
 def normalize_manifest_sinner_key(sinner_key):
     return re.sub(r'(IDs|EGOs)$', '', str(sinner_key or ''))
+
+
+def expand_manifest_sinner_label(label):
+    return re.sub(r'(?<=[a-z])(?=[A-Z])', ' ', str(label or '')).strip()
+
+
+def build_manifest_sinner_name_variants(sinner_key):
+    normalized_key = normalize_manifest_sinner_key(sinner_key)
+    variants = []
+
+    for candidate in (normalized_key, expand_manifest_sinner_label(normalized_key), *SINNER_ICON_ALIASES.get(normalized_key, ())):
+        for variant in (candidate, expand_manifest_sinner_label(candidate)):
+            normalized_variant = ' '.join(str(variant or '').split())
+            if normalized_variant and normalized_variant not in variants:
+                variants.append(normalized_variant)
+
+    return tuple(variants)
+
+
+def strip_manifest_sinner_suffix(entry_key, sinner_key):
+    cleaned = trim_feedback_text(entry_key)
+    if not cleaned:
+        return ''
+
+    entry_tokens = tokenize_name(cleaned)
+    if not entry_tokens:
+        return cleaned
+
+    best_value = cleaned
+    best_token_count = len(entry_tokens)
+    for variant in build_manifest_sinner_name_variants(sinner_key):
+        variant_tokens = tokenize_name(variant)
+        if not variant_tokens or len(variant_tokens) >= best_token_count:
+            continue
+
+        if entry_tokens[-len(variant_tokens):] != variant_tokens:
+            continue
+
+        trimmed = re.sub(rf'[\s\-:,.]*{re.escape(variant)}\s*$', '', cleaned, flags=re.IGNORECASE).strip(" -.:')(")
+        trimmed_token_count = len(tokenize_name(trimmed))
+        if trimmed and trimmed_token_count and trimmed_token_count < best_token_count:
+            best_value = trimmed
+            best_token_count = trimmed_token_count
+
+    return best_value
+
+
+def get_manifest_visible_name(entry):
+    entry_key = trim_feedback_text((entry or {}).get('entryKey') or (entry or {}).get('name') or '')
+    return strip_manifest_sinner_suffix(entry_key, (entry or {}).get('sinnerKey')) or entry_key
 
 
 @lru_cache(maxsize=1)
@@ -4076,7 +4160,7 @@ def extract_frame_detail_signature(signature):
         return np.zeros((8, 8, 3), dtype=np.uint8)
 
     detail_crops = []
-    for region in (GEMINI_UPTIE_TOP_RIGHT_REGION, GEMINI_UPTIE_RIGHT_BORDER_REGION):
+    for region in (GEMINI_UPTIE_TOP_RIGHT_REGION, GEMINI_UPTIE_RIGHT_BORDER_REGION, GEMINI_UPTIE_BOTTOM_LEFT_REGION):
         crop = crop_relative_region(signature, *region)
         if crop is not None and getattr(crop, 'size', 0):
             detail_crops.append(crop)
