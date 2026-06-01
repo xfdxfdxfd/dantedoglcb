@@ -5,29 +5,50 @@
                 <div class="border-b border-white/10 px-6 py-8 md:px-8">
                     <div class="hero-grid items-start">
                         <div class="hero-card">
-                            <p class="section-kicker">{{ $t(`BulkSyncLabel`) }}</p>
+                            <p v-if="showImageRecognition" class="section-kicker">{{ $t(`BulkSyncLabel`) }}</p>
+                            <p v-else class="section-kicker">{{ $t(`ManualSyncLabel`) }}</p>
                             <!-- <div class="deco-divider mt-4 lg:mx-0 lg:justify-start">{{ $t(`StatusRecognitionSuite`) }}</div> -->
                             <h1 class="section-title mt-3">{{ $t(`StatusSetting`) }}</h1>
                             <p class="section-copy mt-4">{{ $t(`statusSettingToolPage`) }}</p>
-                            <p class="mt-4 text-sm text-stone-400">{{ $t(`BulkSyncHint`) }}</p>
+                            <p v-if="showImageRecognition" class="mt-4 text-sm text-stone-400">{{ $t(`BulkSyncHint`) }}</p>
+                            <label class="mt-4 inline-flex items-center cursor-pointer select-none">
+                                <input
+                                    type="checkbox"
+                                    class="sr-only peer"
+                                    :checked="showImageRecognition"
+                                    @change="toggleImageRecognition()"
+                                >
+                                <div class="relative h-5 w-9 rounded-full border border-gold/30 bg-stone-900/70 transition peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-gold/20 peer-checked:border-gold peer-checked:bg-gold/80 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full"></div>
+                                <span class="ms-3 text-sm font-medium text-stone-200">
+                                    {{ $t(showImageRecognition ? `CloseExperimentalFeatures` : `OpenExperimentalFeatures`) }}
+                                </span>
+                            </label>
                         </div>
 
                         <div class="hero-card">
                                 <div class="mt-4 grid gap-3 sm:grid-cols-2">
                                 <button type="button" class="action-button" @click="openFileUpload()">{{ $t(`Import Setting`) }}</button>
                                 <button type="button" class="action-button" @click="download()">{{ $t(`Export Setting`) }}</button>
-                                <button type="button" class="action-button action-button--accent" :disabled="syncState.loading" @click="openScreenshotUpload()">
-                                    {{ syncState.loading ? $t(`SyncingScreenshots`) : $t(`SyncScreenshots`) }}
-                                </button>
+                                
                                 <button type="button" class="action-button action-button--danger" @click="resetProgress()">{{ $t(`Reset`) }}</button>
                             </div>
                         </div>
                     </div>
 
                     <input ref="settingsInput" type="file" class="hidden" accept=".txt,.json" @change="handleSettingsUpload">
-                    <input ref="screenshotsInput" type="file" class="hidden" accept="image/*" multiple @change="handleScreenshotUpload">
+                    <input v-if="showImageRecognition" ref="screenshotsInput" type="file" class="hidden" accept="image/*" multiple @change="handleScreenshotUpload">
 
-                    <div class="mt-6 grid gap-4 lg:grid-cols-3">
+                    <button
+                        v-if="showImageRecognition"
+                        type="button"
+                        class="action-button action-button--accent mt-6"
+                        :disabled="syncState.loading"
+                        @click="openScreenshotUpload()"
+                    >
+                        {{ syncState.loading ? $t(`SyncingScreenshots`) : $t(`SyncScreenshots`) }}
+                    </button>
+                    <div v-if="showImageRecognition" class="mt-6 grid gap-4 lg:grid-cols-3">
+                        
                         <div class="metric-card">
                             <p class="field-label">{{ $t(`ProcessedScreenshots`) }}</p>
                             <p class="deco-stat-value mt-3">{{ syncState.processedScreenshots }}</p>
@@ -42,11 +63,11 @@
                         </div>
                     </div>
 
-                    <p v-if="syncState.error" class="mt-4 rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+                    <p v-if="showImageRecognition && syncState.error" class="mt-4 rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-100">
                         {{ syncState.error }}
                     </p>
 
-                    <div v-if="reviewState.images.length" class="mt-8 border-t border-white/10 pt-8">
+                    <div v-if="showImageRecognition && reviewState.images.length" class="mt-8 border-t border-white/10 pt-8">
                         <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                             <div>
                                 <p class="section-kicker">{{ $t(`RecognitionReview`) }}</p>
@@ -444,6 +465,7 @@ export default {
             reviewCardRefs: {},
             reviewPersistenceReady: false,
             progressSaveTimerId: null,
+            showImageRecognition: false,
         };
     },
     computed: {
@@ -494,6 +516,9 @@ export default {
         },
     },
     methods: {
+        toggleImageRecognition() {
+            this.showImageRecognition = !this.showImageRecognition;
+        },
         createDefaultProgress() {
             return hydrateProgress(createDefaultRosterProgress(), {});
         },
